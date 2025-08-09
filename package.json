@@ -5,8 +5,7 @@
   "type": "module",
   "main": "src/index.ts",
   "bin": {
-    "ragist": "src/cli/index.ts",
-    "ragist-v2": "src/cli/index-v2.ts"
+    "ragist": "src/cli/index.ts"
   },
   "scripts": {
     "dev": "tsx watch src/cli/index.ts",

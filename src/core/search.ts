@@ -1,10 +1,6 @@
-import type { DatabaseSync } from "node:sqlite";
-import {
-  type SearchParams,
-  type SearchResult,
-  searchItems,
-} from "./database.js";
+import type { VectorSearchResult } from "./vector-db/types.js";
 import { generateEmbedding } from "./embedding.js";
+import { databaseService } from "./database-service.js";
 
 export interface RerankOptions {
   boostFactor?: number;
@@ -50,45 +46,33 @@ export interface SemanticSearchOptions {
   rerankBoostFactor?: number;
 }
 
-export interface SemanticSearchResult extends Omit<SearchResult, "distance"> {
-  score: number;
-}
-
 export async function semanticSearch(
-  db: DatabaseSync,
   query: string,
   options: SemanticSearchOptions = {},
-): Promise<SemanticSearchResult[]> {
-  const { k = 5, sourceType, rerank = true, rerankBoostFactor = 0.1 } = options;
+): Promise<VectorSearchResult[]> {
+  const { 
+    k = 5, 
+    sourceType, 
+    rerank = true, 
+    rerankBoostFactor = 0.1,
+  } = options;
 
   try {
     const queryEmbedding = await generateEmbedding(query);
-
-    const searchParams: SearchParams = {
+    
+    const results = await databaseService.searchItems({
       embedding: queryEmbedding,
       k,
       sourceType,
-    };
-
-    const results = searchItems(db, searchParams);
-
-    const scoredResults: SemanticSearchResult[] = results.map((result) => ({
-      id: result.id,
-      content: result.content,
-      title: result.title,
-      url: result.url,
-      sourceType: result.sourceType,
-      metadata: result.metadata,
-      score: 1 - result.distance,
-    }));
+    });
 
     if (rerank) {
-      return rerankResults(query, scoredResults, {
+      return rerankResults(query, results, {
         boostFactor: rerankBoostFactor,
       });
     }
 
-    return scoredResults;
+    return results;
   } catch (error) {
     throw new Error(`Failed to perform semantic search for query: ${query}`, {
       cause: error,
@@ -101,13 +85,12 @@ export interface HybridSearchOptions extends SemanticSearchOptions {
 }
 
 export async function hybridSearch(
-  db: DatabaseSync,
   query: string,
   options: HybridSearchOptions = {},
-): Promise<SemanticSearchResult[]> {
+): Promise<VectorSearchResult[]> {
   const { keywordWeight = 0.3, ...semanticOptions } = options;
 
-  const semanticResults = await semanticSearch(db, query, {
+  const semanticResults = await semanticSearch(query, {
     ...semanticOptions,
     rerank: false,
   });
@@ -124,11 +107,13 @@ export async function hybridSearch(
       contentLower.includes(word),
     ).length;
 
-    const wordMatchScore =
-      queryWords.length > 0 ? exactMatchCount / queryWords.length : 0;
+    const wordMatchScore = queryWords.length > 0
+      ? exactMatchCount / queryWords.length
+      : 0;
 
-    const hybridScore =
-      result.score * (1 - keywordWeight) + wordMatchScore * keywordWeight;
+    const hybridScore = 
+      result.score * (1 - keywordWeight) + 
+      wordMatchScore * keywordWeight;
 
     return {
       ...result,
@@ -148,7 +133,7 @@ export interface SearchStats {
 }
 
 export function calculateSearchStats(
-  results: SemanticSearchResult[],
+  results: VectorSearchResult[],
 ): SearchStats {
   if (results.length === 0) {
     return {
@@ -164,7 +149,7 @@ export function calculateSearchStats(
   const sourceTypes: Record<string, number> = {};
 
   for (const result of results) {
-    const type = result.sourceType || "unknown";
+    const type = (result.metadata?.sourceType as string) || "unknown";
     sourceTypes[type] = (sourceTypes[type] || 0) + 1;
   }
 
