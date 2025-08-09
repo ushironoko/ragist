@@ -3,6 +3,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { validateFilePath, SecurityError } from "../core/security.js";
 import { databaseService } from "../core/database-service.js";
 import { VectorDBFactory } from "../core/vector-db/factory.js";
 import {
@@ -37,9 +38,9 @@ Commands:
       --provider <name>  Vector DB provider (default: sqlite)
       --db <path>        Database file path (for SQLite)
       --text <text>      Index plain text
-      --file <path>      Index a file
-      --gist <url>       Index a GitHub Gist
-      --github <url>     Index a GitHub repository
+      --file <path>      Index a local file (restricted to current directory and subdirectories)
+      --gist <url>       Index a GitHub Gist (only gist.github.com URLs allowed)
+      --github <url>     Index a GitHub repository (only github.com URLs allowed)
       --title <title>    Title for the indexed content
       --url <url>        URL for the indexed content
       --chunk-size <n>   Chunk size (default: 1000)
@@ -78,6 +79,12 @@ Environment Variables:
 Supported Providers:
   - sqlite (built-in)
   - More providers can be added via plugins
+
+Security:
+  - File indexing is restricted to the current working directory and allowed subdirectories
+  - External URLs are limited to GitHub and Gist domains only (github.com, gist.github.com)
+  - Path traversal attacks (../) are prevented
+  - Symbolic links pointing outside allowed directories are blocked
 
 Examples:
   # Index a Gist
@@ -168,19 +175,32 @@ async function handleIndex(args: string[]): Promise<void> {
         options,
       );
     } else if (parsed.values.file) {
-      const filePath = resolve(parsed.values.file);
-      if (!existsSync(filePath)) {
-        console.error(`File not found: ${filePath}`);
-        process.exit(1);
+      try {
+        // Validate file path for security
+        const filePath = await validateFilePath(parsed.values.file);
+        
+        if (!existsSync(filePath)) {
+          console.error(`File not found: ${filePath}`);
+          process.exit(1);
+        }
+        
+        result = await indexFile(
+          filePath,
+          {
+            title: parsed.values.title || parsed.values.file,
+            url: parsed.values.url,
+          },
+          options,
+        );
+      } catch (error) {
+        if (error instanceof SecurityError) {
+          console.error(`Security error: ${error.message}`);
+          console.error('File access is restricted to prevent unauthorized file system access.');
+          console.error('Please ensure the file is in an allowed directory (current directory or subdirectories).');
+          process.exit(1);
+        }
+        throw error;
       }
-      result = await indexFile(
-        filePath,
-        {
-          title: parsed.values.title || parsed.values.file,
-          url: parsed.values.url,
-        },
-        options,
-      );
     } else if (parsed.values.gist) {
       result = await indexGist(parsed.values.gist, options);
     } else if (parsed.values.github) {

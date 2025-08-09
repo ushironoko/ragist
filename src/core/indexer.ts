@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { chunkText } from "./chunking.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
 import { databaseService, type ItemMetadata } from "./database-service.js";
+import { validateGistUrl, validateGitHubRepoUrl, validateExternalUrl, SecurityError } from "./security.js";
 
 export interface IndexOptions {
   chunkSize?: number;
@@ -138,7 +139,9 @@ export async function indexGist(
   };
 
   try {
-    const gistId = extractGistId(gistUrl);
+    // Validate the Gist URL using security module
+    const gistId = validateGistUrl(gistUrl);
+    
     if (!gistId) {
       result.errors.push(`Invalid Gist URL: ${gistUrl}`);
       return result;
@@ -178,9 +181,13 @@ export async function indexGist(
       result.errors.push(...fileResult.errors);
     }
   } catch (error) {
-    result.errors.push(
-      `Failed to index Gist: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    if (error instanceof SecurityError) {
+      result.errors.push(`Security error: ${error.message}`);
+    } else {
+      result.errors.push(
+        `Failed to index Gist: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   return result;
@@ -197,7 +204,9 @@ export async function indexGitHubRepo(
   };
 
   try {
-    const { owner, repo } = extractRepoInfo(repoUrl);
+    // Validate the GitHub repository URL using security module
+    const { owner, repo } = validateGitHubRepoUrl(repoUrl);
+    
     if (!owner || !repo) {
       result.errors.push(`Invalid GitHub repository URL: ${repoUrl}`);
       return result;
@@ -220,9 +229,13 @@ export async function indexGitHubRepo(
       result.errors.push(...filesResult.errors);
     }
   } catch (error) {
-    result.errors.push(
-      `Failed to index GitHub repo: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    if (error instanceof SecurityError) {
+      result.errors.push(`Security error: ${error.message}`);
+    } else {
+      result.errors.push(
+        `Failed to index GitHub repo: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   return result;
@@ -296,21 +309,6 @@ async function indexGitHubPath(
   return result;
 }
 
-function extractGistId(url: string): string | null {
-  const match = url.match(/gist\.github\.com\/[\w-]+\/([a-f0-9]+)/);
-  return match?.[1] ? match[1] : null;
-}
-
-function extractRepoInfo(url: string): { owner: string; repo: string } {
-  const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-  if (match?.[1] && match[2]) {
-    return {
-      owner: match[1],
-      repo: match[2].replace(/\.git$/, ""),
-    };
-  }
-  return { owner: "", repo: "" };
-}
 
 function isTextFile(filename: string): boolean {
   const textExtensions = [
