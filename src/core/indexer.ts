@@ -1,12 +1,7 @@
 import { readFile } from "node:fs/promises";
-import type { DatabaseSync } from "node:sqlite";
 import { chunkText } from "./chunking.js";
-import {
-  type ItemMetadata,
-  type SaveItemParams,
-  saveItem,
-} from "./database.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
+import { databaseService, type ItemMetadata } from "./database-service.js";
 
 export interface IndexOptions {
   chunkSize?: number;
@@ -22,14 +17,13 @@ export interface IndexResult {
 }
 
 export async function indexText(
-  db: DatabaseSync,
   text: string,
   metadata: ItemMetadata = {},
   options: IndexOptions = {},
 ): Promise<IndexResult> {
-  const {
-    chunkSize = 1000,
-    chunkOverlap = 100,
+  const { 
+    chunkSize = 1000, 
+    chunkOverlap = 100, 
     batchSize = 100,
     onProgress,
   } = options;
@@ -75,36 +69,25 @@ export async function indexText(
       onProgress("Saving to database...");
     }
 
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const embedding = embeddings[i];
+    const items = chunks.map((chunk, i) => ({
+      content: chunk,
+      embedding: embeddings[i]!,
+      metadata: {
+        ...metadata,
+        chunkIndex: i,
+        totalChunks: chunks.length,
+      },
+    }));
 
-      if (!chunk || !embedding) {
-        result.errors.push(`Missing chunk or embedding at index ${i}`);
-        continue;
-      }
-
-      const itemParams: SaveItemParams = {
-        content: chunk,
-        embedding,
-        metadata: {
-          ...metadata,
-          chunkIndex: i,
-          totalChunks: chunks.length,
-        },
-      };
-
-      try {
-        saveItem(db, itemParams);
-        result.itemsIndexed++;
-      } catch (error) {
-        result.errors.push(
-          `Failed to save chunk ${i}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
+    try {
+      const ids = await databaseService.saveItems(items);
+      result.itemsIndexed = ids.length;
+      result.chunksCreated = chunks.length;
+    } catch (error) {
+      result.errors.push(
+        `Failed to save chunks: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
-
-    result.chunksCreated = chunks.length;
 
     if (onProgress) {
       onProgress("Indexing complete", 1);
@@ -119,7 +102,6 @@ export async function indexText(
 }
 
 export async function indexFile(
-  db: DatabaseSync,
   filePath: string,
   metadata: ItemMetadata = {},
   options: IndexOptions = {},
@@ -133,7 +115,7 @@ export async function indexFile(
       filePath,
     };
 
-    return indexText(db, content, fileMetadata, options);
+    return indexText(content, fileMetadata, options);
   } catch (error) {
     return {
       itemsIndexed: 0,
@@ -146,7 +128,6 @@ export async function indexFile(
 }
 
 export async function indexGist(
-  db: DatabaseSync,
   gistUrl: string,
   options: IndexOptions = {},
 ): Promise<IndexResult> {
@@ -173,7 +154,7 @@ export async function indexGist(
       return result;
     }
 
-    const gistData = (await response.json()) as {
+    const gistData = await response.json() as {
       description?: string;
       files: Record<string, { content: string; filename: string }>;
       html_url: string;
@@ -190,7 +171,7 @@ export async function indexGist(
         description: gistData.description,
       };
 
-      const fileResult = await indexText(db, file.content, metadata, options);
+      const fileResult = await indexText(file.content, metadata, options);
 
       result.itemsIndexed += fileResult.itemsIndexed;
       result.chunksCreated += fileResult.chunksCreated;
@@ -206,7 +187,6 @@ export async function indexGist(
 }
 
 export async function indexGitHubRepo(
-  db: DatabaseSync,
   repoUrl: string,
   options: IndexOptions & { branch?: string; paths?: string[] } = {},
 ): Promise<IndexResult> {
@@ -230,7 +210,6 @@ export async function indexGitHubRepo(
       const contentsUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
 
       const filesResult = await indexGitHubPath(
-        db,
         contentsUrl,
         { owner, repo, branch },
         options,
@@ -250,7 +229,6 @@ export async function indexGitHubRepo(
 }
 
 async function indexGitHubPath(
-  db: DatabaseSync,
   contentsUrl: string,
   repoInfo: { owner: string; repo: string; branch: string },
   options: IndexOptions,
@@ -271,7 +249,7 @@ async function indexGitHubPath(
       return result;
     }
 
-    const contents = (await response.json()) as Array<{
+    const contents = await response.json() as Array<{
       name: string;
       path: string;
       type: "file" | "dir";
@@ -296,7 +274,7 @@ async function indexGitHubPath(
               path: item.path,
             };
 
-            const fileResult = await indexText(db, content, metadata, options);
+            const fileResult = await indexText(content, metadata, options);
 
             result.itemsIndexed += fileResult.itemsIndexed;
             result.chunksCreated += fileResult.chunksCreated;
@@ -336,66 +314,17 @@ function extractRepoInfo(url: string): { owner: string; repo: string } {
 
 function isTextFile(filename: string): boolean {
   const textExtensions = [
-    ".txt",
-    ".md",
-    ".markdown",
-    ".rst",
-    ".asciidoc",
-    ".js",
-    ".jsx",
-    ".ts",
-    ".tsx",
-    ".mjs",
-    ".cjs",
-    ".py",
-    ".rb",
-    ".go",
-    ".rust",
-    ".rs",
-    ".c",
-    ".cpp",
-    ".h",
-    ".hpp",
-    ".java",
-    ".kt",
-    ".scala",
-    ".swift",
-    ".m",
-    ".mm",
-    ".html",
-    ".htm",
-    ".xml",
-    ".css",
-    ".scss",
-    ".sass",
-    ".less",
-    ".json",
-    ".yaml",
-    ".yml",
-    ".toml",
-    ".ini",
-    ".conf",
-    ".config",
-    ".sh",
-    ".bash",
-    ".zsh",
-    ".fish",
-    ".ps1",
-    ".bat",
-    ".cmd",
-    ".sql",
-    ".graphql",
-    ".proto",
-    ".vue",
-    ".svelte",
-    ".astro",
-    ".tex",
-    ".bib",
-    ".r",
-    ".R",
-    ".jl",
-    ".m",
-    ".mat",
+    ".txt", ".md", ".markdown", ".rst", ".asciidoc",
+    ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
+    ".py", ".rb", ".go", ".rust", ".rs", ".c", ".cpp", ".h", ".hpp",
+    ".java", ".kt", ".scala", ".swift", ".m", ".mm",
+    ".html", ".htm", ".xml", ".css", ".scss", ".sass", ".less",
+    ".json", ".yaml", ".yml", ".toml", ".ini", ".conf", ".config",
+    ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat", ".cmd",
+    ".sql", ".graphql", ".proto",
+    ".vue", ".svelte", ".astro",
+    ".tex", ".bib",
+    ".r", ".R", ".jl", ".m", ".mat",
   ];
 
   const lowerName = filename.toLowerCase();
