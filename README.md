@@ -258,8 +258,8 @@ npm run tsc  # Type checking
   - `vector-db/` - Pluggable vector database architecture
   - `chunking.ts` - Text chunking with overlap
   - `embedding.ts` - Google AI embeddings generation
-  - `search-v2.ts` - Semantic and hybrid search
-  - `indexer-v2.ts` - Content indexing from various sources
+  - `search.ts` - Semantic and hybrid search
+  - `indexer.ts` - Content indexing from various sources
 
 - **CLI**:
   - `cli/index.ts` - Command-line interface
