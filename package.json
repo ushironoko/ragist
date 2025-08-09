@@ -1,0 +1,41 @@
+{
+  "name": "ragist",
+  "version": "0.1.0",
+  "description": "RAG search system for Gist and GitHub repositories",
+  "type": "module",
+  "main": "src/index.ts",
+  "bin": {
+    "ragist": "src/cli/index.ts",
+    "ragist-v2": "src/cli/index-v2.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/cli/index.ts",
+    "build": "tsc",
+    "start": "node --experimental-strip-types src/cli/index.ts",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check --write .",
+    "format": "biome format --write .",
+    "tsc": "tsc --noEmit"
+  },
+  "keywords": ["rag", "vector-search", "embeddings", "gist", "github"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ai-sdk/google": "1.0.13",
+    "ai": "4.0.31",
+    "sqlite-vec": "0.1.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "22.10.5",
+    "@vitest/coverage-v8": "^2.1.8",
+    "tsx": "4.19.2",
+    "typescript": "5.7.3",
+    "vitest": "2.1.8"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
