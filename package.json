@@ -31,13 +31,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/node": "24.2.1",
+    "@types/node": "24.2.0",
     "@vitest/coverage-v8": "^2.1.8",
     "tsx": "4.19.2",
     "typescript": "5.7.3",
     "vitest": "2.1.8"
   },
   "engines": {
-    "node": ">=24.2.1"
+    "node": ">=24.2.0"
   }
 }
