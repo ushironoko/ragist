@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { DatabaseService } from "./database-service.js";
 import { VectorDBRegistry } from "./vector-db/registry.js";
 import type { VectorDBConfig } from "./vector-db/types.js";
@@ -40,7 +40,9 @@ describe("DatabaseService", () => {
   });
 
   test("throws error when accessing adapter before initialization", () => {
-    expect(() => service.getAdapter()).toThrow("Database service not initialized");
+    expect(() => service.getAdapter()).toThrow(
+      "Database service not initialized",
+    );
   });
 
   test("can save and retrieve items", async () => {
@@ -95,7 +97,7 @@ describe("DatabaseService", () => {
 
     const ids = await service.saveItems(items);
     expect(ids).toHaveLength(2);
-    expect(ids.every(id => typeof id === "string")).toBe(true);
+    expect(ids.every((id) => typeof id === "string")).toBe(true);
 
     const count = await service.countItems();
     expect(count).toBe(2);

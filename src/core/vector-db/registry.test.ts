@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { VectorDBRegistry } from "./registry.js";
 import type { VectorDBAdapter, VectorDBConfig } from "./types.js";
 
@@ -10,7 +10,7 @@ vi.mock("node:sqlite", () => ({
 // Mock adapter for testing
 class MockAdapter implements VectorDBAdapter {
   constructor(private config: VectorDBConfig) {}
-  
+
   async initialize(): Promise<void> {}
   async insert(): Promise<string> {
     return "mock-id";
@@ -56,20 +56,20 @@ describe("VectorDBRegistry", () => {
 
   test("registers built-in adapters on initialization", () => {
     VectorDBRegistry.initialize();
-    
+
     expect(VectorDBRegistry.hasProvider("sqlite")).toBe(true);
     expect(VectorDBRegistry.hasProvider("memory")).toBe(true);
   });
 
   test("can register custom adapter", () => {
     VectorDBRegistry.register("mock", MockAdapter as any);
-    
+
     expect(VectorDBRegistry.hasProvider("mock")).toBe(true);
   });
 
   test("prevents duplicate adapter registration", () => {
     VectorDBRegistry.register("mock", MockAdapter as any);
-    
+
     expect(() => {
       VectorDBRegistry.register("mock", MockAdapter as any);
     }).toThrow("Adapter already registered for provider: mock");
@@ -78,9 +78,9 @@ describe("VectorDBRegistry", () => {
   test("lists all registered providers", () => {
     VectorDBRegistry.initialize();
     VectorDBRegistry.register("mock", MockAdapter as any);
-    
+
     const providers = VectorDBRegistry.listProviders();
-    
+
     expect(providers).toContain("sqlite");
     expect(providers).toContain("memory");
     expect(providers).toContain("mock");
@@ -88,14 +88,14 @@ describe("VectorDBRegistry", () => {
 
   test("creates adapter instance", () => {
     VectorDBRegistry.register("mock", MockAdapter as any);
-    
+
     const config: VectorDBConfig = {
       provider: "mock",
       options: {},
     };
-    
+
     const adapter = VectorDBRegistry.create(config);
-    
+
     expect(adapter).toBeInstanceOf(MockAdapter);
   });
 
@@ -104,7 +104,7 @@ describe("VectorDBRegistry", () => {
       provider: "unknown",
       options: {},
     };
-    
+
     expect(() => {
       VectorDBRegistry.create(config);
     }).toThrow("No adapter registered for provider: unknown");
@@ -113,7 +113,7 @@ describe("VectorDBRegistry", () => {
   test("can unregister provider", () => {
     VectorDBRegistry.register("mock", MockAdapter as any);
     expect(VectorDBRegistry.hasProvider("mock")).toBe(true);
-    
+
     VectorDBRegistry.unregister("mock");
     expect(VectorDBRegistry.hasProvider("mock")).toBe(false);
   });
