@@ -1,12 +1,22 @@
-import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import * as sqliteVec from "sqlite-vec";
+import { BaseVectorAdapter } from "../base-adapter.js";
+import { VECTOR_DB_CONSTANTS } from "../constants.js";
+import {
+  DatabaseNotInitializedError,
+  DocumentNotFoundError,
+  VectorDBError,
+} from "../errors.js";
 import type {
-  VectorDBAdapter,
   VectorDBConfig,
   VectorDocument,
   VectorSearchResult,
 } from "../types.ts";
+import {
+  buildSQLFilterConditions,
+  buildSQLWhereClause,
+} from "../utils/filter.js";
+import { generateDocumentId, validateDimension } from "../utils/validation.js";
 
 export interface SQLiteAdapterConfig extends VectorDBConfig {
   provider: "sqlite";
@@ -16,13 +26,12 @@ export interface SQLiteAdapterConfig extends VectorDBConfig {
   };
 }
 
-export class SQLiteAdapter implements VectorDBAdapter {
+export class SQLiteAdapter extends BaseVectorAdapter {
   private db: DatabaseSync | null = null;
-  private readonly dimension: number;
   private readonly dbPath: string;
 
   constructor(config: SQLiteAdapterConfig) {
-    this.dimension = config.options?.dimension ?? 768;
+    super(config);
     this.dbPath = config.options?.path ?? ":memory:";
   }
 
@@ -54,7 +63,7 @@ export class SQLiteAdapter implements VectorDBAdapter {
         END;
       `);
     } catch (error) {
-      throw new Error("Failed to initialize SQLite vector database", {
+      throw new VectorDBError("Failed to initialize SQLite vector database", {
         cause: error,
       });
     }
@@ -62,10 +71,11 @@ export class SQLiteAdapter implements VectorDBAdapter {
 
   async insert(document: VectorDocument): Promise<string> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new DatabaseNotInitializedError();
     }
 
-    const id = document.id || randomUUID();
+    const id = generateDocumentId(document.id);
+    validateDimension(document.embedding, this.dimension);
     const metadataJson = document.metadata
       ? JSON.stringify(document.metadata)
       : null;
@@ -106,17 +116,10 @@ export class SQLiteAdapter implements VectorDBAdapter {
 
       return id;
     } catch (error) {
-      throw new Error(`Failed to insert document: ${id}`, { cause: error });
+      throw new VectorDBError(`Failed to insert document: ${id}`, {
+        cause: error,
+      });
     }
-  }
-
-  async insertBatch(documents: VectorDocument[]): Promise<string[]> {
-    const ids: string[] = [];
-    for (const doc of documents) {
-      const id = await this.insert(doc);
-      ids.push(id);
-    }
-    return ids;
   }
 
   async search(
@@ -124,10 +127,10 @@ export class SQLiteAdapter implements VectorDBAdapter {
     options?: { k?: number; filter?: Record<string, unknown> },
   ): Promise<VectorSearchResult[]> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new DatabaseNotInitializedError();
     }
 
-    const k = options?.k ?? 5;
+    const k = options?.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
 
     try {
       let query = `
@@ -148,10 +151,11 @@ export class SQLiteAdapter implements VectorDBAdapter {
 
       // Apply filters if provided
       if (options?.filter) {
-        for (const [key, value] of Object.entries(options.filter)) {
-          query += ` AND json_extract(d.metadata, '$.${key}') = ?`;
-          queryParams.push(value);
+        const { conditions, params } = buildSQLFilterConditions(options.filter);
+        for (const condition of conditions) {
+          query += ` AND ${condition}`;
         }
+        queryParams.push(...params);
       }
 
       query += " ORDER BY v.distance";
@@ -170,13 +174,13 @@ export class SQLiteAdapter implements VectorDBAdapter {
         metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
       }));
     } catch (error) {
-      throw new Error("Failed to search documents", { cause: error });
+      throw new VectorDBError("Failed to search documents", { cause: error });
     }
   }
 
   async update(id: string, document: Partial<VectorDocument>): Promise<void> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new DatabaseNotInitializedError();
     }
 
     try {
@@ -207,7 +211,7 @@ export class SQLiteAdapter implements VectorDBAdapter {
           .get(id) as { rowid: number } | undefined;
 
         if (!row) {
-          throw new Error(`Document not found: ${id}`);
+          throw new DocumentNotFoundError(id);
         }
 
         this.db
@@ -218,13 +222,15 @@ export class SQLiteAdapter implements VectorDBAdapter {
           );
       }
     } catch (error) {
-      throw new Error(`Failed to update document: ${id}`, { cause: error });
+      throw new VectorDBError(`Failed to update document: ${id}`, {
+        cause: error,
+      });
     }
   }
 
   async delete(id: string): Promise<void> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new DatabaseNotInitializedError();
     }
 
     try {
@@ -239,19 +245,15 @@ export class SQLiteAdapter implements VectorDBAdapter {
         this.db.prepare("DELETE FROM documents WHERE id = ?").run(id);
       }
     } catch (error) {
-      throw new Error(`Failed to delete document: ${id}`, { cause: error });
-    }
-  }
-
-  async deleteBatch(ids: string[]): Promise<void> {
-    for (const id of ids) {
-      await this.delete(id);
+      throw new VectorDBError(`Failed to delete document: ${id}`, {
+        cause: error,
+      });
     }
   }
 
   async get(id: string): Promise<VectorDocument | null> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new DatabaseNotInitializedError();
     }
 
     try {
@@ -291,13 +293,15 @@ export class SQLiteAdapter implements VectorDBAdapter {
         metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
       };
     } catch (error) {
-      throw new Error(`Failed to get document: ${id}`, { cause: error });
+      throw new VectorDBError(`Failed to get document: ${id}`, {
+        cause: error,
+      });
     }
   }
 
   async count(filter?: Record<string, unknown>): Promise<number> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new DatabaseNotInitializedError();
     }
 
     try {
@@ -305,18 +309,16 @@ export class SQLiteAdapter implements VectorDBAdapter {
       const params: any[] = [];
 
       if (filter && Object.keys(filter).length > 0) {
-        const conditions: string[] = [];
-        for (const [key, value] of Object.entries(filter)) {
-          conditions.push(`json_extract(metadata, '$.${key}') = ?`);
-          params.push(value);
-        }
-        query += ` WHERE ${conditions.join(" AND ")}`;
+        const { whereClause, params: filterParams } =
+          buildSQLWhereClause(filter);
+        query += whereClause;
+        params.push(...filterParams);
       }
 
       const result = this.db.prepare(query).get(...params) as { count: number };
       return result.count;
     } catch (error) {
-      throw new Error("Failed to count documents", { cause: error });
+      throw new VectorDBError("Failed to count documents", { cause: error });
     }
   }
 
@@ -326,11 +328,11 @@ export class SQLiteAdapter implements VectorDBAdapter {
     filter?: Record<string, unknown>;
   }): Promise<VectorDocument[]> {
     if (!this.db) {
-      throw new Error("Database not initialized");
+      throw new DatabaseNotInitializedError();
     }
 
-    const limit = options?.limit ?? 100;
-    const offset = options?.offset ?? 0;
+    const limit = options?.limit ?? VECTOR_DB_CONSTANTS.DEFAULT_LIST_LIMIT;
+    const offset = options?.offset ?? VECTOR_DB_CONSTANTS.DEFAULT_LIST_OFFSET;
 
     try {
       let query = `
@@ -340,12 +342,11 @@ export class SQLiteAdapter implements VectorDBAdapter {
       const params: any[] = [];
 
       if (options?.filter && Object.keys(options.filter).length > 0) {
-        const conditions: string[] = [];
-        for (const [key, value] of Object.entries(options.filter)) {
-          conditions.push(`json_extract(d.metadata, '$.${key}') = ?`);
-          params.push(value);
-        }
-        query += ` WHERE ${conditions.join(" AND ")}`;
+        const { whereClause, params: filterParams } = buildSQLWhereClause(
+          options.filter,
+        );
+        query += whereClause;
+        params.push(...filterParams);
       }
 
       query += " ORDER BY d.created_at DESC LIMIT ? OFFSET ?";
@@ -377,7 +378,7 @@ export class SQLiteAdapter implements VectorDBAdapter {
 
       return documents;
     } catch (error) {
-      throw new Error("Failed to list documents", { cause: error });
+      throw new VectorDBError("Failed to list documents", { cause: error });
     }
   }
 
@@ -387,7 +388,7 @@ export class SQLiteAdapter implements VectorDBAdapter {
         this.db.close();
         this.db = null;
       } catch (error) {
-        throw new Error("Failed to close database", { cause: error });
+        throw new VectorDBError("Failed to close database", { cause: error });
       }
     }
   }

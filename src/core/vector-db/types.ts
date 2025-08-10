@@ -18,7 +18,10 @@ export interface VectorSearchResult {
 
 export interface VectorDBConfig {
   provider: string;
-  options?: Record<string, unknown>;
+  options?: {
+    dimension?: number;
+    [key: string]: unknown;
+  };
 }
 
 export interface VectorDBAdapter {
