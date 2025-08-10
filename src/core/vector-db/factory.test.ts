@@ -106,8 +106,8 @@ describe("VectorDBFactory", () => {
       expect(adapter.getInfo().provider).toBe("memory");
     } finally {
       // Clean up environment variables
-      delete process.env.VECTOR_DB_PROVIDER;
-      delete process.env.EMBEDDING_DIMENSION;
+      process.env.VECTOR_DB_PROVIDER = undefined;
+      process.env.EMBEDDING_DIMENSION = undefined;
     }
   });
 
@@ -124,8 +124,8 @@ describe("VectorDBFactory", () => {
       expect(adapter).toBeDefined();
       expect(adapter.getInfo().provider).toBe("memory");
     } finally {
-      delete process.env.VECTOR_DB_PROVIDER;
-      delete process.env.VECTOR_DB_CONFIG;
+      process.env.VECTOR_DB_PROVIDER = undefined;
+      process.env.VECTOR_DB_CONFIG = undefined;
     }
   });
 
@@ -137,7 +137,7 @@ describe("VectorDBFactory", () => {
       expect(adapter).toBeDefined();
       // Should fall back to defaults
     } finally {
-      delete process.env.VECTOR_DB_CONFIG;
+      process.env.VECTOR_DB_CONFIG = undefined;
     }
   });
 
@@ -204,9 +204,9 @@ describe("VectorDBFactory", () => {
       expect(adapter).toBeDefined();
       expect(adapter.getInfo().provider).toBe("sqlite");
     } finally {
-      delete process.env.VECTOR_DB_PROVIDER;
-      delete process.env.SQLITE_DB_PATH;
-      delete process.env.EMBEDDING_DIMENSION;
+      process.env.VECTOR_DB_PROVIDER = undefined;
+      process.env.SQLITE_DB_PATH = undefined;
+      process.env.EMBEDDING_DIMENSION = undefined;
     }
   });
 
