@@ -6,7 +6,7 @@ import type {
   VectorDBConfig,
   VectorDocument,
   VectorSearchResult,
-} from "../types.js";
+} from "../types.ts";
 
 export interface SQLiteAdapterConfig extends VectorDBConfig {
   provider: "sqlite";

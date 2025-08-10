@@ -2,20 +2,20 @@
 
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
-import { databaseService } from "../core/database-service.js";
+import { databaseService } from "../core/database-service.ts";
 import {
   indexFile,
   indexGist,
   indexGitHubRepo,
   indexText,
-} from "../core/indexer.js";
+} from "../core/indexer.ts";
 import {
   calculateSearchStats,
   hybridSearch,
   semanticSearch,
-} from "../core/search.js";
-import { SecurityError, validateFilePath } from "../core/security.js";
-import type { VectorDBFactory } from "../core/vector-db/factory.js";
+} from "../core/search.ts";
+import { SecurityError, validateFilePath } from "../core/security.ts";
+import type { VectorDBFactory } from "../core/vector-db/factory.ts";
 
 const COMMANDS = {
   index: "Index content into the database",

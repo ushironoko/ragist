@@ -5,7 +5,7 @@ import {
   chunkText,
   chunkTextWithMetadata,
   estimateChunkCount,
-} from "./chunking.js";
+} from "./chunking.ts";
 
 describe("chunkText", () => {
   test("returns single chunk for short text", () => {

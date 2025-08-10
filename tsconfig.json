@@ -20,6 +20,8 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "experimentalDecorators": false,
     "emitDecoratorMetadata": false,
     "types": ["node"]

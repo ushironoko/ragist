@@ -4,7 +4,7 @@ import type {
   VectorDBConfig,
   VectorDocument,
   VectorSearchResult,
-} from "../types.js";
+} from "../types.ts";
 
 export interface MemoryAdapterConfig extends VectorDBConfig {
   provider: "memory";

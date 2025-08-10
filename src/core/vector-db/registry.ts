@@ -1,10 +1,10 @@
-import { MemoryAdapter } from "./adapters/memory-adapter.js";
-import { SQLiteAdapter } from "./adapters/sqlite-adapter.js";
+import { MemoryAdapter } from "./adapters/memory-adapter.ts";
+import { SQLiteAdapter } from "./adapters/sqlite-adapter.ts";
 import type {
   VectorDBAdapter,
   VectorDBAdapterConstructor,
   VectorDBConfig,
-} from "./types.js";
+} from "./types.ts";
 
 /**
  * Registry for vector database adapters

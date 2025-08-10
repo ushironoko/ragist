@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { VectorDBFactory } from "./vector-db/factory.js";
+import { VectorDBFactory } from "./vector-db/factory.ts";
 import type {
   VectorDBAdapter,
   VectorDocument,
   VectorSearchResult,
-} from "./vector-db/types.js";
+} from "./vector-db/types.ts";
 
 export interface ItemMetadata {
   title?: string;

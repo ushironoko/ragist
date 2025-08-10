@@ -1,5 +1,5 @@
-import { VectorDBRegistry } from "./registry.js";
-import type { VectorDBAdapter, VectorDBConfig } from "./types.js";
+import { VectorDBRegistry } from "./registry.ts";
+import type { VectorDBAdapter, VectorDBConfig } from "./types.ts";
 
 /**
  * Factory for creating vector database adapters
