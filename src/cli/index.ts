@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 
+// Load environment variables from .env file
+try {
+  process.loadEnvFile(".env");
+} catch (error) {
+  // .envファイルが存在しない場合は警告のみ（開発環境）
+  if (process.env.NODE_ENV === "development") {
+    console.warn(
+      "Warning: .env file not found. Using environment variables only.",
+    );
+  }
+}
+
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { databaseService } from "../core/database-service.js";
@@ -318,7 +330,9 @@ async function handleQuery(args: string[]): Promise<void> {
     console.log("Search Statistics:");
     console.log(`  Average Score: ${stats.averageScore.toFixed(3)}`);
     console.log(
-      `  Score Range: ${stats.minScore.toFixed(3)} - ${stats.maxScore.toFixed(3)}`,
+      `  Score Range: ${stats.minScore.toFixed(3)} - ${stats.maxScore.toFixed(
+        3,
+      )}`,
     );
 
     if (Object.keys(stats.sourceTypes).length > 1) {

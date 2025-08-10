@@ -27,7 +27,25 @@ npm install
 
 ## Setup
 
-Set your Google AI API key:
+### Method 1: Using .env file (Recommended)
+
+Copy the example environment file and add your API key:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and add your Google AI API key:
+
+```
+GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
+```
+
+The `.env` file will be automatically loaded when you run the CLI.
+
+### Method 2: Environment variables
+
+Alternatively, you can set the API key as an environment variable:
 
 ```bash
 export GOOGLE_GENERATIVE_AI_API_KEY="your-api-key"
