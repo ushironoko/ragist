@@ -3,7 +3,7 @@ import type { DatabaseSync } from "node:sqlite";
 import {
   DatabaseNotInitializedError,
   InvalidDimensionError,
-} from "../errors.js";
+} from "../errors.ts";
 
 /**
  * Check if database is initialized (for SQLite)

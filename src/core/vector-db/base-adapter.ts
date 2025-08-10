@@ -1,9 +1,9 @@
-import { VECTOR_DB_CONSTANTS } from "./constants.js";
+import { VECTOR_DB_CONSTANTS } from "./constants.ts";
 import type {
   VectorDBAdapter,
   VectorDBConfig,
   VectorDocument,
-} from "./types.js";
+} from "./types.ts";
 
 /**
  * Base adapter class providing common functionality for vector database adapters
@@ -43,7 +43,7 @@ export abstract class BaseVectorAdapter implements VectorDBAdapter {
   abstract search(
     embedding: number[],
     options?: { k?: number; filter?: Record<string, unknown> },
-  ): Promise<import("./types.js").VectorSearchResult[]>;
+  ): Promise<import("./types.ts").VectorSearchResult[]>;
   abstract update(id: string, document: Partial<VectorDocument>): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract get(id: string): Promise<VectorDocument | null>;
