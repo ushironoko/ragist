@@ -38,8 +38,35 @@ export class SQLiteAdapter extends BaseVectorAdapter {
   async initialize(): Promise<void> {
     try {
       this.db = new DatabaseSync(this.dbPath);
-      sqliteVec.load(this.db as any);
+      
+      // Try to load sqlite-vec extension - required for vector operations
+      try {
+        sqliteVec.load(this.db as any);
+      } catch (extError: any) {
+        // Close the database connection before throwing error
+        if (this.db) {
+          this.db.close();
+          this.db = null;
+        }
+        
+        // Provide clear error message with suggestions
+        const errorMessage = `SQLite vector extension (sqlite-vec) could not be loaded. 
 
+This is likely because Node.js SQLite does not allow extension loading in your environment.
+
+Suggestions:
+1. Use the memory adapter instead: --provider memory
+2. Use a different Node.js version that supports SQLite extensions
+3. Consider using a standalone SQLite installation with vector support
+
+Original error: ${extError.message}`;
+        
+        throw new VectorDBError(errorMessage, {
+          cause: extError,
+        });
+      }
+
+      // Create tables with vector support
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS documents (
           id TEXT PRIMARY KEY,
@@ -63,6 +90,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
         END;
       `);
     } catch (error) {
+      console.error("SQLite initialization error:", error);
       throw new VectorDBError("Failed to initialize SQLite vector database", {
         cause: error,
       });
@@ -81,7 +109,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
       : null;
 
     try {
-      // Insert document
+      // Use sqlite-vec extension (required)
       this.db
         .prepare(
           "INSERT OR REPLACE INTO documents (id, content, metadata) VALUES (?, ?, ?)",
@@ -133,6 +161,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
     const k = options?.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
 
     try {
+      // Use sqlite-vec extension (required)
       let query = `
         SELECT 
           d.id,
@@ -234,6 +263,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
     }
 
     try {
+      // Delete with sqlite-vec extension (required)
       const row = this.db
         .prepare("SELECT rowid FROM documents WHERE id = ?")
         .get(id) as { rowid: number } | undefined;
@@ -257,6 +287,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
     }
 
     try {
+      // Get with sqlite-vec extension (required)
       const row = this.db
         .prepare(
           `SELECT d.id, d.content, d.metadata, d.rowid 
@@ -275,7 +306,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
         return null;
       }
 
-      // Get embedding
+      // Get embedding from vec_documents
       const vecRow = this.db
         .prepare("SELECT embedding FROM vec_documents WHERE rowid = ?")
         .get(row.rowid) as { embedding: Uint8Array } | undefined;
@@ -361,6 +392,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
 
       const documents: VectorDocument[] = [];
 
+      // Get embeddings from vec_documents (required)
       for (const row of rows) {
         const vecRow = this.db
           .prepare("SELECT embedding FROM vec_documents WHERE rowid = ?")
@@ -406,4 +438,6 @@ export class SQLiteAdapter extends BaseVectorAdapter {
       ],
     };
   }
+
+
 }
