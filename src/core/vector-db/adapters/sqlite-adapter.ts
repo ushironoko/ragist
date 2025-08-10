@@ -37,11 +37,23 @@ export class SQLiteAdapter extends BaseVectorAdapter {
 
   async initialize(): Promise<void> {
     try {
-      this.db = new DatabaseSync(this.dbPath);
+      // Node.js 23.5.0+ requires allowExtension option to load extensions
+      this.db = new DatabaseSync(this.dbPath, {
+        allowExtension: true,
+      } as any);
 
       // Try to load sqlite-vec extension - required for vector operations
       try {
-        sqliteVec.load(this.db as any);
+        // Node.js 23.5.0+ supports database.loadExtension()
+        // Check if the method exists (for backward compatibility)
+        if (typeof this.db.loadExtension === "function") {
+          // Use the new Node.js loadExtension API
+          const extensionPath = sqliteVec.getLoadablePath();
+          this.db.loadExtension(extensionPath);
+        } else {
+          // Fallback to sqlite-vec's load method for older Node.js versions
+          sqliteVec.load(this.db as any);
+        }
       } catch (extError: any) {
         // Close the database connection before throwing error
         if (this.db) {
@@ -52,12 +64,14 @@ export class SQLiteAdapter extends BaseVectorAdapter {
         // Provide clear error message with suggestions
         const errorMessage = `SQLite vector extension (sqlite-vec) could not be loaded. 
 
-This is likely because Node.js SQLite does not allow extension loading in your environment.
+This is likely because:
+1. Your Node.js version (${process.version}) doesn't support SQLite extensions
+2. The sqlite-vec extension file is missing or incompatible
 
 Suggestions:
 1. Use the memory adapter instead: --provider memory
-2. Use a different Node.js version that supports SQLite extensions
-3. Consider using a standalone SQLite installation with vector support
+2. Upgrade to Node.js 23.5.0 or later for SQLite extension support
+3. Ensure sqlite-vec is properly installed: npm install sqlite-vec
 
 Original error: ${extError.message}`;
 
@@ -67,11 +81,13 @@ Original error: ${extError.message}`;
       }
 
       // Create tables with vector support
+      // Note: sqlite-vec virtual tables auto-assign rowids, so we need a mapping table
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS documents (
           id TEXT PRIMARY KEY,
           content TEXT NOT NULL,
           metadata TEXT,
+          vec_rowid INTEGER,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
@@ -81,6 +97,9 @@ Original error: ${extError.message}`;
 
         CREATE INDEX IF NOT EXISTS idx_documents_created_at 
         ON documents(created_at);
+        
+        CREATE INDEX IF NOT EXISTS idx_documents_vec_rowid 
+        ON documents(vec_rowid);
 
         CREATE TRIGGER IF NOT EXISTS update_timestamp 
         AFTER UPDATE ON documents
@@ -109,38 +128,40 @@ Original error: ${extError.message}`;
       : null;
 
     try {
-      // Use sqlite-vec extension (required)
-      this.db
-        .prepare(
-          "INSERT OR REPLACE INTO documents (id, content, metadata) VALUES (?, ?, ?)",
-        )
-        .run(id, document.content, metadataJson);
+      // Check if document already exists to get its vec_rowid
+      const existing = this.db
+        .prepare("SELECT vec_rowid FROM documents WHERE id = ?")
+        .get(id) as { vec_rowid: number | null } | undefined;
 
-      // Get rowid for vector table
-      const row = this.db
-        .prepare("SELECT rowid FROM documents WHERE id = ?")
-        .get(id) as { rowid: number };
+      let vecRowid: number;
 
-      // Insert or update embedding
-      const existingVec = this.db
-        .prepare("SELECT rowid FROM vec_documents WHERE rowid = ?")
-        .get(row.rowid);
-
-      if (existingVec) {
+      if (existing?.vec_rowid) {
+        // Update existing embedding
+        vecRowid = existing.vec_rowid;
         this.db
           .prepare("UPDATE vec_documents SET embedding = ? WHERE rowid = ?")
           .run(
             new Uint8Array(new Float32Array(document.embedding).buffer),
-            row.rowid,
+            vecRowid,
           );
       } else {
-        this.db
-          .prepare("INSERT INTO vec_documents (rowid, embedding) VALUES (?, ?)")
+        // Insert new embedding (let SQLite auto-assign rowid)
+        const result = this.db
+          .prepare("INSERT INTO vec_documents (embedding) VALUES (?)")
           .run(
-            row.rowid,
             new Uint8Array(new Float32Array(document.embedding).buffer),
-          );
+          ) as any;
+
+        // Handle both real SQLite and mock responses
+        vecRowid = result?.lastInsertRowid ?? 1;
       }
+
+      // Insert or update document with vec_rowid reference
+      this.db
+        .prepare(
+          "INSERT OR REPLACE INTO documents (id, content, metadata, vec_rowid) VALUES (?, ?, ?, ?)",
+        )
+        .run(id, document.content, metadataJson, vecRowid);
 
       return id;
     } catch (error) {
@@ -161,7 +182,7 @@ Original error: ${extError.message}`;
     const k = options?.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
 
     try {
-      // Use sqlite-vec extension (required)
+      // Use sqlite-vec extension with vec_rowid mapping
       let query = `
         SELECT 
           d.id,
@@ -169,7 +190,7 @@ Original error: ${extError.message}`;
           d.metadata,
           v.distance
         FROM vec_documents v
-        JOIN documents d ON d.rowid = v.rowid
+        JOIN documents d ON d.vec_rowid = v.rowid
         WHERE v.embedding MATCH ? AND k = ?
       `;
 
@@ -236,10 +257,10 @@ Original error: ${extError.message}`;
 
       if (document.embedding !== undefined) {
         const row = this.db
-          .prepare("SELECT rowid FROM documents WHERE id = ?")
-          .get(id) as { rowid: number } | undefined;
+          .prepare("SELECT vec_rowid FROM documents WHERE id = ?")
+          .get(id) as { vec_rowid: number | null } | undefined;
 
-        if (!row) {
+        if (!row || !row.vec_rowid) {
           throw new DocumentNotFoundError(id);
         }
 
@@ -247,7 +268,7 @@ Original error: ${extError.message}`;
           .prepare("UPDATE vec_documents SET embedding = ? WHERE rowid = ?")
           .run(
             new Uint8Array(new Float32Array(document.embedding).buffer),
-            row.rowid,
+            row.vec_rowid,
           );
       }
     } catch (error) {
@@ -263,15 +284,18 @@ Original error: ${extError.message}`;
     }
 
     try {
-      // Delete with sqlite-vec extension (required)
+      // Delete with vec_rowid mapping
       const row = this.db
-        .prepare("SELECT rowid FROM documents WHERE id = ?")
-        .get(id) as { rowid: number } | undefined;
+        .prepare("SELECT vec_rowid FROM documents WHERE id = ?")
+        .get(id) as { vec_rowid: number | null } | undefined;
 
-      if (row) {
+      if (row?.vec_rowid) {
         this.db
           .prepare("DELETE FROM vec_documents WHERE rowid = ?")
-          .run(row.rowid);
+          .run(row.vec_rowid);
+      }
+
+      if (row) {
         this.db.prepare("DELETE FROM documents WHERE id = ?").run(id);
       }
     } catch (error) {
@@ -287,10 +311,10 @@ Original error: ${extError.message}`;
     }
 
     try {
-      // Get with sqlite-vec extension (required)
+      // Get with vec_rowid mapping
       const row = this.db
         .prepare(
-          `SELECT d.id, d.content, d.metadata, d.rowid 
+          `SELECT d.id, d.content, d.metadata, d.vec_rowid 
            FROM documents d WHERE d.id = ?`,
         )
         .get(id) as
@@ -298,18 +322,18 @@ Original error: ${extError.message}`;
             id: string;
             content: string;
             metadata: string | null;
-            rowid: number;
+            vec_rowid: number | null;
           }
         | undefined;
 
-      if (!row) {
+      if (!row || !row.vec_rowid) {
         return null;
       }
 
       // Get embedding from vec_documents
       const vecRow = this.db
         .prepare("SELECT embedding FROM vec_documents WHERE rowid = ?")
-        .get(row.rowid) as { embedding: Uint8Array } | undefined;
+        .get(row.vec_rowid) as { embedding: Uint8Array } | undefined;
 
       if (!vecRow) {
         return null;
@@ -367,16 +391,19 @@ Original error: ${extError.message}`;
 
     try {
       let query = `
-        SELECT d.id, d.content, d.metadata, d.rowid
+        SELECT d.id, d.content, d.metadata, d.vec_rowid
         FROM documents d
+        WHERE d.vec_rowid IS NOT NULL
       `;
       const params: any[] = [];
 
       if (options?.filter && Object.keys(options.filter).length > 0) {
-        const { whereClause, params: filterParams } = buildSQLWhereClause(
+        const { conditions, params: filterParams } = buildSQLFilterConditions(
           options.filter,
         );
-        query += whereClause;
+        for (const condition of conditions) {
+          query += ` AND ${condition}`;
+        }
         params.push(...filterParams);
       }
 
@@ -387,16 +414,16 @@ Original error: ${extError.message}`;
         id: string;
         content: string;
         metadata: string | null;
-        rowid: number;
+        vec_rowid: number;
       }>;
 
       const documents: VectorDocument[] = [];
 
-      // Get embeddings from vec_documents (required)
+      // Get embeddings from vec_documents
       for (const row of rows) {
         const vecRow = this.db
           .prepare("SELECT embedding FROM vec_documents WHERE rowid = ?")
-          .get(row.rowid) as { embedding: Uint8Array } | undefined;
+          .get(row.vec_rowid) as { embedding: Uint8Array } | undefined;
 
         if (vecRow) {
           documents.push({
