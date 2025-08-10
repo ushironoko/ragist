@@ -68,7 +68,7 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 
 ## Important Development Notes
 
-- **Node.js Version**: Must use Node.js 24.5.0+ (see `.node-version`)
+- **Node.js Version**: Must use Node.js 24.2.1+ (see `.node-version`)
 - **Module System**: Pure ESM, no CommonJS support
 - **TypeScript**: Uses `.ts` extensions in imports, Node.js experimental strip types for execution
 - **Error Handling**: All async operations must handle errors properly
