@@ -22,10 +22,6 @@ export interface MemoryAdapterConfig extends VectorDBConfig {
 export class MemoryAdapter extends BaseVectorAdapter {
   private documents = new Map<string, VectorDocument>();
 
-  constructor(config: MemoryAdapterConfig) {
-    super(config);
-  }
-
   async initialize(): Promise<void> {
     // No initialization needed for in-memory storage
   }

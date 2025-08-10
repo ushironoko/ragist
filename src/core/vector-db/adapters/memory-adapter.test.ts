@@ -1,6 +1,6 @@
-import { describe, expect, test, beforeEach } from "vitest";
-import { MemoryAdapter } from "./memory-adapter.js";
+import { beforeEach, describe, expect, test } from "vitest";
 import type { VectorDocument } from "../types.js";
+import { MemoryAdapter } from "./memory-adapter.js";
 
 describe("MemoryAdapter", () => {
   let adapter: MemoryAdapter;
@@ -81,7 +81,7 @@ describe("MemoryAdapter", () => {
 
     // Search for similar documents
     const results = await adapter.search([1, 0, 0], { k: 2 });
-    
+
     expect(results).toHaveLength(2);
     expect(results[0].id).toBe("1"); // Most similar
     expect(results[0].score).toBeCloseTo(1, 5);
@@ -119,7 +119,9 @@ describe("MemoryAdapter", () => {
     });
 
     expect(results).toHaveLength(2);
-    expect(results.every(r => r.metadata?.sourceType === "github")).toBe(true);
+    expect(results.every((r) => r.metadata?.sourceType === "github")).toBe(
+      true,
+    );
   });
 
   test("updates document", async () => {
@@ -264,7 +266,7 @@ describe("MemoryAdapter", () => {
     };
 
     await expect(adapter.insert(wrongDimension)).rejects.toThrow(
-      "Invalid embedding dimension"
+      "Invalid embedding dimension",
     );
   });
 
@@ -279,11 +281,10 @@ describe("MemoryAdapter", () => {
 
   test("returns adapter info", () => {
     const info = adapter.getInfo();
-    
+
     expect(info.provider).toBe("memory");
     expect(info.version).toBeDefined();
     expect(info.capabilities).toContain("vector-search");
     expect(info.capabilities).toContain("metadata-filtering");
-
   });
 });

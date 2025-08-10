@@ -1,6 +1,6 @@
-import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
-import { SQLiteAdapter } from "./sqlite-adapter.js";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { VectorDocument } from "../types.js";
+import { SQLiteAdapter } from "./sqlite-adapter.js";
 
 // Mock DatabaseSync to avoid actual SQLite initialization in tests
 vi.mock("node:sqlite", () => ({
@@ -24,8 +24,10 @@ vi.mock("node:sqlite", () => ({
         };
       }
       // Mock for SELECT from vec_documents
-      if (query.includes("SELECT rowid FROM vec_documents") || 
-          query.includes("SELECT embedding FROM vec_documents")) {
+      if (
+        query.includes("SELECT rowid FROM vec_documents") ||
+        query.includes("SELECT embedding FROM vec_documents")
+      ) {
         return {
           run: vi.fn(),
           get: vi.fn(),
@@ -95,7 +97,7 @@ describe("SQLiteAdapter", () => {
     const uninitializedAdapter = new SQLiteAdapter({
       provider: "sqlite",
     });
-    
+
     const document: VectorDocument = {
       id: "test-id",
       content: "Test content",
@@ -108,7 +110,7 @@ describe("SQLiteAdapter", () => {
 
   test("inserts document after initialization", async () => {
     await adapter.initialize();
-    
+
     const document: VectorDocument = {
       id: "test-id",
       content: "Test content",
@@ -124,53 +126,53 @@ describe("SQLiteAdapter", () => {
 
   test("searches for documents", async () => {
     await adapter.initialize();
-    
+
     const embedding = Array(768).fill(0.1);
     const results = await adapter.search(embedding, { k: 5 });
-    
+
     expect(Array.isArray(results)).toBe(true);
   });
 
   test("gets document by id", async () => {
     await adapter.initialize();
-    
+
     const result = await adapter.get("test-id");
     expect(result).toBeDefined();
   });
 
   test("updates document", async () => {
     await adapter.initialize();
-    
+
     await expect(
       adapter.update("test-id", {
         content: "Updated content",
-      })
+      }),
     ).resolves.not.toThrow();
   });
 
   test("deletes document", async () => {
     await adapter.initialize();
-    
+
     await expect(adapter.delete("test-id")).resolves.not.toThrow();
   });
 
   test("counts documents", async () => {
     await adapter.initialize();
-    
+
     const count = await adapter.count();
     expect(typeof count).toBe("number");
   });
 
   test("lists documents with pagination", async () => {
     await adapter.initialize();
-    
+
     const results = await adapter.list({ limit: 10, offset: 0 });
     expect(Array.isArray(results)).toBe(true);
   });
 
   test("batch inserts documents", async () => {
     await adapter.initialize();
-    
+
     const documents: VectorDocument[] = [
       {
         id: "id1",
@@ -192,10 +194,8 @@ describe("SQLiteAdapter", () => {
 
   test("batch deletes documents", async () => {
     await adapter.initialize();
-    
-    await expect(
-      adapter.deleteBatch(["id1", "id2"])
-    ).resolves.not.toThrow();
+
+    await expect(adapter.deleteBatch(["id1", "id2"])).resolves.not.toThrow();
   });
 
   test("closes database connection", async () => {
@@ -205,17 +205,16 @@ describe("SQLiteAdapter", () => {
 
   test("returns adapter info", () => {
     const info = adapter.getInfo();
-    
+
     expect(info.provider).toBe("sqlite");
     expect(info.version).toBeDefined();
     expect(info.capabilities).toContain("vector-search");
     expect(info.capabilities).toContain("metadata-filtering");
-
   });
 
   test("handles dimension mismatch", async () => {
     await adapter.initialize();
-    
+
     const document: VectorDocument = {
       id: "test-id",
       content: "Test content",

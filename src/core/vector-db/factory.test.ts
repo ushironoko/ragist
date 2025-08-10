@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { VectorDBFactory } from "./factory.js";
 import { VectorDBRegistry } from "./registry.js";
 import type { VectorDBConfig } from "./types.js";
@@ -167,7 +167,9 @@ describe("VectorDBFactory", () => {
     VectorDBFactory.clearInstances();
 
     // After clearing, should create a new instance
-    const newAdapter = await VectorDBFactory.create(config, { singleton: true });
+    const newAdapter = await VectorDBFactory.create(config, {
+      singleton: true,
+    });
     expect(newAdapter).toBeDefined();
   });
 
@@ -215,7 +217,7 @@ describe("VectorDBFactory", () => {
     };
 
     await expect(VectorDBFactory.create(config)).rejects.toThrow(
-      "No adapter registered for provider: unknown"
+      "No adapter registered for provider: unknown",
     );
   });
 

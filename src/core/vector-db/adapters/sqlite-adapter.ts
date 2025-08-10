@@ -38,7 +38,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
   async initialize(): Promise<void> {
     try {
       this.db = new DatabaseSync(this.dbPath);
-      
+
       // Try to load sqlite-vec extension - required for vector operations
       try {
         sqliteVec.load(this.db as any);
@@ -48,7 +48,7 @@ export class SQLiteAdapter extends BaseVectorAdapter {
           this.db.close();
           this.db = null;
         }
-        
+
         // Provide clear error message with suggestions
         const errorMessage = `SQLite vector extension (sqlite-vec) could not be loaded. 
 
@@ -60,7 +60,7 @@ Suggestions:
 3. Consider using a standalone SQLite installation with vector support
 
 Original error: ${extError.message}`;
-        
+
         throw new VectorDBError(errorMessage, {
           cause: extError,
         });
@@ -438,6 +438,4 @@ Original error: ${extError.message}`;
       ],
     };
   }
-
-
 }
