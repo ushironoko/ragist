@@ -9,7 +9,7 @@ import {
   validateFilePath,
   validateGistUrl,
   validateGitHubRepoUrl,
-} from "./security.ts";
+} from "./security.js";
 
 describe("Security Module", () => {
   let testDir: string;

@@ -1,13 +1,13 @@
-import { BaseVectorAdapter } from "../base-adapter.ts";
-import { VECTOR_DB_CONSTANTS } from "../constants.ts";
-import { DocumentNotFoundError } from "../errors.ts";
+import { BaseVectorAdapter } from "../base-adapter.js";
+import { VECTOR_DB_CONSTANTS } from "../constants.js";
+import { DocumentNotFoundError } from "../errors.js";
 import type {
   VectorDBConfig,
   VectorDocument,
   VectorSearchResult,
-} from "../types.ts";
-import { applyMetadataFilter } from "../utils/filter.ts";
-import { generateDocumentId, validateDimension } from "../utils/validation.ts";
+} from "../types.js";
+import { applyMetadataFilter } from "../utils/filter.js";
+import { generateDocumentId, validateDimension } from "../utils/validation.js";
 
 export interface MemoryAdapterConfig extends VectorDBConfig {
   provider: "memory";

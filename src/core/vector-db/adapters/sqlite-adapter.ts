@@ -1,22 +1,22 @@
 import { DatabaseSync } from "node:sqlite";
 import * as sqliteVec from "sqlite-vec";
-import { BaseVectorAdapter } from "../base-adapter.ts";
-import { VECTOR_DB_CONSTANTS } from "../constants.ts";
+import { BaseVectorAdapter } from "../base-adapter.js";
+import { VECTOR_DB_CONSTANTS } from "../constants.js";
 import {
   DatabaseNotInitializedError,
   DocumentNotFoundError,
   VectorDBError,
-} from "../errors.ts";
+} from "../errors.js";
 import type {
   VectorDBConfig,
   VectorDocument,
   VectorSearchResult,
-} from "../types.ts";
+} from "../types.js";
 import {
   buildSQLFilterConditions,
   buildSQLWhereClause,
-} from "../utils/filter.ts";
-import { generateDocumentId, validateDimension } from "../utils/validation.ts";
+} from "../utils/filter.js";
+import { generateDocumentId, validateDimension } from "../utils/validation.js";
 
 export interface SQLiteAdapterConfig extends VectorDBConfig {
   provider: "sqlite";

@@ -1,22 +1,22 @@
-#!/usr/bin/env node --experimental-strip-types
+#!/usr/bin/env node
 
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
-import { databaseService } from "../core/database-service.ts";
+import { databaseService } from "../core/database-service.js";
 import {
   indexFile,
   indexGist,
   indexGitHubRepo,
   indexText,
-} from "../core/indexer.ts";
+} from "../core/indexer.js";
 import {
   calculateSearchStats,
   hybridSearch,
   semanticSearch,
-} from "../core/search.ts";
-import { SecurityError, validateFilePath } from "../core/security.ts";
-import type { VectorDBFactory } from "../core/vector-db/factory.ts";
-import { handleInit } from "./commands/init.ts";
+} from "../core/search.js";
+import { SecurityError, validateFilePath } from "../core/security.js";
+import type { VectorDBFactory } from "../core/vector-db/factory.js";
+import { handleInit } from "./commands/init.js";
 
 const COMMANDS = {
   index: "Index content into the database",
@@ -469,5 +469,8 @@ async function main(): Promise<void> {
 
 main().catch((error) => {
   console.error("Fatal error:", error);
+  if (error instanceof Error && error.stack) {
+    console.error("Stack trace:", error.stack);
+  }
   process.exit(1);
 });

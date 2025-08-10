@@ -9,7 +9,7 @@ import {
   generateEmbeddings,
   generateEmbeddingsBatch,
   normalizeEmbedding,
-} from "./embedding.ts";
+} from "./embedding.js";
 
 // Mock the AI SDK
 vi.mock("@ai-sdk/google", () => ({

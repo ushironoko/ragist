@@ -1,12 +1,12 @@
 import { readFile } from "node:fs/promises";
-import { chunkText } from "./chunking.ts";
-import { type ItemMetadata, databaseService } from "./database-service.ts";
-import { generateEmbeddingsBatch } from "./embedding.ts";
+import { chunkText } from "./chunking.js";
+import { type ItemMetadata, databaseService } from "./database-service.js";
+import { generateEmbeddingsBatch } from "./embedding.js";
 import {
   SecurityError,
   validateGistUrl,
   validateGitHubRepoUrl,
-} from "./security.ts";
+} from "./security.js";
 
 export interface IndexOptions {
   chunkSize?: number;

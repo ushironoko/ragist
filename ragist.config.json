@@ -1,0 +1,24 @@
+{
+  "vectorDB": {
+    "provider": "sqlite",
+    "options": {
+      "path": "./ragist.db",
+      "dimension": 768
+    }
+  },
+  "embedding": {
+    "model": "text-embedding-004",
+    "dimension": 768
+  },
+  "indexing": {
+    "chunkSize": 1000,
+    "chunkOverlap": 100,
+    "batchSize": 100
+  },
+  "search": {
+    "defaultK": 5,
+    "enableRerank": true,
+    "rerankBoostFactor": 0.1,
+    "hybridKeywordWeight": 0.3
+  }
+}
