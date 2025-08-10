@@ -11,14 +11,20 @@
     "dev": "tsc --watch",
     "build": "tsc",
     "start": "node dist/cli/index.js",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "lint": "biome check --write .",
     "format": "biome format --write .",
     "tsc": "tsc --noEmit"
   },
-  "keywords": ["rag", "vector-search", "embeddings", "gist", "github"],
+  "keywords": [
+    "rag",
+    "vector-search",
+    "embeddings",
+    "gist",
+    "github"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

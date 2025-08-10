@@ -31,8 +31,6 @@ export class VectorDBRegistry {
    * Register a vector database adapter
    */
   static register(provider: string, adapter: VectorDBAdapterConstructor): void {
-    VectorDBRegistry.initialize();
-
     if (VectorDBRegistry.adapters.has(provider)) {
       throw new Error(`Adapter already registered for provider: ${provider}`);
     }
