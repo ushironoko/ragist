@@ -1,10 +1,13 @@
-import { randomUUID } from "node:crypto";
+import { BaseVectorAdapter } from "../base-adapter.ts";
+import { VECTOR_DB_CONSTANTS } from "../constants.ts";
+import { DocumentNotFoundError } from "../errors.ts";
 import type {
-  VectorDBAdapter,
   VectorDBConfig,
   VectorDocument,
   VectorSearchResult,
 } from "../types.ts";
+import { applyMetadataFilter } from "../utils/filter.ts";
+import { generateDocumentId, validateDimension } from "../utils/validation.ts";
 
 export interface MemoryAdapterConfig extends VectorDBConfig {
   provider: "memory";
@@ -16,12 +19,11 @@ export interface MemoryAdapterConfig extends VectorDBConfig {
 /**
  * In-memory vector database adapter for testing and development
  */
-export class MemoryAdapter implements VectorDBAdapter {
+export class MemoryAdapter extends BaseVectorAdapter {
   private documents = new Map<string, VectorDocument>();
-  private readonly dimension: number;
 
   constructor(config: MemoryAdapterConfig) {
-    this.dimension = config.options?.dimension ?? 768;
+    super(config);
   }
 
   async initialize(): Promise<void> {
@@ -29,13 +31,8 @@ export class MemoryAdapter implements VectorDBAdapter {
   }
 
   async insert(document: VectorDocument): Promise<string> {
-    const id = document.id || randomUUID();
-
-    if (document.embedding.length !== this.dimension) {
-      throw new Error(
-        `Invalid embedding dimension: expected ${this.dimension}, got ${document.embedding.length}`,
-      );
-    }
+    const id = generateDocumentId(document.id);
+    validateDimension(document.embedding, this.dimension);
 
     this.documents.set(id, {
       ...document,
@@ -45,35 +42,22 @@ export class MemoryAdapter implements VectorDBAdapter {
     return id;
   }
 
-  async insertBatch(documents: VectorDocument[]): Promise<string[]> {
-    const ids: string[] = [];
-    for (const doc of documents) {
-      const id = await this.insert(doc);
-      ids.push(id);
-    }
-    return ids;
-  }
-
   async search(
     embedding: number[],
     options?: { k?: number; filter?: Record<string, unknown> },
   ): Promise<VectorSearchResult[]> {
-    const k = options?.k ?? 5;
+    const k = options?.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
 
     // Calculate similarities for all documents
     const results: Array<{ doc: VectorDocument; score: number }> = [];
 
     for (const doc of this.documents.values()) {
       // Apply filters
-      if (options?.filter) {
-        let matchesFilter = true;
-        for (const [key, value] of Object.entries(options.filter)) {
-          if (doc.metadata?.[key] !== value) {
-            matchesFilter = false;
-            break;
-          }
-        }
-        if (!matchesFilter) continue;
+      if (
+        options?.filter &&
+        !applyMetadataFilter(doc.metadata, options.filter)
+      ) {
+        continue;
       }
 
       // Calculate cosine similarity
@@ -96,13 +80,11 @@ export class MemoryAdapter implements VectorDBAdapter {
   async update(id: string, document: Partial<VectorDocument>): Promise<void> {
     const existing = this.documents.get(id);
     if (!existing) {
-      throw new Error(`Document not found: ${id}`);
+      throw new DocumentNotFoundError(id);
     }
 
-    if (document.embedding && document.embedding.length !== this.dimension) {
-      throw new Error(
-        `Invalid embedding dimension: expected ${this.dimension}, got ${document.embedding.length}`,
-      );
+    if (document.embedding) {
+      validateDimension(document.embedding, this.dimension);
     }
 
     this.documents.set(id, {
@@ -116,12 +98,6 @@ export class MemoryAdapter implements VectorDBAdapter {
     this.documents.delete(id);
   }
 
-  async deleteBatch(ids: string[]): Promise<void> {
-    for (const id of ids) {
-      this.documents.delete(id);
-    }
-  }
-
   async get(id: string): Promise<VectorDocument | null> {
     return this.documents.get(id) || null;
   }
@@ -133,14 +109,7 @@ export class MemoryAdapter implements VectorDBAdapter {
 
     let count = 0;
     for (const doc of this.documents.values()) {
-      let matchesFilter = true;
-      for (const [key, value] of Object.entries(filter)) {
-        if (doc.metadata?.[key] !== value) {
-          matchesFilter = false;
-          break;
-        }
-      }
-      if (matchesFilter) {
+      if (applyMetadataFilter(doc.metadata, filter)) {
         count++;
       }
     }
@@ -153,22 +122,19 @@ export class MemoryAdapter implements VectorDBAdapter {
     offset?: number;
     filter?: Record<string, unknown>;
   }): Promise<VectorDocument[]> {
-    const limit = options?.limit ?? 100;
-    const offset = options?.offset ?? 0;
+    const limit = options?.limit ?? VECTOR_DB_CONSTANTS.DEFAULT_LIST_LIMIT;
+    const offset = options?.offset ?? VECTOR_DB_CONSTANTS.DEFAULT_LIST_OFFSET;
 
     let documents = Array.from(this.documents.values());
 
     // Apply filters
     if (options?.filter) {
-      const filterEntries = Object.entries(options.filter);
-      documents = documents.filter((doc) => {
-        for (const [key, value] of filterEntries) {
-          if (doc.metadata?.[key] !== value) {
-            return false;
-          }
-        }
-        return true;
-      });
+      documents = documents.filter((doc) =>
+        applyMetadataFilter(
+          doc.metadata,
+          options.filter as Record<string, unknown>,
+        ),
+      );
     }
 
     // Apply pagination
