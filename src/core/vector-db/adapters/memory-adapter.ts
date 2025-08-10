@@ -18,11 +18,9 @@ export interface MemoryAdapterConfig extends VectorDBConfig {
  */
 export class MemoryAdapter implements VectorDBAdapter {
   private documents = new Map<string, VectorDocument>();
-  private readonly config: MemoryAdapterConfig;
   private readonly dimension: number;
 
   constructor(config: MemoryAdapterConfig) {
-    this.config = config;
     this.dimension = config.options?.dimension ?? 768;
   }
 
@@ -32,7 +30,7 @@ export class MemoryAdapter implements VectorDBAdapter {
 
   async insert(document: VectorDocument): Promise<string> {
     const id = document.id || randomUUID();
-    
+
     if (document.embedding.length !== this.dimension) {
       throw new Error(
         `Invalid embedding dimension: expected ${this.dimension}, got ${document.embedding.length}`,
@@ -101,10 +99,7 @@ export class MemoryAdapter implements VectorDBAdapter {
       throw new Error(`Document not found: ${id}`);
     }
 
-    if (
-      document.embedding &&
-      document.embedding.length !== this.dimension
-    ) {
+    if (document.embedding && document.embedding.length !== this.dimension) {
       throw new Error(
         `Invalid embedding dimension: expected ${this.dimension}, got ${document.embedding.length}`,
       );
@@ -165,8 +160,9 @@ export class MemoryAdapter implements VectorDBAdapter {
 
     // Apply filters
     if (options?.filter) {
+      const filterEntries = Object.entries(options.filter);
       documents = documents.filter((doc) => {
-        for (const [key, value] of Object.entries(options.filter!)) {
+        for (const [key, value] of filterEntries) {
           if (doc.metadata?.[key] !== value) {
             return false;
           }
@@ -210,9 +206,11 @@ export class MemoryAdapter implements VectorDBAdapter {
     let magnitudeB = 0;
 
     for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i]! * b[i]!;
-      magnitudeA += a[i]! * a[i]!;
-      magnitudeB += b[i]! * b[i]!;
+      const aVal = a[i] ?? 0;
+      const bVal = b[i] ?? 0;
+      dotProduct += aVal * bVal;
+      magnitudeA += aVal * aVal;
+      magnitudeB += bVal * bVal;
     }
 
     magnitudeA = Math.sqrt(magnitudeA);

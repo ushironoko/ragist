@@ -1,16 +1,16 @@
 /**
  * Template for creating custom vector database adapters
- * 
+ *
  * To create a custom adapter:
  * 1. Copy this template to src/core/vector-db/adapters/your-adapter.ts
  * 2. Implement all required methods
  * 3. Register your adapter in the registry or at runtime
- * 
+ *
  * Example registration:
  * ```typescript
  * import { VectorDBRegistry } from "ragist";
  * import { YourAdapter } from "./your-adapter";
- * 
+ *
  * VectorDBRegistry.register("your-provider", YourAdapter);
  * ```
  */
@@ -35,10 +35,10 @@ export interface YourAdapterConfig extends VectorDBConfig {
 
 export class YourAdapter implements VectorDBAdapter {
   private config: YourAdapterConfig;
-  
+
   constructor(config: YourAdapterConfig) {
     this.config = config;
-    
+
     // Validate required configuration
     if (!config.options?.apiKey) {
       throw new Error("API key is required for YourAdapter");

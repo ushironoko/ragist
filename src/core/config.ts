@@ -22,6 +22,7 @@ export interface RagistConfig {
   };
 }
 
+// biome-ignore lint/complexity/noStaticOnlyClass: Config manager pattern requires static methods
 export class ConfigManager {
   private static config: RagistConfig = {};
   private static loaded = false;
@@ -31,21 +32,21 @@ export class ConfigManager {
    * Priority: CLI args > Environment variables > Config file > Defaults
    */
   static async load(configPath?: string): Promise<RagistConfig> {
-    if (this.loaded && !configPath) {
-      return this.config;
+    if (ConfigManager.loaded && !configPath) {
+      return ConfigManager.config;
     }
 
     // Try to load config file
-    const configFile = await this.loadConfigFile(configPath);
-    
+    const configFile = await ConfigManager.loadConfigFile(configPath);
+
     // Merge with environment variables
-    const envConfig = this.loadFromEnv();
-    
+    const envConfig = ConfigManager.loadFromEnv();
+
     // Merge all configs (env overwrites file)
-    this.config = this.mergeConfigs(configFile, envConfig);
-    this.loaded = true;
-    
-    return this.config;
+    ConfigManager.config = ConfigManager.mergeConfigs(configFile, envConfig);
+    ConfigManager.loaded = true;
+
+    return ConfigManager.config;
   }
 
   /**
@@ -98,7 +99,10 @@ export class ConfigManager {
       // Provider-specific env vars
       if (process.env.VECTOR_DB_PROVIDER === "sqlite") {
         if (process.env.SQLITE_DB_PATH) {
-          config.vectorDB.options!.path = process.env.SQLITE_DB_PATH;
+          if (!config.vectorDB.options) {
+            config.vectorDB.options = {};
+          }
+          config.vectorDB.options.path = process.env.SQLITE_DB_PATH;
         }
       }
     }
@@ -110,7 +114,7 @@ export class ConfigManager {
         config.embedding.model = process.env.EMBEDDING_MODEL;
       }
       if (process.env.EMBEDDING_DIMENSION) {
-        config.embedding.dimension = parseInt(
+        config.embedding.dimension = Number.parseInt(
           process.env.EMBEDDING_DIMENSION,
           10,
         );
@@ -125,13 +129,16 @@ export class ConfigManager {
     ) {
       config.indexing = {};
       if (process.env.CHUNK_SIZE) {
-        config.indexing.chunkSize = parseInt(process.env.CHUNK_SIZE, 10);
+        config.indexing.chunkSize = Number.parseInt(process.env.CHUNK_SIZE, 10);
       }
       if (process.env.CHUNK_OVERLAP) {
-        config.indexing.chunkOverlap = parseInt(process.env.CHUNK_OVERLAP, 10);
+        config.indexing.chunkOverlap = Number.parseInt(
+          process.env.CHUNK_OVERLAP,
+          10,
+        );
       }
       if (process.env.BATCH_SIZE) {
-        config.indexing.batchSize = parseInt(process.env.BATCH_SIZE, 10);
+        config.indexing.batchSize = Number.parseInt(process.env.BATCH_SIZE, 10);
       }
     }
 
@@ -185,21 +192,24 @@ export class ConfigManager {
    * Get current configuration
    */
   static get(): RagistConfig {
-    return this.config;
+    return ConfigManager.config;
   }
 
   /**
    * Update configuration
    */
   static set(config: Partial<RagistConfig>): void {
-    this.config = this.mergeConfigs(this.config, config);
+    ConfigManager.config = ConfigManager.mergeConfigs(
+      ConfigManager.config,
+      config,
+    );
   }
 
   /**
    * Reset configuration
    */
   static reset(): void {
-    this.config = {};
-    this.loaded = false;
+    ConfigManager.config = {};
+    ConfigManager.loaded = false;
   }
 }

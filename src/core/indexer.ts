@@ -1,8 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { chunkText } from "./chunking.js";
+import { type ItemMetadata, databaseService } from "./database-service.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
-import { databaseService, type ItemMetadata } from "./database-service.js";
-import { validateGistUrl, validateGitHubRepoUrl, validateExternalUrl, SecurityError } from "./security.js";
+import {
+  SecurityError,
+  validateGistUrl,
+  validateGitHubRepoUrl,
+} from "./security.js";
 
 export interface IndexOptions {
   chunkSize?: number;
@@ -22,9 +26,9 @@ export async function indexText(
   metadata: ItemMetadata = {},
   options: IndexOptions = {},
 ): Promise<IndexResult> {
-  const { 
-    chunkSize = 1000, 
-    chunkOverlap = 100, 
+  const {
+    chunkSize = 1000,
+    chunkOverlap = 100,
     batchSize = 100,
     onProgress,
   } = options;
@@ -72,7 +76,7 @@ export async function indexText(
 
     const items = chunks.map((chunk, i) => ({
       content: chunk,
-      embedding: embeddings[i]!,
+      embedding: embeddings[i] ?? [],
       metadata: {
         ...metadata,
         chunkIndex: i,
@@ -141,7 +145,7 @@ export async function indexGist(
   try {
     // Validate the Gist URL using security module
     const gistId = validateGistUrl(gistUrl);
-    
+
     if (!gistId) {
       result.errors.push(`Invalid Gist URL: ${gistUrl}`);
       return result;
@@ -157,7 +161,7 @@ export async function indexGist(
       return result;
     }
 
-    const gistData = await response.json() as {
+    const gistData = (await response.json()) as {
       description?: string;
       files: Record<string, { content: string; filename: string }>;
       html_url: string;
@@ -206,7 +210,7 @@ export async function indexGitHubRepo(
   try {
     // Validate the GitHub repository URL using security module
     const { owner, repo } = validateGitHubRepoUrl(repoUrl);
-    
+
     if (!owner || !repo) {
       result.errors.push(`Invalid GitHub repository URL: ${repoUrl}`);
       return result;
@@ -262,7 +266,7 @@ async function indexGitHubPath(
       return result;
     }
 
-    const contents = await response.json() as Array<{
+    const contents = (await response.json()) as Array<{
       name: string;
       path: string;
       type: "file" | "dir";
@@ -309,20 +313,68 @@ async function indexGitHubPath(
   return result;
 }
 
-
 function isTextFile(filename: string): boolean {
   const textExtensions = [
-    ".txt", ".md", ".markdown", ".rst", ".asciidoc",
-    ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
-    ".py", ".rb", ".go", ".rust", ".rs", ".c", ".cpp", ".h", ".hpp",
-    ".java", ".kt", ".scala", ".swift", ".m", ".mm",
-    ".html", ".htm", ".xml", ".css", ".scss", ".sass", ".less",
-    ".json", ".yaml", ".yml", ".toml", ".ini", ".conf", ".config",
-    ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat", ".cmd",
-    ".sql", ".graphql", ".proto",
-    ".vue", ".svelte", ".astro",
-    ".tex", ".bib",
-    ".r", ".R", ".jl", ".m", ".mat",
+    ".txt",
+    ".md",
+    ".markdown",
+    ".rst",
+    ".asciidoc",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".mjs",
+    ".cjs",
+    ".py",
+    ".rb",
+    ".go",
+    ".rust",
+    ".rs",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".java",
+    ".kt",
+    ".scala",
+    ".swift",
+    ".m",
+    ".mm",
+    ".html",
+    ".htm",
+    ".xml",
+    ".css",
+    ".scss",
+    ".sass",
+    ".less",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".conf",
+    ".config",
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".fish",
+    ".ps1",
+    ".bat",
+    ".cmd",
+    ".sql",
+    ".graphql",
+    ".proto",
+    ".vue",
+    ".svelte",
+    ".astro",
+    ".tex",
+    ".bib",
+    ".r",
+    ".R",
+    ".jl",
+    ".m",
+    ".mat",
   ];
 
   const lowerName = filename.toLowerCase();

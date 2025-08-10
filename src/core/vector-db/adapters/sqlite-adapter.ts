@@ -1,5 +1,5 @@
-import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
 import * as sqliteVec from "sqlite-vec";
 import type {
   VectorDBAdapter,
@@ -18,19 +18,17 @@ export interface SQLiteAdapterConfig extends VectorDBConfig {
 
 export class SQLiteAdapter implements VectorDBAdapter {
   private db: DatabaseSync | null = null;
-  private readonly config: SQLiteAdapterConfig;
   private readonly dimension: number;
   private readonly dbPath: string;
 
   constructor(config: SQLiteAdapterConfig) {
-    this.config = config;
     this.dimension = config.options?.dimension ?? 768;
     this.dbPath = config.options?.path ?? ":memory:";
   }
 
   async initialize(): Promise<void> {
     try {
-      this.db = new DatabaseSync(this.dbPath, { allowExtension: true });
+      this.db = new DatabaseSync(this.dbPath);
       sqliteVec.load(this.db as any);
 
       this.db.exec(`
@@ -235,7 +233,9 @@ export class SQLiteAdapter implements VectorDBAdapter {
         .get(id) as { rowid: number } | undefined;
 
       if (row) {
-        this.db.prepare("DELETE FROM vec_documents WHERE rowid = ?").run(row.rowid);
+        this.db
+          .prepare("DELETE FROM vec_documents WHERE rowid = ?")
+          .run(row.rowid);
         this.db.prepare("DELETE FROM documents WHERE id = ?").run(id);
       }
     } catch (error) {
@@ -260,12 +260,14 @@ export class SQLiteAdapter implements VectorDBAdapter {
           `SELECT d.id, d.content, d.metadata, d.rowid 
            FROM documents d WHERE d.id = ?`,
         )
-        .get(id) as {
-        id: string;
-        content: string;
-        metadata: string | null;
-        rowid: number;
-      } | undefined;
+        .get(id) as
+        | {
+            id: string;
+            content: string;
+            metadata: string | null;
+            rowid: number;
+          }
+        | undefined;
 
       if (!row) {
         return null;

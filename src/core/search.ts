@@ -1,6 +1,6 @@
-import type { VectorSearchResult } from "./vector-db/types.js";
-import { generateEmbedding } from "./embedding.js";
 import { databaseService } from "./database-service.js";
+import { generateEmbedding } from "./embedding.js";
+import type { VectorSearchResult } from "./vector-db/types.js";
 
 export interface RerankOptions {
   boostFactor?: number;
@@ -50,16 +50,11 @@ export async function semanticSearch(
   query: string,
   options: SemanticSearchOptions = {},
 ): Promise<VectorSearchResult[]> {
-  const { 
-    k = 5, 
-    sourceType, 
-    rerank = true, 
-    rerankBoostFactor = 0.1,
-  } = options;
+  const { k = 5, sourceType, rerank = true, rerankBoostFactor = 0.1 } = options;
 
   try {
     const queryEmbedding = await generateEmbedding(query);
-    
+
     const results = await databaseService.searchItems({
       embedding: queryEmbedding,
       k,
@@ -107,13 +102,11 @@ export async function hybridSearch(
       contentLower.includes(word),
     ).length;
 
-    const wordMatchScore = queryWords.length > 0
-      ? exactMatchCount / queryWords.length
-      : 0;
+    const wordMatchScore =
+      queryWords.length > 0 ? exactMatchCount / queryWords.length : 0;
 
-    const hybridScore = 
-      result.score * (1 - keywordWeight) + 
-      wordMatchScore * keywordWeight;
+    const hybridScore =
+      result.score * (1 - keywordWeight) + wordMatchScore * keywordWeight;
 
     return {
       ...result,

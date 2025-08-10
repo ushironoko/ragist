@@ -1,9 +1,10 @@
-import type { VectorDBAdapter, VectorDBConfig } from "./types.js";
 import { VectorDBRegistry } from "./registry.js";
+import type { VectorDBAdapter, VectorDBConfig } from "./types.js";
 
 /**
  * Factory for creating vector database adapters
  */
+// biome-ignore lint/complexity/noStaticOnlyClass: Factory pattern requires static methods
 export class VectorDBFactory {
   private static instances = new Map<string, VectorDBAdapter>();
   private static defaultConfig: VectorDBConfig = {
@@ -18,14 +19,14 @@ export class VectorDBFactory {
    * Set default configuration
    */
   static setDefaultConfig(config: VectorDBConfig): void {
-    this.defaultConfig = config;
+    VectorDBFactory.defaultConfig = config;
   }
 
   /**
    * Get default configuration
    */
   static getDefaultConfig(): VectorDBConfig {
-    return { ...this.defaultConfig };
+    return { ...VectorDBFactory.defaultConfig };
   }
 
   /**
@@ -36,10 +37,10 @@ export class VectorDBFactory {
     options?: { singleton?: boolean },
   ): Promise<VectorDBAdapter> {
     const finalConfig = {
-      ...this.defaultConfig,
+      ...VectorDBFactory.defaultConfig,
       ...config,
       options: {
-        ...this.defaultConfig.options,
+        ...VectorDBFactory.defaultConfig.options,
         ...config?.options,
       },
     };
@@ -48,7 +49,7 @@ export class VectorDBFactory {
 
     // Use singleton pattern if requested
     if (options?.singleton) {
-      const existing = this.instances.get(instanceKey);
+      const existing = VectorDBFactory.instances.get(instanceKey);
       if (existing) {
         return existing;
       }
@@ -59,7 +60,7 @@ export class VectorDBFactory {
     await adapter.initialize();
 
     if (options?.singleton) {
-      this.instances.set(instanceKey, adapter);
+      VectorDBFactory.instances.set(instanceKey, adapter);
     }
 
     return adapter;
@@ -85,7 +86,7 @@ export class VectorDBFactory {
     if (provider === "sqlite") {
       options.path = process.env.SQLITE_DB_PATH || options.path;
       options.dimension = process.env.EMBEDDING_DIMENSION
-        ? parseInt(process.env.EMBEDDING_DIMENSION, 10)
+        ? Number.parseInt(process.env.EMBEDDING_DIMENSION, 10)
         : options.dimension;
     }
     // Add more providers here as they are implemented
@@ -95,7 +96,7 @@ export class VectorDBFactory {
     //   options.index = process.env.PINECONE_INDEX || options.index;
     // }
 
-    return this.create({
+    return VectorDBFactory.create({
       provider,
       options,
     });
@@ -105,17 +106,17 @@ export class VectorDBFactory {
    * Clear all cached instances
    */
   static clearInstances(): void {
-    this.instances.clear();
+    VectorDBFactory.instances.clear();
   }
 
   /**
    * Close all cached instances
    */
   static async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.instances.values()).map((adapter) =>
-      adapter.close(),
+    const closePromises = Array.from(VectorDBFactory.instances.values()).map(
+      (adapter) => adapter.close(),
     );
     await Promise.all(closePromises);
-    this.instances.clear();
+    VectorDBFactory.instances.clear();
   }
 }

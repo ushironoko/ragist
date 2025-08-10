@@ -1,11 +1,8 @@
 #!/usr/bin/env node --experimental-strip-types
 
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { validateFilePath, SecurityError } from "../core/security.js";
 import { databaseService } from "../core/database-service.js";
-import { VectorDBFactory } from "../core/vector-db/factory.js";
 import {
   indexFile,
   indexGist,
@@ -17,6 +14,8 @@ import {
   hybridSearch,
   semanticSearch,
 } from "../core/search.js";
+import { SecurityError, validateFilePath } from "../core/security.js";
+import type { VectorDBFactory } from "../core/vector-db/factory.js";
 
 const COMMANDS = {
   index: "Index content into the database",
@@ -103,18 +102,20 @@ Examples:
 `);
 }
 
-async function getDBConfig(args: any): Promise<Parameters<typeof VectorDBFactory.create>[0]> {
+async function getDBConfig(
+  args: any,
+): Promise<Parameters<typeof VectorDBFactory.create>[0]> {
   const provider = args.provider || process.env.VECTOR_DB_PROVIDER || "sqlite";
-  
+
   const options: Record<string, unknown> = {};
-  
+
   if (provider === "sqlite") {
     options.path = args.db || process.env.SQLITE_DB_PATH || "ragist.db";
-    options.dimension = process.env.EMBEDDING_DIMENSION 
-      ? parseInt(process.env.EMBEDDING_DIMENSION, 10)
+    options.dimension = process.env.EMBEDDING_DIMENSION
+      ? Number.parseInt(process.env.EMBEDDING_DIMENSION, 10)
       : 768;
   }
-  
+
   return {
     provider,
     options,
@@ -140,10 +141,10 @@ async function handleIndex(args: string[]): Promise<void> {
     },
     allowPositionals: false,
   });
-  
+
   const dbConfig = await getDBConfig(parsed.values);
   await databaseService.initialize(dbConfig);
-  
+
   try {
     const options = {
       chunkSize: parsed.values["chunk-size"]
@@ -161,9 +162,9 @@ async function handleIndex(args: string[]): Promise<void> {
         }
       },
     };
-    
+
     let result: Awaited<ReturnType<typeof indexText>>;
-    
+
     if (parsed.values.text) {
       result = await indexText(
         parsed.values.text,
@@ -178,12 +179,12 @@ async function handleIndex(args: string[]): Promise<void> {
       try {
         // Validate file path for security
         const filePath = await validateFilePath(parsed.values.file);
-        
+
         if (!existsSync(filePath)) {
           console.error(`File not found: ${filePath}`);
           process.exit(1);
         }
-        
+
         result = await indexFile(
           filePath,
           {
@@ -195,8 +196,12 @@ async function handleIndex(args: string[]): Promise<void> {
       } catch (error) {
         if (error instanceof SecurityError) {
           console.error(`Security error: ${error.message}`);
-          console.error('File access is restricted to prevent unauthorized file system access.');
-          console.error('Please ensure the file is in an allowed directory (current directory or subdirectories).');
+          console.error(
+            "File access is restricted to prevent unauthorized file system access.",
+          );
+          console.error(
+            "Please ensure the file is in an allowed directory (current directory or subdirectories).",
+          );
           process.exit(1);
         }
         throw error;
@@ -218,11 +223,11 @@ async function handleIndex(args: string[]): Promise<void> {
       );
       process.exit(1);
     }
-    
+
     console.log("\nIndexing Results:");
     console.log(`  Items indexed: ${result.itemsIndexed}`);
     console.log(`  Chunks created: ${result.chunksCreated}`);
-    
+
     if (result.errors.length > 0) {
       console.error("\nErrors encountered:");
       for (const error of result.errors) {
@@ -247,69 +252,71 @@ async function handleQuery(args: string[]): Promise<void> {
     },
     allowPositionals: true,
   });
-  
+
   const query = parsed.positionals.join(" ").trim();
   if (!query) {
     console.error("No query specified");
     process.exit(1);
   }
-  
+
   const dbConfig = await getDBConfig(parsed.values);
   await databaseService.initialize(dbConfig);
-  
+
   try {
     const options = {
-      k: parsed.values["top-k"] ? Number.parseInt(parsed.values["top-k"], 10) : 5,
+      k: parsed.values["top-k"]
+        ? Number.parseInt(parsed.values["top-k"], 10)
+        : 5,
       sourceType: parsed.values.type,
       rerank: !parsed.values["no-rerank"],
     };
-    
+
     console.log(`Searching for: "${query}"\n`);
-    
+
     const results = parsed.values.hybrid
       ? await hybridSearch(query, options)
       : await semanticSearch(query, options);
-    
+
     if (results.length === 0) {
       console.log("No results found");
       return;
     }
-    
+
     const stats = calculateSearchStats(results);
-    
+
     console.log(`Found ${stats.totalResults} results\n`);
-    
+
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
       if (!result) continue;
-      
+
       const metadata = result.metadata || {};
       console.log(`${i + 1}. ${metadata.title || "(Untitled)"}`);
-      
+
       if (metadata.url) {
         console.log(`   URL: ${metadata.url}`);
       }
-      
+
       console.log(`   Score: ${result.score.toFixed(3)}`);
       console.log(`   Type: ${metadata.sourceType || "unknown"}`);
-      
+
       const preview = result.content.substring(0, 200);
       const lines = preview.split("\n").map((line) => `   | ${line}`);
       console.log(lines.join("\n"));
-      
+
       if (result.content.length > 200) {
         console.log("   | ...");
       }
-      
+
       console.log();
     }
-    
+
     console.log("Search Statistics:");
     console.log(`  Average Score: ${stats.averageScore.toFixed(3)}`);
     console.log(
       `  Score Range: ${stats.minScore.toFixed(3)} - ${stats.maxScore.toFixed(3)}`,
     );
-    
+
     if (Object.keys(stats.sourceTypes).length > 1) {
       console.log("  Source Types:");
       for (const [type, count] of Object.entries(stats.sourceTypes)) {
@@ -331,16 +338,16 @@ async function handleList(args: string[]): Promise<void> {
     },
     allowPositionals: false,
   });
-  
+
   const dbConfig = await getDBConfig(parsed.values);
   await databaseService.initialize(dbConfig);
-  
+
   try {
     const stats = await databaseService.getStats();
-    
-    console.log(`Database Provider: ${dbConfig.provider}`);
+
+    console.log(`Database Provider: ${dbConfig?.provider || "unknown"}`);
     console.log(`Total items: ${stats.totalItems}`);
-    
+
     if (Object.keys(stats.bySourceType).length > 0) {
       console.log("\nItems by source type:");
       for (const [type, count] of Object.entries(stats.bySourceType)) {
@@ -349,15 +356,17 @@ async function handleList(args: string[]): Promise<void> {
         }
       }
     }
-    
+
     if (!parsed.values.stats && stats.totalItems > 0) {
       console.log("\nRecent items:");
-      
+
       const items = await databaseService.listItems({ limit: 10 });
-      
+
       for (const item of items) {
         const metadata = item.metadata || {};
-        console.log(`  [${item.id.substring(0, 8)}] ${metadata.title || "(Untitled)"}`);
+        console.log(
+          `  [${item.id.substring(0, 8)}] ${metadata.title || "(Untitled)"}`,
+        );
         if (metadata.url) {
           console.log(`       URL: ${metadata.url}`);
         }
@@ -381,18 +390,18 @@ async function handleInfo(args: string[]): Promise<void> {
     },
     allowPositionals: false,
   });
-  
+
   const dbConfig = await getDBConfig(parsed.values);
   await databaseService.initialize(dbConfig);
-  
+
   try {
     const info = databaseService.getAdapterInfo();
-    
+
     if (info) {
       console.log("Database Adapter Information:");
       console.log(`  Provider: ${info.provider}`);
       console.log(`  Version: ${info.version}`);
-      console.log(`  Capabilities:`);
+      console.log("  Capabilities:");
       for (const capability of info.capabilities) {
         console.log(`    - ${capability}`);
       }
@@ -407,18 +416,23 @@ async function handleInfo(args: string[]): Promise<void> {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = args[0];
-  
-  if (!command || command === "help" || command === "--help" || command === "-h") {
+
+  if (
+    !command ||
+    command === "help" ||
+    command === "--help" ||
+    command === "-h"
+  ) {
     showHelp();
     process.exit(0);
   }
-  
+
   if (!Object.keys(COMMANDS).includes(command)) {
     console.error(`Unknown command: ${command}`);
     console.error("Run 'ragist help' for usage information");
     process.exit(1);
   }
-  
+
   try {
     switch (command) {
       case "index":
@@ -435,7 +449,10 @@ async function main(): Promise<void> {
         break;
     }
   } catch (error) {
-    console.error("Error:", error instanceof Error ? error.message : String(error));
+    console.error(
+      "Error:",
+      error instanceof Error ? error.message : String(error),
+    );
     process.exit(1);
   }
 }
