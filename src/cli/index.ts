@@ -16,6 +16,7 @@ import {
 } from "../core/search.ts";
 import { SecurityError, validateFilePath } from "../core/security.ts";
 import type { VectorDBFactory } from "../core/vector-db/factory.ts";
+import { handleInit } from "./commands/init.ts";
 
 const COMMANDS = {
   index: "Index content into the database",
@@ -68,6 +69,9 @@ Commands:
       --provider <name>  Vector DB provider (default: sqlite)
       
   help     Show this help message
+
+Special Commands:
+  --init   Initialize a new Ragist project with .env and config files
 
 Environment Variables:
   VECTOR_DB_PROVIDER     Default vector DB provider
@@ -416,6 +420,12 @@ async function handleInfo(args: string[]): Promise<void> {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = args[0];
+
+  // Handle --init command
+  if (command === "--init" || command === "init") {
+    await handleInit();
+    process.exit(0);
+  }
 
   if (
     !command ||

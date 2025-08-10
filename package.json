@@ -23,7 +23,10 @@
   "license": "MIT",
   "dependencies": {
     "@ai-sdk/google": "1.0.13",
+    "@inquirer/prompts": "^7.8.1",
     "ai": "4.0.31",
+    "chalk": "^5.4.1",
+    "ora": "^8.2.0",
     "sqlite-vec": "0.1.6"
   },
   "devDependencies": {
