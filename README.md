@@ -1,5 +1,8 @@
 # Ragist - Pluggable Vector Database Architecture
 
+[![npm version](https://badge.fury.io/js/@ushironoko%2Fragist.svg)](https://www.npmjs.com/package/@ushironoko/ragist)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 RAG (Retrieval-Augmented Generation) search system with pluggable vector database support.
 
 ## Features
@@ -19,12 +22,32 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
 - Node.js >= 24.2.0
 - Google AI API key for embeddings
 
+## Installation
+
+### Global Installation
+
+```bash
+pnpm add -g @ushironoko/ragist
+```
+
+### Local Installation
+
+```bash
+pnpm add @ushironoko/ragist
+```
+
+### Direct Usage (without installation)
+
+```bash
+npx @ushironoko/ragist init
+```
+
 ## Setup
 
 Run the initialization command to set up Ragist:
 
 ```bash
-npx ragist init
+npx @ushironoko/ragist init
 ```
 
 This interactive command will:
@@ -38,8 +61,8 @@ This interactive command will:
 You can also specify options directly:
 
 ```bash
-npx ragist init --provider memory  # Use in-memory database
-npx ragist init --provider sqlite --db ./custom-path.db  # Custom SQLite path
+npx @ushironoko/ragist init --provider memory  # Use in-memory database
+npx @ushironoko/ragist init --provider sqlite --db ./custom-path.db  # Custom SQLite path
 ```
 
 ## Usage
@@ -49,31 +72,31 @@ npx ragist init --provider sqlite --db ./custom-path.db  # Custom SQLite path
 Index a GitHub Gist:
 
 ```bash
-npx ragist index --gist https://gist.github.com/user/abc123
+npx @ushironoko/ragist index --gist https://gist.github.com/user/abc123
 ```
 
 Index a GitHub repository:
 
 ```bash
-npx ragist index --github https://github.com/owner/repo --branch main --paths src,docs
+npx @ushironoko/ragist index --github https://github.com/owner/repo --branch main --paths src,docs
 ```
 
 Index a local file:
 
 ```bash
-npx ragist index --file ./document.md --title "My Document"
+npx @ushironoko/ragist index --file ./document.md --title "My Document"
 ```
 
 Index plain text:
 
 ```bash
-npx ragist index --text "Your text content here" --title "Text Title"
+npx @ushironoko/ragist index --text "Your text content here" --title "Text Title"
 ```
 
 Use specific provider:
 
 ```bash
-npx ragist index --provider memory --file ./test.md
+npx @ushironoko/ragist index --provider memory --file ./test.md
 ```
 
 ### Search
@@ -81,32 +104,32 @@ npx ragist index --provider memory --file ./test.md
 Basic search:
 
 ```bash
-npx ragist query "vector search implementation"
+npx @ushironoko/ragist query "vector search implementation"
 ```
 
 Search with options:
 
 ```bash
-npx ragist query --top-k 10 --type gist "embeddings"
+npx @ushironoko/ragist query --top-k 10 --type gist "embeddings"
 ```
 
 Hybrid search (combines semantic and keyword matching):
 
 ```bash
-npx ragist query --hybrid "search query"
+npx @ushironoko/ragist query --hybrid "search query"
 ```
 
 Query with specific provider:
 
 ```bash
-npx ragist query --provider sqlite "search query"
+npx @ushironoko/ragist query --provider sqlite "search query"
 ```
 
 ### List Indexed Content
 
 ```bash
-npx ragist list
-npx ragist list --stats  # Show statistics only
+npx @ushironoko/ragist list
+npx @ushironoko/ragist list --stats  # Show statistics only
 ```
 
 ### Adapter Information
@@ -114,13 +137,13 @@ npx ragist list --stats  # Show statistics only
 Show adapter information:
 
 ```bash
-npx ragist info --provider sqlite
+npx @ushironoko/ragist info --provider sqlite
 ```
 
 ## Programmatic Usage
 
 ```typescript
-import { databaseService, semanticSearch, indexText } from "ragist";
+import { databaseService, semanticSearch, indexText } from "@ushironoko/ragist";
 
 // Initialize with configuration
 await databaseService.initialize({
@@ -148,7 +171,7 @@ const results = await semanticSearch("query");
 The recommended way to use custom adapters is with `withCustomRegistry` for scoped, isolated usage:
 
 ```typescript
-import { withCustomRegistry } from "ragist";
+import { withCustomRegistry } from "@ushironoko/ragist";
 import { createPineconeAdapter } from "./pinecone-adapter";
 
 // Use custom adapter in an isolated scope
@@ -187,13 +210,13 @@ await withCustomRegistry(
 Use `createBaseAdapter` helper to reduce code duplication when implementing storage operations:
 
 ```typescript
-import { createBaseAdapter, type StorageOperations } from "ragist";
+import { createBaseAdapter, type StorageOperations } from "@ushironoko/ragist";
 import type {
   VectorDocument,
   VectorSearchResult,
   VectorDBConfig,
   VectorDBAdapter,
-} from "ragist";
+} from "@ushironoko/ragist";
 
 // Implement only the storage-specific operations
 const createPineconeStorage = (apiKey: string): StorageOperations => {
@@ -242,10 +265,10 @@ export const createPineconeAdapter = async (
 For complete control over the registry and adapter lifecycle:
 
 ```typescript
-import { withRegistry } from "ragist";
+import { withRegistry } from "@ushironoko/ragist";
 import { createPineconeAdapter } from "./pinecone-adapter";
-import { createDatabaseService } from "ragist";
-import { createFactory } from "ragist";
+import { createDatabaseService } from "@ushironoko/ragist";
+import { createFactory } from "@ushironoko/ragist";
 
 await withRegistry(async (registry) => {
   // Register custom adapter

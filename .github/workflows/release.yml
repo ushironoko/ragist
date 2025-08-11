@@ -1,0 +1,158 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-type:
+        description: "Release type (patch, minor, major, prerelease)"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      prerelease-identifier:
+        description: "Prerelease identifier (alpha, beta, rc)"
+        required: false
+        default: "alpha"
+        type: choice
+        options:
+          - alpha
+          - beta
+          - rc
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".node-version"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Run type check
+        run: pnpm run tsc
+
+      - name: Run lint
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        id: bump
+        run: |
+          if [ "${{ github.event.inputs.release-type }}" = "prerelease" ]; then
+            pnpm version prerelease --preid=${{ github.event.inputs.prerelease-identifier }} --no-git-tag-version
+          else
+            pnpm version ${{ github.event.inputs.release-type }} --no-git-tag-version
+          fi
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        run: |
+          VERSION=${{ steps.bump.outputs.version }}
+          DATE=$(date +"%Y-%m-%d")
+          
+          # Create changelog entry
+          if [ -f CHANGELOG.md ]; then
+            TEMP_FILE=$(mktemp)
+            echo "# Changelog" > $TEMP_FILE
+            echo "" >> $TEMP_FILE
+            echo "## [$VERSION] - $DATE" >> $TEMP_FILE
+            echo "" >> $TEMP_FILE
+            
+            # Get commits since last tag
+            if git describe --tags --abbrev=0 2>/dev/null; then
+              LAST_TAG=$(git describe --tags --abbrev=0)
+              git log $LAST_TAG..HEAD --pretty=format:"- %s" >> $TEMP_FILE
+            else
+              git log --pretty=format:"- %s" >> $TEMP_FILE
+            fi
+            
+            echo "" >> $TEMP_FILE
+            echo "" >> $TEMP_FILE
+            
+            # Append existing changelog without the header
+            tail -n +2 CHANGELOG.md >> $TEMP_FILE 2>/dev/null || true
+            
+            mv $TEMP_FILE CHANGELOG.md
+          fi
+
+      - name: Commit changes
+        run: |
+          git add package.json CHANGELOG.md
+          git commit -m "chore: release v${{ steps.bump.outputs.version }}"
+
+      - name: Create tag
+        run: |
+          git tag -a "v${{ steps.bump.outputs.version }}" -m "Release v${{ steps.bump.outputs.version }}"
+
+      - name: Push changes
+        run: |
+          git push origin main
+          git push origin "v${{ steps.bump.outputs.version }}"
+
+      - name: Publish to NPM
+        run: pnpm publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.bump.outputs.version }}
+          release_name: Release v${{ steps.bump.outputs.version }}
+          body: |
+            ## What's Changed
+            
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+            
+            ## Installation
+            
+            ```bash
+            pnpm add @ushironoko/ragist@${{ steps.bump.outputs.version }}
+            ```
+            
+            or use directly:
+            
+            ```bash
+            npx @ushironoko/ragist@${{ steps.bump.outputs.version }}
+            ```
+          draft: false
+          prerelease: ${{ github.event.inputs.release-type == 'prerelease' }}

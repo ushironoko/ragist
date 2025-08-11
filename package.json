@@ -1,5 +1,5 @@
 {
-  "name": "ragist",
+  "name": "@ushironoko/ragist",
   "version": "0.1.0",
   "description": "RAG search system for Gist and GitHub repositories",
   "type": "module",
@@ -7,6 +7,14 @@
   "bin": {
     "ragist": "dist/cli/index.js"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "templates"],
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
@@ -16,11 +24,33 @@
     "test:coverage": "vitest run --coverage",
     "lint": "biome check --write .",
     "format": "biome format --write .",
-    "tsc": "tsc --noEmit"
+    "tsc": "tsc --noEmit",
+    "prepublishOnly": "pnpm run lint && pnpm run tsc && pnpm run test && pnpm run build"
   },
-  "keywords": ["rag", "vector-search", "embeddings", "gist", "github"],
-  "author": "",
+  "keywords": [
+    "rag",
+    "vector-search",
+    "embeddings",
+    "gist",
+    "github",
+    "cli",
+    "ai",
+    "llm"
+  ],
+  "author": "ushironoko",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ushironoko/ragist.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ushironoko/ragist/issues"
+  },
+  "homepage": "https://github.com/ushironoko/ragist#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dependencies": {
     "@ai-sdk/google": "2.0.3",
     "@inquirer/prompts": "^7.8.1",
