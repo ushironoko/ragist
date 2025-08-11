@@ -22,7 +22,7 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
 ## Installation
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## Setup
@@ -258,15 +258,15 @@ See `templates/adapter-template.ts` for a complete template to create your own a
 Run tests:
 ```bash
 npm test
-npm run test:watch    # Watch mode
-npm run test:coverage # With coverage
+pnpm run test:watch    # Watch mode
+pnpm run test:coverage # With coverage
 ```
 
 Linting and formatting:
 ```bash
-npm run lint
-npm run format
-npm run tsc  # Type checking
+pnpm run lint
+pnpm run format
+pnpm run tsc  # Type checking
 ```
 
 ## Architecture
