@@ -38,7 +38,7 @@ const COMMANDS = {
   help: "Show help message",
 } as const;
 
-function showHelp(): void {
+export function showHelp(): void {
   console.log(`
 Ragist - RAG Search System for Gist and GitHub Repositories
 
@@ -138,7 +138,7 @@ async function getDBConfig(
   };
 }
 
-async function handleIndex(args: string[]): Promise<void> {
+export async function handleIndex(args: string[]): Promise<void> {
   const parsed = parseArgs({
     args,
     options: {
@@ -255,7 +255,7 @@ async function handleIndex(args: string[]): Promise<void> {
   }
 }
 
-async function handleQuery(args: string[]): Promise<void> {
+export async function handleQuery(args: string[]): Promise<void> {
   const parsed = parseArgs({
     args,
     options: {
@@ -346,7 +346,7 @@ async function handleQuery(args: string[]): Promise<void> {
   }
 }
 
-async function handleList(args: string[]): Promise<void> {
+export async function handleList(args: string[]): Promise<void> {
   const parsed = parseArgs({
     args,
     options: {
@@ -400,7 +400,7 @@ async function handleList(args: string[]): Promise<void> {
   }
 }
 
-async function handleInfo(args: string[]): Promise<void> {
+export async function handleInfo(args: string[]): Promise<void> {
   const parsed = parseArgs({
     args,
     options: {
@@ -481,10 +481,13 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
-  console.error("Fatal error:", error);
-  if (error instanceof Error && error.stack) {
-    console.error("Stack trace:", error.stack);
-  }
-  process.exit(1);
-});
+// Only run main if this is the main module
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((error) => {
+    console.error("Fatal error:", error);
+    if (error instanceof Error && error.stack) {
+      console.error("Stack trace:", error.stack);
+    }
+    process.exit(1);
+  });
+}
