@@ -1,10 +1,15 @@
-import { registry } from "./registry.js";
+import type { RegistryInterface } from "./registry.js";
+import { createRegistry } from "./registry.js";
 import type { VectorDBAdapter, VectorDBConfig } from "./types.js";
 
 /**
  * Create a factory for vector database adapters using closure pattern
+ * @param registry - Optional registry instance, defaults to a new instance
  */
-export const createFactory = () => {
+export const createFactory = (registry?: RegistryInterface) => {
+  // Use provided registry or create a new one
+  const reg = registry || createRegistry();
+
   // Private state
   let defaultConfig: VectorDBConfig = {
     provider: "memory",
@@ -37,7 +42,7 @@ export const createFactory = () => {
     };
 
     // Create new adapter instance
-    const adapter = registry.create(finalConfig);
+    const adapter = await reg.create(finalConfig);
     await adapter.initialize();
 
     return adapter;
@@ -79,6 +84,3 @@ export const createFactory = () => {
     createFromEnv,
   };
 };
-
-// Create and export a singleton factory instance
-export const factory = createFactory();

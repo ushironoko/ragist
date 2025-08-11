@@ -3,7 +3,7 @@ import {
   type SaveItemParams,
   createDatabaseService,
 } from "./database-service.js";
-import { registry } from "./vector-db/adapters/registry.js";
+import { createRegistry } from "./vector-db/adapters/registry.js";
 import type { VectorDBConfig } from "./vector-db/adapters/types.js";
 
 // Mock node:sqlite to avoid import errors
@@ -13,11 +13,12 @@ vi.mock("node:sqlite", () => ({
 
 describe("DatabaseService", () => {
   let service: ReturnType<typeof createDatabaseService>;
+  let registry: ReturnType<typeof createRegistry>;
 
   beforeEach(() => {
+    // Create a fresh registry for each test
+    registry = createRegistry();
     service = createDatabaseService();
-    // Clear registry to ensure clean state
-    registry.clear();
   });
 
   afterEach(async () => {

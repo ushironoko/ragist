@@ -6,6 +6,11 @@ import {
 import { createDatabaseService } from "./database-service.js";
 import type { VectorDBConfig } from "./vector-db/adapters/types.js";
 
+// Mock node:sqlite to avoid import errors
+vi.mock("node:sqlite", () => ({
+  DatabaseSync: vi.fn(),
+}));
+
 // Mock database-service
 vi.mock("./database-service.js", () => ({
   createDatabaseService: vi.fn(() => ({

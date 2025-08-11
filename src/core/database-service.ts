@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { factory } from "./vector-db/adapters/factory.js";
+import { createFactory } from "./vector-db/adapters/factory.js";
 import type {
   VectorDBAdapter,
   VectorDocument,
@@ -69,7 +69,9 @@ const withErrorHandling = async <T>(
  * Type definition for the database service interface
  */
 export interface DatabaseService {
-  initialize: (config?: Parameters<typeof factory.create>[0]) => Promise<void>;
+  initialize: (
+    config?: Parameters<ReturnType<typeof createFactory>["create"]>[0],
+  ) => Promise<void>;
   saveItem: (params: SaveItemParams) => Promise<string>;
   saveItems: (items: SaveItemParams[]) => Promise<string[]>;
   searchItems: (params: SearchParams) => Promise<VectorSearchResult[]>;
@@ -87,7 +89,11 @@ export interface DatabaseService {
   getAdapterInfo: () => ReturnType<VectorDBAdapter["getInfo"]> | null;
 }
 
-export function createDatabaseService(): DatabaseService {
+export function createDatabaseService(
+  factory?: ReturnType<typeof createFactory>,
+): DatabaseService {
+  // Use provided factory or create a default one
+  const factoryInstance = factory || createFactory();
   let adapter: VectorDBAdapter | null = null;
 
   /**
@@ -104,9 +110,9 @@ export function createDatabaseService(): DatabaseService {
    * Initialize the database service
    */
   const initialize = async (
-    config?: Parameters<typeof factory.create>[0],
+    config?: Parameters<typeof factoryInstance.create>[0],
   ): Promise<void> => {
-    adapter = await factory.create(config);
+    adapter = await factoryInstance.create(config);
   };
 
   /**

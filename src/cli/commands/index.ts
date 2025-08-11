@@ -8,13 +8,13 @@ import {
   indexText,
 } from "../../core/indexer.js";
 import { SecurityError, validateFilePath } from "../../core/security.js";
-import type { factory } from "../../core/vector-db/adapters/factory.js";
+import type { createFactory } from "../../core/vector-db/adapters/factory.js";
 
 export async function getDBConfig(values: {
   provider?: string;
   db?: string;
   [key: string]: string | boolean | undefined;
-}): Promise<Parameters<typeof factory.create>[0]> {
+}): Promise<Parameters<ReturnType<typeof createFactory>["create"]>[0]> {
   const provider =
     values.provider || process.env.VECTOR_DB_PROVIDER || "sqlite";
 

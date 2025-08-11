@@ -75,8 +75,8 @@ describe("createRegistry", () => {
   });
 
   describe("create", () => {
-    it("should create an adapter instance", () => {
-      const adapter = registry.create({
+    it("should create an adapter instance", async () => {
+      const adapter = await registry.create({
         provider: "memory",
         options: { dimension: 3 },
       });
@@ -85,10 +85,10 @@ describe("createRegistry", () => {
       expect(adapter.getInfo().provider).toBe("memory");
     });
 
-    it("should throw error for unregistered provider", () => {
-      expect(() => registry.create({ provider: "non-existent" })).toThrow(
-        "No adapter registered",
-      );
+    it("should throw error for unregistered provider", async () => {
+      await expect(
+        registry.create({ provider: "non-existent" }),
+      ).rejects.toThrow("No adapter registered");
     });
   });
 
