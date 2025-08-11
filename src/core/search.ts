@@ -1,6 +1,6 @@
 import { databaseService } from "./database-service.js";
 import { generateEmbedding } from "./embedding.js";
-import type { VectorSearchResult } from "./vector-db/types.js";
+import type { VectorSearchResult } from "./vector-db/adapters/types.js";
 
 export interface RerankOptions {
   boostFactor?: number;

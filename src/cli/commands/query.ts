@@ -69,7 +69,7 @@ export async function handleQuery(args: string[]): Promise<void> {
       console.log(`   Type: ${metadata.sourceType || "unknown"}`);
 
       const preview = result.content.substring(0, 200);
-      const lines = preview.split("\n").map((line) => `   | ${line}`);
+      const lines = preview.split("\n").map((line: string) => `   | ${line}`);
       console.log(lines.join("\n"));
 
       if (result.content.length > 200) {

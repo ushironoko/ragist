@@ -16,7 +16,7 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
 
 ## Requirements
 
-- Node.js >= 22.5.0
+- Node.js >= 24.2.0
 - Google AI API key for embeddings
 
 ## Installation
@@ -58,7 +58,7 @@ Create a `ragist.config.json` file:
 ```json
 {
   "vectorDB": {
-    "provider": "sqlite",  // or "memory", "pinecone", etc.
+    "provider": "sqlite", // or "memory", "pinecone", etc.
     "options": {
       "path": "./my-database.db",
       "dimension": 768
@@ -80,26 +80,31 @@ export EMBEDDING_DIMENSION=768
 ### Index Content
 
 Index a GitHub Gist:
+
 ```bash
 npx ragist index --gist https://gist.github.com/user/abc123
 ```
 
 Index a GitHub repository:
+
 ```bash
 npx ragist index --github https://github.com/owner/repo --branch main --paths src,docs
 ```
 
 Index a local file:
+
 ```bash
 npx ragist index --file ./document.md --title "My Document"
 ```
 
 Index plain text:
+
 ```bash
 npx ragist index --text "Your text content here" --title "Text Title"
 ```
 
 Use specific provider:
+
 ```bash
 npx ragist index --provider memory --file ./test.md
 ```
@@ -107,21 +112,25 @@ npx ragist index --provider memory --file ./test.md
 ### Search
 
 Basic search:
+
 ```bash
 npx ragist query "vector search implementation"
 ```
 
 Search with options:
+
 ```bash
 npx ragist query --top-k 10 --type gist "embeddings"
 ```
 
 Hybrid search (combines semantic and keyword matching):
+
 ```bash
 npx ragist query --hybrid "search query"
 ```
 
 Query with specific provider:
+
 ```bash
 npx ragist query --provider sqlite "search query"
 ```
@@ -136,6 +145,7 @@ npx ragist list --stats  # Show statistics only
 ### Adapter Information
 
 Show adapter information:
+
 ```bash
 npx ragist info --provider sqlite
 ```
@@ -143,25 +153,21 @@ npx ragist info --provider sqlite
 ## Programmatic Usage
 
 ```typescript
-import { 
-  VectorDBFactory, 
-  databaseService,
-  semanticSearch 
-} from "ragist";
+import { databaseService, semanticSearch, indexText } from "ragist";
 
 // Initialize with configuration
 await databaseService.initialize({
   provider: "sqlite",
   options: {
     path: "./my-db.db",
-    dimension: 768
-  }
+    dimension: 768,
+  },
 });
 
 // Index content
 await indexText("Your content here", {
   title: "Document Title",
-  sourceType: "text"
+  sourceType: "text",
 });
 
 // Search
@@ -170,36 +176,45 @@ const results = await semanticSearch("query");
 
 ## Creating Custom Adapters
 
-### 1. Implement the Adapter Interface
+### 1. Create an Adapter Factory Function
 
 ```typescript
-import type { VectorDBAdapter } from "ragist";
+import type { VectorDBAdapter, VectorDBConfig } from "ragist";
 
-export class PineconeAdapter implements VectorDBAdapter {
-  async initialize(): Promise<void> {
-    // Connect to Pinecone
-  }
+export const createPineconeAdapter = async (
+  config: VectorDBConfig,
+): Promise<VectorDBAdapter> => {
+  const client = new PineconeClient(config.options);
 
-  async insert(document: VectorDocument): Promise<string> {
-    // Insert into Pinecone index
-  }
+  return {
+    async initialize(): Promise<void> {
+      // Connect to Pinecone
+      await client.connect();
+    },
 
-  async search(embedding: number[], options?): Promise<VectorSearchResult[]> {
-    // Query Pinecone
-  }
+    async insert(document: VectorDocument): Promise<string> {
+      // Insert into Pinecone index
+      return await client.upsert(document);
+    },
 
-  // ... implement other required methods
-}
+    async search(embedding: number[], options?): Promise<VectorSearchResult[]> {
+      // Query Pinecone
+      return await client.query(embedding, options);
+    },
+
+    // ... implement other required methods
+  };
+};
 ```
 
 ### 2. Register Your Adapter
 
 ```typescript
 import { VectorDBRegistry } from "ragist";
-import { PineconeAdapter } from "./pinecone-adapter";
+import { createPineconeAdapter } from "./pinecone-adapter";
 
 // Register at startup
-VectorDBRegistry.register("pinecone", PineconeAdapter);
+VectorDBRegistry.register("pinecone", createPineconeAdapter);
 ```
 
 ### 3. Use Your Adapter
@@ -223,6 +238,8 @@ See `templates/adapter-template.ts` for a complete template to create your own a
 
 ### Required Methods
 
+Each adapter factory function must return an object implementing these methods:
+
 - `initialize()` - Set up connections
 - `insert()` - Add single document
 - `insertBatch()` - Add multiple documents
@@ -234,16 +251,21 @@ See `templates/adapter-template.ts` for a complete template to create your own a
 - `list()` - List with pagination
 - `close()` - Clean up resources
 
+### Factory Function Pattern
+
+Adapters are created using factory functions that:
+
+1. Accept a `VectorDBConfig` parameter
+2. Return a `Promise<VectorDBAdapter>`
+3. Handle async initialization and resource setup
+4. Return an object implementing all required methods
+
 ### Supported Adapters
 
-| Adapter | Status | Description | Use Case |
-|---------|--------|-------------|----------|
-| SQLite | ✅ Built-in | Local file-based storage | Development, small-scale production |
-| Memory | ✅ Built-in | In-memory storage | Testing, temporary data |
-| Pinecone | 🔄 Example | Cloud vector database | Production, scalable |
-| Qdrant | 📝 Planned | Open-source vector DB | Self-hosted production |
-| Weaviate | 📝 Planned | GraphQL vector search | Complex queries |
-| Milvus | 📝 Planned | Distributed vector DB | Large-scale production |
+| Adapter | Status      | Description              | Use Case                            |
+| ------- | ----------- | ------------------------ | ----------------------------------- |
+| SQLite  | ✅ Built-in | Local file-based storage | Development, small-scale production |
+| Memory  | ✅ Built-in | In-memory storage        | Testing, temporary data             |
 
 ## Benefits of Pluggable Architecture
 
@@ -256,6 +278,7 @@ See `templates/adapter-template.ts` for a complete template to create your own a
 ## Development
 
 Run tests:
+
 ```bash
 npm test
 pnpm run test:watch    # Watch mode
@@ -263,6 +286,7 @@ pnpm run test:coverage # With coverage
 ```
 
 Linting and formatting:
+
 ```bash
 pnpm run lint
 pnpm run format
@@ -272,6 +296,7 @@ pnpm run tsc  # Type checking
 ## Architecture
 
 - **Core Modules**:
+
   - `database-service.ts` - Vector database service with pluggable adapters
   - `vector-db/` - Pluggable vector database architecture
   - `chunking.ts` - Text chunking with overlap

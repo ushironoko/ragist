@@ -38,8 +38,9 @@ export async function handleList(args: string[]): Promise<void> {
 
       for (const item of items) {
         const metadata = item.metadata || {};
+        const itemId = item.id || "unknown";
         console.log(
-          `  [${item.id.substring(0, 8)}] ${metadata.title || "(Untitled)"}`,
+          `  [${itemId.substring(0, 8)}] ${metadata.title || "(Untitled)"}`,
         );
         if (metadata.url) {
           console.log(`       URL: ${metadata.url}`);
