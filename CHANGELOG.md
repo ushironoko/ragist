@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.0.0] - 2025-08-11
+
+
+
+
 ## [1.0.0] - 2025-08-11
 
 - Merge pull request #27 from ushironoko/publish-workflow

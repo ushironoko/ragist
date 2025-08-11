@@ -1,6 +1,6 @@
 {
   "name": "@ushironoko/ragist",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "RAG search system for Gist and GitHub repositories",
   "type": "module",
   "main": "dist/index.js",
