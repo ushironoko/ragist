@@ -12,7 +12,6 @@ try {
   }
 }
 
-
 import { showHelp } from "./commands/help.js";
 import { handleIndex } from "./commands/index.js";
 import { handleInfo } from "./commands/info.js";
