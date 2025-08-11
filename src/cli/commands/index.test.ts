@@ -33,8 +33,8 @@ vi.mock("../../core/indexer.js", () => ({
 
 vi.mock("../../core/security.js", () => {
   class SecurityError extends Error {
-    constructor(message: string) {
-      super(message);
+    constructor(message: string, options?: ErrorOptions) {
+      super(message, options);
       this.name = "SecurityError";
     }
   }
@@ -125,7 +125,7 @@ describe("handleIndex", () => {
     const { validateFilePath, SecurityError } = securityModule;
 
     // Create an instance that will pass instanceof check
-    const error = new SecurityError("Invalid path");
+    const error = new SecurityError("Invalid path", "code");
 
     // Mock validateFilePath to reject with SecurityError
     (validateFilePath as any).mockRejectedValueOnce(error);

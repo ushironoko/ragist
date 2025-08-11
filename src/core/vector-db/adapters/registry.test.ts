@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryAdapter } from "./memory-adapter.js";
 import { createRegistry } from "./registry.js";
-import type { VectorDBAdapter } from "./types.js";
 
 // Mock SQLite to avoid actual database initialization in tests
 vi.mock("node:sqlite", () => ({

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { DatabaseService } from "./database-service.js";
+import { DatabaseService, type SaveItemParams } from "./database-service.js";
 import { registry } from "./vector-db/adapters/registry.js";
 import type { VectorDBConfig } from "./vector-db/adapters/types.js";
 
@@ -19,12 +19,10 @@ describe("DatabaseService", () => {
 
   afterEach(async () => {
     // Clean up after each test
-    if (service.getAdapter) {
-      try {
-        await service.close();
-      } catch {
-        // Ignore errors during cleanup
-      }
+    try {
+      await service.close();
+    } catch {
+      // Ignore errors during cleanup
     }
   });
 
@@ -39,8 +37,9 @@ describe("DatabaseService", () => {
     await expect(service.initialize(config)).resolves.not.toThrow();
   });
 
-  test("throws error when accessing adapter before initialization", () => {
-    expect(() => service.getAdapter()).toThrow(
+  test("throws error when accessing adapter before initialization", async () => {
+    // Try to perform an operation that requires the adapter
+    await expect(service.countItems()).rejects.toThrow(
       "Database service not initialized",
     );
   });
@@ -55,12 +54,12 @@ describe("DatabaseService", () => {
 
     await service.initialize(config);
 
-    const params = {
+    const params: SaveItemParams = {
       content: "Test content",
       embedding: [0.1, 0.2, 0.3],
       metadata: {
         title: "Test Item",
-        sourceType: "test",
+        sourceType: "file",
       },
     };
 
@@ -198,14 +197,21 @@ describe("DatabaseService", () => {
     };
 
     await service.initialize(config);
-    const adapter1 = service.getAdapter();
 
-    // Initialize again with same config
+    // Save an item with first initialization
+    await service.saveItem({
+      content: "Test",
+      embedding: [0.1, 0.2, 0.3],
+    });
+    const count1 = await service.countItems();
+
+    // Initialize again with same config (should use singleton)
     await service.initialize(config);
-    const adapter2 = service.getAdapter();
 
-    // Should return the same instance due to singleton pattern
-    expect(adapter1).toBe(adapter2);
+    // Count should remain the same due to singleton pattern
+    const count2 = await service.countItems();
+    expect(count1).toBe(count2);
+    expect(count2).toBe(1);
   });
 
   test("can close database connection", async () => {
