@@ -25,6 +25,10 @@ describe("DatabaseService", () => {
     try {
       await service.close();
     } catch {
+      // TODO: This catch block ignores errors during cleanup, which could hide
+      // issues with the close() method or database connection management.
+      // Consider logging these errors or at least checking if the service
+      // was actually initialized before attempting to close it.
       // Ignore errors during cleanup
     }
   });

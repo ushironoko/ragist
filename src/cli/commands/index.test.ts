@@ -87,6 +87,9 @@ describe("handleIndex", () => {
     await handleIndex(["--text", "Hello world", "--title", "Test"]);
 
     const { indexText } = await import("../../core/indexer.js");
+    // TODO: The last two parameters are using expect.any(Object) which doesn't
+    // verify the actual structure of the config and service objects being passed.
+    // Consider adding more specific assertions for these parameters.
     expect(indexText).toHaveBeenCalledWith(
       "Hello world",
       { title: "Test", url: undefined, sourceType: "text" },
@@ -111,6 +114,8 @@ describe("handleIndex", () => {
     await handleIndex(["--gist", "1234567890"]);
 
     const { indexGist } = await import("../../core/indexer.js");
+    // TODO: Using expect.any(Object) for config and service parameters.
+    // Consider verifying the actual structure of these objects.
     expect(indexGist).toHaveBeenCalledWith(
       "1234567890",
       expect.any(Object),
@@ -155,6 +160,10 @@ describe("handleIndex", () => {
     try {
       await handleIndex(["--file", "../../../etc/passwd"]);
     } catch (err) {
+      // TODO: This catch block is intentionally swallowing errors because
+      // process.exit is mocked and doesn't actually terminate the process.
+      // Consider refactoring handleIndex to return error codes instead of
+      // calling process.exit directly for better testability.
       // Should not throw, process.exit is mocked
     }
 

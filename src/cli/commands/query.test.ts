@@ -73,6 +73,9 @@ describe("handleQuery", () => {
     await handleQuery(["test query"]);
 
     const { semanticSearch } = await import("../../core/search.js");
+    // TODO: The third parameter uses expect.any(Object) which doesn't verify
+    // the actual structure of the service object being passed.
+    // Consider adding more specific assertions for the database service.
     expect(semanticSearch).toHaveBeenCalledWith(
       "test query",
       expect.objectContaining({ k: 5, rerank: true }),
@@ -87,6 +90,9 @@ describe("handleQuery", () => {
     await handleQuery(["--hybrid", "test query"]);
 
     const { hybridSearch } = await import("../../core/search.js");
+    // TODO: The third parameter uses expect.any(Object) which doesn't verify
+    // the actual structure of the service object being passed.
+    // Consider adding more specific assertions for the database service.
     expect(hybridSearch).toHaveBeenCalledWith(
       "test query",
       expect.objectContaining({ k: 5, rerank: true }),
