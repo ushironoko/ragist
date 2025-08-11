@@ -4,14 +4,60 @@
  * To create a custom adapter:
  * 1. Copy this template to src/core/vector-db/adapters/your-adapter.ts
  * 2. Implement all required methods in the factory function
- * 3. Register your adapter factory in the registry or at runtime
+ * 3. Use one of these registration methods:
  *
- * Example registration:
+ * Method 1: Using withCustomRegistry (Recommended for scoped usage):
  * ```typescript
- * import { registry } from "ragist";
+ * import { withCustomRegistry } from "ragist";
  * import { createYourAdapter } from "./your-adapter";
  *
- * registry.register("your-provider", createYourAdapter);
+ * await withCustomRegistry(
+ *   new Map([["your-provider", createYourAdapter]]),
+ *   async (registry) => {
+ *     const adapter = await registry.create({
+ *       provider: "your-provider",
+ *       options: { apiKey: "..." }
+ *     });
+ *     // Use adapter...
+ *   }
+ * );
+ * ```
+ *
+ * Method 2: Using withRegistry (Full control):
+ * ```typescript
+ * import { withRegistry } from "ragist";
+ * import { createYourAdapter } from "./your-adapter";
+ *
+ * await withRegistry(async (registry) => {
+ *   registry.register("your-provider", createYourAdapter);
+ *   const adapter = await registry.create({
+ *     provider: "your-provider",
+ *     options: { apiKey: "..." }
+ *   });
+ *   // Use adapter...
+ * });
+ * ```
+ *
+ * Method 3: Using createBaseAdapter (Reduce code duplication):
+ * ```typescript
+ * import { createBaseAdapter, type StorageOperations } from "ragist";
+ *
+ * const createYourStorage = (config: YourAdapterConfig): StorageOperations => {
+ *   // Implement only storage-specific operations
+ * };
+ *
+ * export const createYourAdapter = async (config: YourAdapterConfig): Promise<VectorDBAdapter> => {
+ *   const storage = createYourStorage(config);
+ *   return createBaseAdapter(
+ *     {
+ *       dimension: config.options?.dimension || 768,
+ *       provider: "your-provider",
+ *       version: "1.0.0",
+ *       capabilities: ["vector-search"],
+ *     },
+ *     storage
+ *   );
+ * };
  * ```
  */
 
@@ -36,11 +82,11 @@ export interface YourAdapterConfig extends VectorDBConfig {
 /**
  * Factory function to create your custom adapter
  * @param config - Configuration for the adapter
- * @returns VectorDBAdapter instance
+ * @returns Promise<VectorDBAdapter> instance
  */
-export const createYourAdapter = (
+export const createYourAdapter = async (
   config: YourAdapterConfig,
-): VectorDBAdapter => {
+): Promise<VectorDBAdapter> => {
   // Validate required configuration
   if (!config.options?.apiKey) {
     throw new Error("API key is required for YourAdapter");

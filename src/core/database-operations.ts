@@ -1,4 +1,6 @@
 import { createDatabaseService } from "./database-service.js";
+import { createFactory } from "./vector-db/adapters/factory.js";
+import { withRegistry } from "./vector-db/adapters/registry-operations.js";
 import type { VectorDBConfig } from "./vector-db/adapters/types.js";
 
 /**
@@ -46,15 +48,18 @@ export const createDatabaseOperations = (
   const withDatabase = async <T>(
     operation: (service: DatabaseServiceInterface) => Promise<T>,
   ): Promise<T> => {
-    const service = createDatabaseService();
+    return withRegistry(async (registry) => {
+      const factory = createFactory(registry);
+      const service = createDatabaseService(factory);
 
-    try {
-      await service.initialize(config);
-      return await operation(service);
-    } finally {
-      // Always cleanup, even if operation fails
-      await service.close();
-    }
+      try {
+        await service.initialize(config);
+        return await operation(service);
+      } finally {
+        // Always cleanup, even if operation fails
+        await service.close();
+      }
+    });
   };
 
   /**

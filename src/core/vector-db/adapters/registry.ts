@@ -7,9 +7,21 @@ import type {
 } from "./types.js";
 
 /**
+ * Registry interface for vector database adapters
+ */
+export interface RegistryInterface {
+  register: (provider: string, factory: AdapterFactory) => void;
+  get: (provider: string) => AdapterFactory | undefined;
+  create: (config: VectorDBConfig) => Promise<VectorDBAdapter>;
+  listProviders: () => string[];
+  hasProvider: (provider: string) => boolean;
+  unregister: (provider: string) => boolean;
+  clear: () => void;
+}
+/**
  * Create a registry for vector database adapters using closure pattern
  */
-export const createRegistry = () => {
+export const createRegistry = (): RegistryInterface => {
   // Private state
   const adapters = new Map<string, AdapterFactory>();
   let initialized = false;
@@ -40,7 +52,7 @@ export const createRegistry = () => {
   };
 
   // Create an adapter instance
-  const create = (config: VectorDBConfig): VectorDBAdapter => {
+  const create = async (config: VectorDBConfig): Promise<VectorDBAdapter> => {
     initialize();
 
     const factory = get(config.provider);
@@ -48,7 +60,7 @@ export const createRegistry = () => {
       throw new Error(`No adapter registered for provider: ${config.provider}`);
     }
 
-    return factory(config);
+    return await factory(config);
   };
 
   // List all registered providers
@@ -86,6 +98,3 @@ export const createRegistry = () => {
     clear,
   };
 };
-
-// Create and export a singleton registry instance
-export const registry = createRegistry();

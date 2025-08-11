@@ -1,0 +1,190 @@
+import { describe, expect, it, vi } from "vitest";
+import {
+  getDefaultRegistry,
+  withCustomRegistry,
+  withRegistry,
+} from "./registry-operations.js";
+import type { VectorDBAdapter, VectorDBConfig } from "./types.js";
+
+// Mock node:sqlite to avoid import errors
+vi.mock("node:sqlite", () => ({
+  DatabaseSync: vi.fn(),
+}));
+
+describe("registry-operations", () => {
+  describe("withRegistry", () => {
+    it("provides a registry with built-in adapters", async () => {
+      const result = await withRegistry(async (registry) => {
+        expect(registry.hasProvider("memory")).toBe(true);
+        expect(registry.hasProvider("sqlite")).toBe(true);
+        return "test-result";
+      });
+
+      expect(result).toBe("test-result");
+    });
+
+    it("creates adapter instances", async () => {
+      await withRegistry(async (registry) => {
+        const config: VectorDBConfig = {
+          provider: "memory",
+          options: { dimension: 3 },
+        };
+
+        const adapter = await registry.create(config);
+        expect(adapter).toBeDefined();
+        expect(adapter.initialize).toBeDefined();
+      });
+    });
+
+    it("isolates registry instances", async () => {
+      // First operation adds custom adapter
+      await withRegistry(async (registry) => {
+        const mockAdapter = (): VectorDBAdapter => ({
+          initialize: vi.fn(),
+          insert: vi.fn(),
+          insertBatch: vi.fn(),
+          search: vi.fn(),
+          update: vi.fn(),
+          delete: vi.fn(),
+          deleteBatch: vi.fn(),
+          get: vi.fn(),
+          count: vi.fn(),
+          list: vi.fn(),
+          close: vi.fn(),
+          getInfo: vi.fn(),
+        });
+
+        registry.register("custom", mockAdapter);
+        expect(registry.hasProvider("custom")).toBe(true);
+      });
+
+      // Second operation should not see the custom adapter
+      await withRegistry(async (registry) => {
+        expect(registry.hasProvider("custom")).toBe(false);
+      });
+    });
+  });
+
+  describe("withCustomRegistry", () => {
+    it("allows custom adapter registration", async () => {
+      const mockAdapter = (): VectorDBAdapter => ({
+        initialize: vi.fn(),
+        insert: vi.fn(),
+        insertBatch: vi.fn(),
+        search: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        deleteBatch: vi.fn(),
+        get: vi.fn(),
+        count: vi.fn(),
+        list: vi.fn(),
+        close: vi.fn(),
+        getInfo: vi.fn().mockReturnValue({
+          provider: "custom",
+          version: "1.0.0",
+          capabilities: [],
+        }),
+      });
+
+      const customAdapters = new Map([["custom", mockAdapter]]);
+
+      const result = await withCustomRegistry(
+        customAdapters,
+        async (registry) => {
+          expect(registry.hasProvider("custom")).toBe(true);
+          expect(registry.hasProvider("memory")).toBe(true); // Built-ins still available
+
+          const adapter = await registry.create({ provider: "custom" });
+          const info = adapter.getInfo();
+          expect(info.provider).toBe("custom");
+
+          return "custom-result";
+        },
+      );
+
+      expect(result).toBe("custom-result");
+    });
+
+    it("supports multiple custom adapters", async () => {
+      const mockAdapter1 = (): VectorDBAdapter => ({
+        initialize: vi.fn(),
+        insert: vi.fn(),
+        insertBatch: vi.fn(),
+        search: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        deleteBatch: vi.fn(),
+        get: vi.fn(),
+        count: vi.fn(),
+        list: vi.fn(),
+        close: vi.fn(),
+        getInfo: vi.fn(),
+      });
+
+      const mockAdapter2 = (): VectorDBAdapter => ({
+        initialize: vi.fn(),
+        insert: vi.fn(),
+        insertBatch: vi.fn(),
+        search: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        deleteBatch: vi.fn(),
+        get: vi.fn(),
+        count: vi.fn(),
+        list: vi.fn(),
+        close: vi.fn(),
+        getInfo: vi.fn(),
+      });
+
+      const customAdapters = new Map([
+        ["custom1", mockAdapter1],
+        ["custom2", mockAdapter2],
+      ]);
+
+      await withCustomRegistry(customAdapters, async (registry) => {
+        expect(registry.hasProvider("custom1")).toBe(true);
+        expect(registry.hasProvider("custom2")).toBe(true);
+
+        const providers = registry.listProviders();
+        expect(providers).toContain("custom1");
+        expect(providers).toContain("custom2");
+      });
+    });
+  });
+
+  describe("getDefaultRegistry", () => {
+    it("creates a registry with built-in adapters", () => {
+      const registry = getDefaultRegistry();
+
+      expect(registry.hasProvider("memory")).toBe(true);
+      expect(registry.hasProvider("sqlite")).toBe(true);
+    });
+
+    it("creates independent instances", () => {
+      const registry1 = getDefaultRegistry();
+      const registry2 = getDefaultRegistry();
+
+      // Add custom adapter to first registry
+      const mockAdapter = (): VectorDBAdapter => ({
+        initialize: vi.fn(),
+        insert: vi.fn(),
+        insertBatch: vi.fn(),
+        search: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        deleteBatch: vi.fn(),
+        get: vi.fn(),
+        count: vi.fn(),
+        list: vi.fn(),
+        close: vi.fn(),
+        getInfo: vi.fn(),
+      });
+
+      registry1.register("custom", mockAdapter);
+
+      // Second registry should not have the custom adapter
+      expect(registry1.hasProvider("custom")).toBe(true);
+      expect(registry2.hasProvider("custom")).toBe(false);
+    });
+  });
+});

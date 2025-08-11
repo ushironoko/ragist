@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleQuery } from "./query.js";
 
+// Mock node:sqlite to avoid import errors
+vi.mock("node:sqlite", () => ({
+  DatabaseSync: vi.fn(),
+}));
+
 vi.mock("../../core/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),

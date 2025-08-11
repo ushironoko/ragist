@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createFactory } from "./factory.js";
+import { createRegistry } from "./registry.js";
 
 // Mock SQLite to avoid actual database initialization in tests
 vi.mock("node:sqlite", () => ({
@@ -24,9 +25,11 @@ vi.mock("sqlite-vec", () => ({
 
 describe("createFactory", () => {
   let factory: ReturnType<typeof createFactory>;
+  let registry: ReturnType<typeof createRegistry>;
 
   beforeEach(() => {
-    factory = createFactory();
+    registry = createRegistry();
+    factory = createFactory(registry);
   });
 
   afterEach(async () => {

@@ -176,7 +176,129 @@ const results = await semanticSearch("query");
 
 ## Creating Custom Adapters
 
-### 1. Create an Adapter Factory Function
+### Method 1: Using Base Adapter (Recommended)
+
+The easiest way to create a custom adapter is to use the `createBaseAdapter` helper that handles common functionality:
+
+```typescript
+import { createBaseAdapter, type StorageOperations } from "ragist";
+import type { VectorDocument, VectorSearchResult, VectorDBConfig, VectorDBAdapter } from "ragist";
+
+// Implement only the storage-specific operations
+const createPineconeStorage = (apiKey: string): StorageOperations => {
+  const client = new PineconeClient(apiKey);
+  
+  return {
+    async storeDocument(doc: VectorDocument): Promise<string> {
+      return await client.upsert(doc);
+    },
+    
+    async retrieveDocument(id: string): Promise<VectorDocument | null> {
+      return await client.fetch(id);
+    },
+    
+    async searchSimilar(embedding: number[], options?): Promise<VectorSearchResult[]> {
+      return await client.query(embedding, options);
+    },
+    
+    // ... implement other storage operations
+  };
+};
+
+// Create your adapter factory
+export const createPineconeAdapter = async (config: VectorDBConfig): Promise<VectorDBAdapter> => {
+  const storage = createPineconeStorage(config.options.apiKey);
+  
+  return createBaseAdapter(
+    {
+      dimension: config.options.dimension || 768,
+      provider: "pinecone",
+      version: "1.0.0",
+      capabilities: ["vector-search", "metadata-filter"],
+    },
+    storage,
+  );
+};
+```
+
+### Method 2: Using withCustomRegistry (Isolated Scope)
+
+For temporary, scoped usage of custom adapters without affecting the global registry:
+
+```typescript
+import { withCustomRegistry } from "ragist";
+import { createPineconeAdapter } from "./pinecone-adapter";
+import { indexText, semanticSearch } from "ragist";
+
+// Use custom adapter in an isolated scope
+await withCustomRegistry(
+  new Map([["pinecone", createPineconeAdapter]]),
+  async (registry) => {
+    // Create adapter using the custom registry
+    const adapter = await registry.create({
+      provider: "pinecone",
+      options: { 
+        apiKey: "your-key",
+        environment: "us-east1-gcp",
+        index: "ragist"
+      },
+    });
+    
+    await adapter.initialize();
+    
+    // Use the adapter directly
+    await adapter.insert({
+      id: "doc1",
+      content: "Example content",
+      embedding: [0.1, 0.2, ...],
+      metadata: { source: "example" }
+    });
+    
+    const results = await adapter.search([0.1, 0.2, ...], { k: 5 });
+    
+    await adapter.close();
+  },
+);
+```
+
+### Method 3: Using withRegistry for Full Control
+
+For complete control over the registry and adapter lifecycle:
+
+```typescript
+import { withRegistry } from "ragist";
+import { createPineconeAdapter } from "./pinecone-adapter";
+import { createDatabaseService } from "ragist";
+import { createFactory } from "ragist";
+
+await withRegistry(async (registry) => {
+  // Register custom adapter
+  registry.register("pinecone", createPineconeAdapter);
+  
+  // Create factory with the registry
+  const factory = createFactory(registry);
+  
+  // Create database service
+  const service = createDatabaseService(factory);
+  
+  // Initialize and use
+  await service.initialize({
+    provider: "pinecone",
+    options: { apiKey: "your-key" }
+  });
+  
+  // Use the service
+  await service.saveItem({
+    content: "Example content",
+    embedding: [0.1, 0.2, ...],
+    metadata: { title: "Example" }
+  });
+  
+  await service.close();
+});
+```
+
+### Method 4: Direct Implementation
 
 ```typescript
 import type { VectorDBAdapter, VectorDBConfig } from "ragist";
@@ -207,30 +329,40 @@ export const createPineconeAdapter = async (
 };
 ```
 
-### 2. Register Your Adapter
+### Method 5: Using Database Operations with Custom Registry
+
+For high-level operations with custom adapters:
 
 ```typescript
-import { registry } from "ragist";
+import { createDatabaseOperations } from "ragist";
+import { withCustomRegistry } from "ragist";
 import { createPineconeAdapter } from "./pinecone-adapter";
 
-// Register at startup
-registry.register("pinecone", createPineconeAdapter);
-```
+// Create operations with custom configuration
+const dbOps = createDatabaseOperations({
+  provider: "pinecone",
+  options: { apiKey: "your-key" }
+});
 
-### 3. Use Your Adapter
-
-```json
-{
-  "vectorDB": {
-    "provider": "pinecone",
-    "options": {
-      "apiKey": "your-api-key",
-      "environment": "us-east1-gcp",
-      "index": "ragist"
-    }
+// Use with custom registry
+await withCustomRegistry(
+  new Map([["pinecone", createPineconeAdapter]]),
+  async (registry) => {
+    // The database operations will use the custom registry
+    await dbOps.withDatabase(async (service) => {
+      await service.saveItem({
+        content: "Content to index",
+        embedding: [0.1, 0.2, ...],
+        metadata: { source: "custom" }
+      });
+      
+      const results = await service.searchItems({
+        embedding: [0.1, 0.2, ...],
+        k: 10
+      });
+    });
   }
-}
-```
+);
 
 ## Adapter Development Guide
 
