@@ -1,10 +1,10 @@
 import { google } from "@ai-sdk/google";
 import { embed, embedMany } from "ai";
 
-// Use text-embedding-004 which supports multilingual text including Japanese
-// Note: text-embedding-005 is English-only, text-multilingual-embedding-002 requires Vertex AI
+// Use gemini-embedding-001 which supports multilingual text including Japanese with configurable dimensions
+// Note: text-embedding-004 is English-only
 export const EMBEDDING_MODEL =
-  process.env.EMBEDDING_MODEL || "text-embedding-004";
+  process.env.EMBEDDING_MODEL || "gemini-embedding-001";
 export const EMBEDDING_DIMENSION = Number.parseInt(
   process.env.EMBEDDING_DIMENSION || "768",
   10,
@@ -22,9 +22,20 @@ export async function generateEmbedding(
 
   try {
     const { embedding } = await embed({
-      model: google.textEmbeddingModel(model),
+      model: google.textEmbedding(model),
       value: text,
+      providerOptions: {
+        google: {
+          outputDimensionality: EMBEDDING_DIMENSION,
+        },
+      },
     });
+
+    // Normalize embeddings when using dimensions smaller than 3072
+    // gemini-embedding-001 returns normalized vectors only for 3072 dimensions
+    if (EMBEDDING_DIMENSION < 3072) {
+      return normalizeEmbedding(embedding);
+    }
 
     return embedding;
   } catch (error) {
@@ -46,9 +57,20 @@ export async function generateEmbeddings(
 
   try {
     const { embeddings } = await embedMany({
-      model: google.textEmbeddingModel(model),
+      model: google.textEmbedding(model),
       values: texts,
+      providerOptions: {
+        google: {
+          outputDimensionality: EMBEDDING_DIMENSION,
+        },
+      },
     });
+
+    // Normalize embeddings when using dimensions smaller than 3072
+    // gemini-embedding-001 returns normalized vectors only for 3072 dimensions
+    if (EMBEDDING_DIMENSION < 3072) {
+      return embeddings.map((embedding) => normalizeEmbedding(embedding));
+    }
 
     return embeddings;
   } catch (error) {
@@ -100,6 +122,12 @@ export async function generateEmbeddingsBatch(
   return allEmbeddings;
 }
 
+/**
+ * Normalize an embedding vector to unit length.
+ * Note: gemini-embedding-001 already returns normalized vectors,
+ * so this function is not needed for the default model.
+ * Kept for compatibility with other models that may not normalize.
+ */
 export function normalizeEmbedding(embedding: number[]): number[] {
   const magnitude = Math.sqrt(
     embedding.reduce((sum, val) => sum + val * val, 0),
