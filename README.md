@@ -210,11 +210,11 @@ export const createPineconeAdapter = async (
 ### 2. Register Your Adapter
 
 ```typescript
-import { VectorDBRegistry } from "ragist";
+import { registry } from "ragist";
 import { createPineconeAdapter } from "./pinecone-adapter";
 
 // Register at startup
-VectorDBRegistry.register("pinecone", createPineconeAdapter);
+registry.register("pinecone", createPineconeAdapter);
 ```
 
 ### 3. Use Your Adapter
@@ -280,7 +280,7 @@ Adapters are created using factory functions that:
 Run tests:
 
 ```bash
-npm test
+pnpm test
 pnpm run test:watch    # Watch mode
 pnpm run test:coverage # With coverage
 ```

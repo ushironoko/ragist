@@ -8,10 +8,10 @@
  *
  * Example registration:
  * ```typescript
- * import { VectorDBRegistry } from "ragist";
+ * import { registry } from "ragist";
  * import { createYourAdapter } from "./your-adapter";
  *
- * VectorDBRegistry.register("your-provider", createYourAdapter);
+ * registry.register("your-provider", createYourAdapter);
  * ```
  */
 
@@ -36,11 +36,11 @@ export interface YourAdapterConfig extends VectorDBConfig {
 /**
  * Factory function to create your custom adapter
  * @param config - Configuration for the adapter
- * @returns Promise resolving to a VectorDBAdapter instance
+ * @returns VectorDBAdapter instance
  */
-export const createYourAdapter = async (
+export const createYourAdapter = (
   config: YourAdapterConfig,
-): Promise<VectorDBAdapter> => {
+): VectorDBAdapter => {
   // Validate required configuration
   if (!config.options?.apiKey) {
     throw new Error("API key is required for YourAdapter");

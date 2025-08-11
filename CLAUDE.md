@@ -29,7 +29,7 @@ The project provides a CLI tool with the following commands:
 The system uses a **pluggable adapter pattern** for vector databases, allowing seamless switching between different storage backends:
 
 1. **Core Abstraction**: `VectorDBAdapter` interface in `src/core/vector-db/adapters/types.ts` defines the contract all adapters must implement
-2. **Registry Pattern**: `VectorDBRegistry` in `src/core/vector-db/adapters/registry.ts` manages adapter registration and instantiation
+2. **Registry Pattern**: `registry` (singleton instance) in `src/core/vector-db/adapters/registry.ts` manages adapter registration and instantiation
 3. **Factory Pattern**: `VectorDBFactory` in `src/core/vector-db/adapters/factory.ts` creates adapter instances based on configuration
 4. **Service Layer**: `DatabaseService` in `src/core/database-service.ts` provides high-level API abstracting adapter details
 
@@ -47,7 +47,7 @@ The system uses a **pluggable adapter pattern** for vector databases, allowing s
   - `utils/validation.ts` - Input validation utilities
 - **Extension Points**:
   - New adapters are created as factory functions returning `VectorDBAdapter` interface
-  - Register via `VectorDBRegistry.register(name, adapterFactory)`
+  - Register via `registry.register(name, adapterFactory)`
   - Template available at `templates/adapter-template.ts`
 
 #### Core Services (`src/core/`)
@@ -85,7 +85,7 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 
 1. Copy `templates/adapter-template.ts` to `src/core/vector-db/adapters/`
 2. Create a factory function that returns an object implementing all `VectorDBAdapter` interface methods
-3. Register in registry: `VectorDBRegistry.register('mydb', createMyAdapter)`
+3. Register in registry: `registry.register('mydb', createMyAdapter)`
 4. Add configuration support in `config.ts` if needed
 5. Write comprehensive tests for the adapter (colocated as `my-adapter.test.ts`)
 6. Update README.md with adapter documentation
