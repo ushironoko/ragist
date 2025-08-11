@@ -1,37 +1,71 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { VectorDocument } from "../types.js";
-import { SQLiteAdapter } from "./sqlite-adapter.js";
+import { DatabaseSync } from "node:sqlite";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createSQLiteAdapter } from "./sqlite-adapter.js";
+import type { VectorDBAdapter, VectorDocument } from "./types.js";
 
 // Mock DatabaseSync to avoid actual SQLite initialization in tests
 vi.mock("node:sqlite", () => ({
   DatabaseSync: vi.fn().mockImplementation(() => ({
     exec: vi.fn(),
     prepare: vi.fn().mockImplementation((query: string) => {
-      // Mock for SELECT rowid query
-      if (query.includes("SELECT rowid FROM documents")) {
+      // Mock for SELECT vec_rowid query
+      if (query.includes("SELECT vec_rowid FROM documents")) {
         return {
-          run: vi.fn(),
-          get: vi.fn().mockReturnValue({ rowid: 1 }),
-          all: vi.fn().mockReturnValue([]),
+          get: vi.fn().mockReturnValue(null),
         };
       }
       // Mock for COUNT query
       if (query.includes("COUNT(*)")) {
         return {
-          run: vi.fn(),
           get: vi.fn().mockReturnValue({ count: 0 }),
+        };
+      }
+      // Mock for INSERT INTO vec_documents
+      if (query.includes("INSERT INTO vec_documents")) {
+        return {
+          run: vi.fn().mockReturnValue({ lastInsertRowid: 1 }),
+        };
+      }
+      // Mock for INSERT OR REPLACE INTO documents
+      if (query.includes("INSERT OR REPLACE INTO documents")) {
+        return {
+          run: vi.fn(),
+        };
+      }
+      // Mock for SELECT from documents
+      if (query.includes("SELECT * FROM documents WHERE id")) {
+        return {
+          get: vi.fn().mockReturnValue(null),
+        };
+      }
+      // Mock for vector search
+      if (query.includes("FROM vec_documents v")) {
+        return {
           all: vi.fn().mockReturnValue([]),
         };
       }
-      // Mock for SELECT from vec_documents
-      if (
-        query.includes("SELECT rowid FROM vec_documents") ||
-        query.includes("SELECT embedding FROM vec_documents")
-      ) {
+      // Mock for list documents
+      if (query.includes("SELECT * FROM documents")) {
+        return {
+          all: vi.fn().mockReturnValue([]),
+        };
+      }
+      // Mock for UPDATE documents
+      if (query.includes("UPDATE documents SET")) {
         return {
           run: vi.fn(),
-          get: vi.fn(),
-          all: vi.fn().mockReturnValue([]),
+        };
+      }
+      // Mock for DELETE FROM documents
+      if (query.includes("DELETE FROM documents")) {
+        return {
+          run: vi.fn().mockReturnValue({ changes: 1 }),
+        };
+      }
+      // Mock for DELETE FROM vec_documents
+      if (query.includes("DELETE FROM vec_documents")) {
+        return {
+          run: vi.fn(),
         };
       }
       // Default mock
@@ -42,6 +76,7 @@ vi.mock("node:sqlite", () => ({
       };
     }),
     close: vi.fn(),
+    loadExtension: vi.fn(),
   })),
 }));
 
@@ -51,177 +86,288 @@ vi.mock("sqlite-vec", () => ({
     load: vi.fn(),
   },
   load: vi.fn(),
+  getLoadablePath: vi.fn().mockReturnValue("/mock/path/to/sqlite-vec.so"),
 }));
 
-describe("SQLiteAdapter", () => {
-  let adapter: SQLiteAdapter;
+describe("createSQLiteAdapter", () => {
+  let adapter: VectorDBAdapter;
 
-  beforeEach(() => {
-    adapter = new SQLiteAdapter({
+  beforeEach(async () => {
+    adapter = createSQLiteAdapter({
       provider: "sqlite",
       options: {
         path: ":memory:",
-        dimension: 768,
+        dimension: 3,
       },
     });
+    await adapter.initialize();
   });
 
   afterEach(async () => {
-    if (adapter) {
-      await adapter.close();
-    }
+    await adapter.close();
   });
 
-  test("constructs with default path", () => {
-    const defaultAdapter = new SQLiteAdapter({
-      provider: "sqlite",
-    });
-    expect(defaultAdapter).toBeDefined();
-  });
-
-  test("constructs with custom path", () => {
-    const customAdapter = new SQLiteAdapter({
-      provider: "sqlite",
-      options: {
-        path: "test.db",
-      },
-    });
-    expect(customAdapter).toBeDefined();
-  });
-
-  test("initializes database", async () => {
-    await expect(adapter.initialize()).resolves.not.toThrow();
-  });
-
-  test("throws error when inserting without initialization", async () => {
-    const uninitializedAdapter = new SQLiteAdapter({
-      provider: "sqlite",
+  describe("initialization", () => {
+    it("should create adapter with default path", () => {
+      const defaultAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+      });
+      expect(defaultAdapter).toBeDefined();
+      expect(defaultAdapter.getInfo().provider).toBe("sqlite");
     });
 
-    const document: VectorDocument = {
-      id: "test-id",
-      content: "Test content",
-      embedding: Array(768).fill(0.1),
-      metadata: {},
-    };
+    it("should create adapter with custom path", () => {
+      const customAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+        options: { path: "test.db" },
+      });
+      expect(customAdapter).toBeDefined();
+    });
 
-    await expect(uninitializedAdapter.insert(document)).rejects.toThrow();
+    it("should initialize database successfully", async () => {
+      const testAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+        options: { path: ":memory:", dimension: 768 },
+      });
+      await expect(testAdapter.initialize()).resolves.not.toThrow();
+      await testAdapter.close();
+    });
   });
 
-  test("inserts document after initialization", async () => {
-    await adapter.initialize();
+  describe("insert", () => {
+    it("should insert a document and return its ID", async () => {
+      const doc: VectorDocument = {
+        content: "test content",
+        embedding: [0.1, 0.2, 0.3],
+        metadata: { type: "test" },
+      };
 
-    const document: VectorDocument = {
-      id: "test-id",
-      content: "Test content",
-      embedding: Array(768).fill(0.1),
-      metadata: {
-        title: "Test",
-      },
-    };
+      const id = await adapter.insert(doc);
+      expect(id).toBeDefined();
+      expect(typeof id).toBe("string");
+    });
 
-    const id = await adapter.insert(document);
-    expect(id).toBe("test-id");
+    it("should use provided ID if specified", async () => {
+      const doc: VectorDocument = {
+        id: "custom-id",
+        content: "test",
+        embedding: [0.1, 0.2, 0.3],
+      };
+
+      const id = await adapter.insert(doc);
+      expect(id).toBe("custom-id");
+    });
+
+    it("should validate embedding dimension", async () => {
+      const doc: VectorDocument = {
+        content: "test",
+        embedding: [0.1, 0.2], // Wrong dimension
+      };
+
+      await expect(adapter.insert(doc)).rejects.toThrow("dimension");
+    });
+
+    it("should throw error when database not initialized", async () => {
+      const uninitializedAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+      });
+
+      await expect(
+        uninitializedAdapter.insert({
+          content: "test",
+          embedding: [0.1, 0.2, 0.3],
+        }),
+      ).rejects.toThrow("not initialized");
+    });
   });
 
-  test("searches for documents", async () => {
-    await adapter.initialize();
+  describe("search", () => {
+    it("should search for similar documents", async () => {
+      const results = await adapter.search([0.1, 0.2, 0.3], { k: 5 });
+      expect(Array.isArray(results)).toBe(true);
+    });
 
-    const embedding = Array(768).fill(0.1);
-    const results = await adapter.search(embedding, { k: 5 });
+    it("should apply filters when searching", async () => {
+      const results = await adapter.search([0.1, 0.2, 0.3], {
+        k: 5,
+        filter: { type: "test" },
+      });
+      expect(Array.isArray(results)).toBe(true);
+    });
 
-    expect(Array.isArray(results)).toBe(true);
+    it("should use default k value when not specified", async () => {
+      const results = await adapter.search([0.1, 0.2, 0.3]);
+      expect(Array.isArray(results)).toBe(true);
+    });
   });
 
-  test("gets document by id", async () => {
-    await adapter.initialize();
+  describe("get", () => {
+    it("should return null for non-existent document", async () => {
+      const doc = await adapter.get("non-existent");
+      expect(doc).toBeNull();
+    });
 
-    const result = await adapter.get("test-id");
-    expect(result).toBeDefined();
+    it("should throw error when database not initialized", async () => {
+      const uninitializedAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+      });
+
+      await expect(uninitializedAdapter.get("test-id")).rejects.toThrow(
+        "not initialized",
+      );
+    });
   });
 
-  test("updates document", async () => {
-    await adapter.initialize();
+  describe("update", () => {
+    it("should throw error when updating non-existent document", async () => {
+      await expect(
+        adapter.update("non-existent", { content: "updated" }),
+      ).rejects.toThrow("not found");
+    });
 
-    await expect(
-      adapter.update("test-id", {
-        content: "Updated content",
-      }),
-    ).resolves.not.toThrow();
+    it("should validate new embedding dimension if provided", async () => {
+      // First mock that document exists
+      vi.mocked(DatabaseSync as any).mockImplementationOnce(
+        () =>
+          ({
+            exec: vi.fn(),
+            prepare: vi.fn().mockImplementation((query: string) => {
+              if (query.includes("SELECT * FROM documents WHERE id")) {
+                return {
+                  get: vi.fn().mockReturnValue({
+                    id: "test-id",
+                    content: "original",
+                    metadata: "{}",
+                    vec_rowid: 1,
+                  }),
+                };
+              }
+              return {
+                run: vi.fn(),
+                get: vi.fn(),
+                all: vi.fn().mockReturnValue([]),
+              };
+            }),
+            close: vi.fn(),
+            loadExtension: vi.fn(),
+          }) as any,
+      );
+
+      const testAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+        options: { dimension: 3 },
+      });
+      await testAdapter.initialize();
+
+      await expect(
+        testAdapter.update("test-id", {
+          embedding: [0.1, 0.2], // Wrong dimension
+        }),
+      ).rejects.toThrow("dimension");
+
+      await testAdapter.close();
+    });
   });
 
-  test("deletes document", async () => {
-    await adapter.initialize();
-
-    await expect(adapter.delete("test-id")).resolves.not.toThrow();
+  describe("delete", () => {
+    it("should throw error when deleting non-existent document", async () => {
+      await expect(adapter.delete("non-existent")).rejects.toThrow("not found");
+    });
   });
 
-  test("counts documents", async () => {
-    await adapter.initialize();
+  describe("batch operations", () => {
+    it("should insert multiple documents", async () => {
+      const docs: VectorDocument[] = [
+        { content: "doc1", embedding: [1, 0, 0] },
+        { content: "doc2", embedding: [0, 1, 0] },
+      ];
 
-    const count = await adapter.count();
-    expect(typeof count).toBe("number");
+      const ids = await adapter.insertBatch(docs);
+      expect(ids).toHaveLength(2);
+    });
+
+    it("should delete multiple documents", async () => {
+      // Mock successful deletion
+      vi.mocked(DatabaseSync as any).mockImplementationOnce(
+        () =>
+          ({
+            exec: vi.fn(),
+            prepare: vi.fn().mockImplementation((query: string) => {
+              if (query.includes("SELECT vec_rowid FROM documents")) {
+                return {
+                  all: vi
+                    .fn()
+                    .mockReturnValue([{ vec_rowid: 1 }, { vec_rowid: 2 }]),
+                };
+              }
+              if (query.includes("DELETE FROM")) {
+                return {
+                  run: vi.fn().mockReturnValue({ changes: 2 }),
+                };
+              }
+              return {
+                run: vi.fn(),
+                get: vi.fn(),
+                all: vi.fn().mockReturnValue([]),
+              };
+            }),
+            close: vi.fn(),
+            loadExtension: vi.fn(),
+          }) as any,
+      );
+
+      const testAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+        options: { dimension: 3 },
+      });
+      await testAdapter.initialize();
+
+      await testAdapter.deleteBatch(["id1", "id2"]);
+
+      await testAdapter.close();
+    });
   });
 
-  test("lists documents with pagination", async () => {
-    await adapter.initialize();
+  describe("count and list", () => {
+    it("should count all documents", async () => {
+      const count = await adapter.count();
+      expect(typeof count).toBe("number");
+    });
 
-    const results = await adapter.list({ limit: 10, offset: 0 });
-    expect(Array.isArray(results)).toBe(true);
+    it("should count with filter", async () => {
+      const count = await adapter.count({ type: "test" });
+      expect(typeof count).toBe("number");
+    });
+
+    it("should list documents with pagination", async () => {
+      const docs = await adapter.list({ limit: 10, offset: 0 });
+      expect(Array.isArray(docs)).toBe(true);
+    });
+
+    it("should list with filter", async () => {
+      const docs = await adapter.list({ filter: { type: "test" } });
+      expect(Array.isArray(docs)).toBe(true);
+    });
   });
 
-  test("batch inserts documents", async () => {
-    await adapter.initialize();
-
-    const documents: VectorDocument[] = [
-      {
-        id: "id1",
-        content: "Content 1",
-        embedding: Array(768).fill(0.1),
-        metadata: {},
-      },
-      {
-        id: "id2",
-        content: "Content 2",
-        embedding: Array(768).fill(0.2),
-        metadata: {},
-      },
-    ];
-
-    const ids = await adapter.insertBatch(documents);
-    expect(ids).toEqual(["id1", "id2"]);
+  describe("getInfo", () => {
+    it("should return adapter information", () => {
+      const info = adapter.getInfo();
+      expect(info.provider).toBe("sqlite");
+      expect(info.version).toBeDefined();
+      expect(info.capabilities).toContain("vector-search");
+      expect(info.capabilities).toContain("metadata-filter");
+      expect(info.capabilities).toContain("batch-operations");
+    });
   });
 
-  test("batch deletes documents", async () => {
-    await adapter.initialize();
-
-    await expect(adapter.deleteBatch(["id1", "id2"])).resolves.not.toThrow();
-  });
-
-  test("closes database connection", async () => {
-    await adapter.initialize();
-    await expect(adapter.close()).resolves.not.toThrow();
-  });
-
-  test("returns adapter info", () => {
-    const info = adapter.getInfo();
-
-    expect(info.provider).toBe("sqlite");
-    expect(info.version).toBeDefined();
-    expect(info.capabilities).toContain("vector-search");
-    expect(info.capabilities).toContain("metadata-filtering");
-  });
-
-  test("handles dimension mismatch", async () => {
-    await adapter.initialize();
-
-    const document: VectorDocument = {
-      id: "test-id",
-      content: "Test content",
-      embedding: [0.1, 0.2], // Wrong dimension
-      metadata: {},
-    };
-
-    await expect(adapter.insert(document)).rejects.toThrow();
+  describe("close", () => {
+    it("should close database connection", async () => {
+      const testAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+      });
+      await testAdapter.initialize();
+      await expect(testAdapter.close()).resolves.not.toThrow();
+    });
   });
 });

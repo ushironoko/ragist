@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { VectorDBFactory } from "./vector-db/factory.js";
+import { factory } from "./vector-db/adapters/factory.js";
 import type {
   VectorDBAdapter,
   VectorDocument,
   VectorSearchResult,
-} from "./vector-db/types.js";
+} from "./vector-db/adapters/types.js";
 
 export interface ItemMetadata {
   title?: string;
@@ -37,9 +37,9 @@ export class DatabaseService {
    * Initialize the database service
    */
   async initialize(
-    config?: Parameters<typeof VectorDBFactory.create>[0],
+    config?: Parameters<typeof factory.create>[0],
   ): Promise<void> {
-    this.adapter = await VectorDBFactory.create(config, { singleton: true });
+    this.adapter = await factory.create(config, { singleton: true });
   }
 
   /**

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { DatabaseService } from "./database-service.js";
-import { VectorDBRegistry } from "./vector-db/registry.js";
-import type { VectorDBConfig } from "./vector-db/types.js";
+import { registry } from "./vector-db/adapters/registry.js";
+import type { VectorDBConfig } from "./vector-db/adapters/types.js";
 
 // Mock node:sqlite to avoid import errors
 vi.mock("node:sqlite", () => ({
@@ -14,7 +14,7 @@ describe("DatabaseService", () => {
   beforeEach(() => {
     service = new DatabaseService();
     // Clear registry to ensure clean state
-    VectorDBRegistry.clear();
+    registry.clear();
   });
 
   afterEach(async () => {

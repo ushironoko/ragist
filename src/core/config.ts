@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { VectorDBConfig } from "./vector-db/types.js";
+import type { VectorDBConfig } from "./vector-db/adapters/types.js";
 
 export interface RagistConfig {
   vectorDB?: VectorDBConfig;

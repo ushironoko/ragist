@@ -1,187 +1,194 @@
-import { BaseVectorAdapter } from "../base-adapter.js";
+import { randomUUID } from "node:crypto";
 import { VECTOR_DB_CONSTANTS } from "../constants.js";
 import { DocumentNotFoundError } from "../errors.js";
+import { applyMetadataFilter } from "../utils/filter.js";
+import { validateDimension } from "../utils/validation.js";
+import { createBatchOperations } from "./common-operations.js";
 import type {
+  ListOptions,
+  SearchOptions,
+  VectorDBAdapter,
   VectorDBConfig,
   VectorDocument,
   VectorSearchResult,
-} from "../types.js";
-import { applyMetadataFilter } from "../utils/filter.js";
-import { generateDocumentId, validateDimension } from "../utils/validation.js";
-
-export interface MemoryAdapterConfig extends VectorDBConfig {
-  provider: "memory";
-  options?: {
-    dimension?: number;
-  };
-}
+} from "./types.js";
 
 /**
- * In-memory vector database adapter for testing and development
+ * Calculate cosine similarity between two vectors
  */
-export class MemoryAdapter extends BaseVectorAdapter {
-  private documents = new Map<string, VectorDocument>();
+const calculateSimilarity = (a: number[], b: number[]): number => {
+  if (a.length !== b.length) return 0;
 
-  async initialize(): Promise<void> {
-    // No initialization needed for in-memory storage
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += (a[i] ?? 0) * (b[i] ?? 0);
+    normA += (a[i] ?? 0) * (a[i] ?? 0);
+    normB += (b[i] ?? 0) * (b[i] ?? 0);
   }
 
-  async insert(document: VectorDocument): Promise<string> {
-    const id = generateDocumentId(document.id);
-    validateDimension(document.embedding, this.dimension);
+  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+  return denominator === 0 ? 0 : dotProduct / denominator;
+};
 
-    this.documents.set(id, {
+/**
+ * Create an in-memory vector database adapter using closure pattern
+ */
+export const createMemoryAdapter = (
+  config: VectorDBConfig,
+): VectorDBAdapter => {
+  // Private state using closure
+  const documents = new Map<string, VectorDocument>();
+  const dimension =
+    config.options?.dimension ?? VECTOR_DB_CONSTANTS.DEFAULT_DIMENSION;
+  const batchOps = createBatchOperations();
+
+  // Implementation of adapter methods
+  const initialize = async (): Promise<void> => {
+    // No initialization needed for in-memory storage
+  };
+
+  const insert = async (document: VectorDocument): Promise<string> => {
+    const id = document.id || randomUUID();
+    validateDimension(document.embedding, dimension as number);
+
+    documents.set(id, {
       ...document,
       id,
     });
 
     return id;
-  }
+  };
 
-  async search(
+  const insertBatch = async (docs: VectorDocument[]): Promise<string[]> => {
+    return batchOps.insertBatch(docs, insert);
+  };
+
+  const search = async (
     embedding: number[],
-    options?: { k?: number; filter?: Record<string, unknown> },
-  ): Promise<VectorSearchResult[]> {
+    options?: SearchOptions,
+  ): Promise<VectorSearchResult[]> => {
     const k = options?.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
 
     // Calculate similarities for all documents
     const results: Array<{ doc: VectorDocument; score: number }> = [];
 
-    for (const doc of this.documents.values()) {
-      // Apply filters
+    for (const doc of documents.values()) {
+      // Apply metadata filter if provided
       if (
         options?.filter &&
-        !applyMetadataFilter(doc.metadata, options.filter)
+        !applyMetadataFilter(doc.metadata || {}, options.filter)
       ) {
         continue;
       }
 
-      // Calculate cosine similarity
-      const score = this.cosineSimilarity(embedding, doc.embedding);
+      const score = calculateSimilarity(embedding, doc.embedding);
       results.push({ doc, score });
     }
 
-    // Sort by score and take top k
+    // Sort by score (descending) and take top k
     results.sort((a, b) => b.score - a.score);
-    const topK = results.slice(0, k);
 
-    return topK.map(({ doc, score }) => ({
-      id: doc.id,
+    return results.slice(0, k).map(({ doc, score }) => ({
+      id: doc.id ?? "",
       content: doc.content,
       score,
       metadata: doc.metadata,
     }));
-  }
+  };
 
-  async update(id: string, document: Partial<VectorDocument>): Promise<void> {
-    const existing = this.documents.get(id);
+  const update = async (
+    id: string,
+    partial: Partial<VectorDocument>,
+  ): Promise<void> => {
+    const existing = documents.get(id);
     if (!existing) {
       throw new DocumentNotFoundError(id);
     }
 
-    if (document.embedding) {
-      validateDimension(document.embedding, this.dimension);
+    if (partial.embedding) {
+      validateDimension(partial.embedding, dimension as number);
     }
 
-    this.documents.set(id, {
+    documents.set(id, {
       ...existing,
-      ...document,
+      ...partial,
       id,
     });
-  }
+  };
 
-  async delete(id: string): Promise<void> {
-    this.documents.delete(id);
-  }
+  const deleteDoc = async (id: string): Promise<void> => {
+    if (!documents.has(id)) {
+      throw new DocumentNotFoundError(id);
+    }
+    documents.delete(id);
+  };
 
-  async get(id: string): Promise<VectorDocument | null> {
-    return this.documents.get(id) || null;
-  }
+  const deleteBatch = async (ids: string[]): Promise<void> => {
+    return batchOps.deleteBatch(ids, deleteDoc);
+  };
 
-  async count(filter?: Record<string, unknown>): Promise<number> {
+  const get = async (id: string): Promise<VectorDocument | null> => {
+    return documents.get(id) || null;
+  };
+
+  const count = async (filter?: Record<string, unknown>): Promise<number> => {
     if (!filter) {
-      return this.documents.size;
+      return documents.size;
     }
 
-    let count = 0;
-    for (const doc of this.documents.values()) {
-      if (applyMetadataFilter(doc.metadata, filter)) {
-        count++;
+    let matchCount = 0;
+    for (const doc of documents.values()) {
+      if (applyMetadataFilter(doc.metadata || {}, filter)) {
+        matchCount++;
       }
     }
+    return matchCount;
+  };
 
-    return count;
-  }
+  const list = async (options?: ListOptions): Promise<VectorDocument[]> => {
+    const limit = options?.limit ?? 10;
+    const offset = options?.offset ?? 0;
 
-  async list(options?: {
-    limit?: number;
-    offset?: number;
-    filter?: Record<string, unknown>;
-  }): Promise<VectorDocument[]> {
-    const limit = options?.limit ?? VECTOR_DB_CONSTANTS.DEFAULT_LIST_LIMIT;
-    const offset = options?.offset ?? VECTOR_DB_CONSTANTS.DEFAULT_LIST_OFFSET;
+    let docs = Array.from(documents.values());
 
-    let documents = Array.from(this.documents.values());
-
-    // Apply filters
+    // Apply filter if provided
     if (options?.filter) {
-      documents = documents.filter((doc) =>
-        applyMetadataFilter(
-          doc.metadata,
-          options.filter as Record<string, unknown>,
-        ),
+      const filter = options.filter;
+      docs = docs.filter((doc) =>
+        applyMetadataFilter(doc.metadata || {}, filter),
       );
     }
 
     // Apply pagination
-    return documents.slice(offset, offset + limit);
-  }
+    return docs.slice(offset, offset + limit);
+  };
 
-  async close(): Promise<void> {
-    this.documents.clear();
-  }
+  const close = async (): Promise<void> => {
+    documents.clear();
+  };
 
-  getInfo(): { provider: string; version: string; capabilities: string[] } {
-    return {
-      provider: "memory",
-      version: "1.0.0",
-      capabilities: [
-        "vector-search",
-        "exact-match",
-        "metadata-filtering",
-        "in-memory",
-        "fast-iteration",
-      ],
-    };
-  }
+  const getInfo = () => ({
+    provider: "memory",
+    version: "1.0.0",
+    capabilities: ["vector-search", "metadata-filter", "batch-operations"],
+  });
 
-  /**
-   * Calculate cosine similarity between two vectors
-   */
-  private cosineSimilarity(a: number[], b: number[]): number {
-    if (a.length !== b.length) {
-      throw new Error("Vectors must have the same dimension");
-    }
-
-    let dotProduct = 0;
-    let magnitudeA = 0;
-    let magnitudeB = 0;
-
-    for (let i = 0; i < a.length; i++) {
-      const aVal = a[i] ?? 0;
-      const bVal = b[i] ?? 0;
-      dotProduct += aVal * bVal;
-      magnitudeA += aVal * aVal;
-      magnitudeB += bVal * bVal;
-    }
-
-    magnitudeA = Math.sqrt(magnitudeA);
-    magnitudeB = Math.sqrt(magnitudeB);
-
-    if (magnitudeA === 0 || magnitudeB === 0) {
-      return 0;
-    }
-
-    return dotProduct / (magnitudeA * magnitudeB);
-  }
-}
+  // Return the adapter interface
+  return {
+    initialize,
+    insert,
+    insertBatch,
+    search,
+    update,
+    delete: deleteDoc,
+    deleteBatch,
+    get,
+    count,
+    list,
+    close,
+    getInfo,
+  };
+};
