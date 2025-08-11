@@ -1,6 +1,6 @@
 {
   "name": "@ushironoko/ragist",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "RAG search system for Gist and GitHub repositories",
   "type": "module",
   "main": "dist/index.js",
@@ -14,7 +14,13 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "templates"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "templates"
+  ],
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
