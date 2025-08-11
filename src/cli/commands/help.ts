@@ -43,7 +43,8 @@ Commands:
   help     Show this help message
 
 Special Commands:
-  --init   Initialize a new Ragist project with .env and config files
+  init, --init   Initialize a new Ragist project with .env and config files
+                 Creates an interactive setup wizard for configuration
 
 Environment Variables:
   VECTOR_DB_PROVIDER     Default vector DB provider
