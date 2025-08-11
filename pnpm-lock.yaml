@@ -18,7 +18,7 @@ importers:
         specifier: 5.0.8
         version: 5.0.8(zod@3.25.76)
       chalk:
-        specifier: ^5.4.1
+        specifier: ^5.5.0
         version: 5.5.0
       ora:
         specifier: ^8.2.0
