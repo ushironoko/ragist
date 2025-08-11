@@ -1,6 +1,6 @@
 /**
  * @ushironoko/ragist - RAG search system with pluggable vector database support
- * 
+ *
  * This module provides the public API for the ragist library.
  */
 
@@ -35,9 +35,9 @@ export {
 
 // Custom adapter creation
 export { withCustomRegistry } from "./core/vector-db/adapters/registry-operations.js";
-export { 
+export {
   createRegistry,
-  type RegistryInterface 
+  type RegistryInterface,
 } from "./core/vector-db/adapters/registry.js";
 export {
   createBaseAdapter,
