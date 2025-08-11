@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
-import { databaseService } from "../../core/database-service.js";
+import { createDatabaseOperations } from "../../core/database-operations.js";
 import {
   indexFile,
   indexGist,
@@ -10,9 +10,11 @@ import {
 import { SecurityError, validateFilePath } from "../../core/security.js";
 import type { factory } from "../../core/vector-db/adapters/factory.js";
 
-export async function getDBConfig(
-  values: any,
-): Promise<Parameters<typeof factory.create>[0]> {
+export async function getDBConfig(values: {
+  provider?: string;
+  db?: string;
+  [key: string]: string | boolean | undefined;
+}): Promise<Parameters<typeof factory.create>[0]> {
   const provider =
     values.provider || process.env.VECTOR_DB_PROVIDER || "sqlite";
 
@@ -52,9 +54,9 @@ export async function handleIndex(args: string[]): Promise<void> {
   });
 
   const dbConfig = await getDBConfig(parsed.values);
-  await databaseService.initialize(dbConfig);
+  const dbOperations = createDatabaseOperations(dbConfig);
 
-  try {
+  await dbOperations.withDatabase(async (service) => {
     const options = {
       chunkSize: parsed.values["chunk-size"]
         ? Number.parseInt(parsed.values["chunk-size"], 10)
@@ -83,6 +85,7 @@ export async function handleIndex(args: string[]): Promise<void> {
           sourceType: "text",
         },
         options,
+        service,
       );
     } else if (parsed.values.file) {
       try {
@@ -100,6 +103,7 @@ export async function handleIndex(args: string[]): Promise<void> {
             url: parsed.values.url,
           },
           options,
+          service,
         );
       } catch (error) {
         if (error instanceof SecurityError) {
@@ -115,7 +119,7 @@ export async function handleIndex(args: string[]): Promise<void> {
         throw error;
       }
     } else if (parsed.values.gist) {
-      result = await indexGist(parsed.values.gist, options);
+      result = await indexGist(parsed.values.gist, options, service);
     } else if (parsed.values.github) {
       const githubOptions = {
         ...options,
@@ -124,7 +128,11 @@ export async function handleIndex(args: string[]): Promise<void> {
           ? parsed.values.paths.split(",").map((p) => p.trim())
           : [""],
       };
-      result = await indexGitHubRepo(parsed.values.github, githubOptions);
+      result = await indexGitHubRepo(
+        parsed.values.github,
+        githubOptions,
+        service,
+      );
     } else {
       console.error(
         "No content specified. Use --text, --file, --gist, or --github",
@@ -143,7 +151,5 @@ export async function handleIndex(args: string[]): Promise<void> {
         console.error(`  - ${error}`);
       }
     }
-  } finally {
-    await databaseService.close();
-  }
+  });
 }

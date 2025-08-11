@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { chunkText } from "./chunking.js";
-import { type ItemMetadata, databaseService } from "./database-service.js";
+import type { DatabaseService, ItemMetadata } from "./database-service.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
 import {
   SecurityError,
@@ -25,6 +25,7 @@ export async function indexText(
   text: string,
   metadata: ItemMetadata = {},
   options: IndexOptions = {},
+  service?: DatabaseService,
 ): Promise<IndexResult> {
   const {
     chunkSize = 1000,
@@ -85,7 +86,11 @@ export async function indexText(
     }));
 
     try {
-      const ids = await databaseService.saveItems(items);
+      if (!service) {
+        throw new Error("Database service is required");
+      }
+      const dbService = service;
+      const ids = await dbService.saveItems(items);
       result.itemsIndexed = ids.length;
       result.chunksCreated = chunks.length;
     } catch (error) {
@@ -110,6 +115,7 @@ export async function indexFile(
   filePath: string,
   metadata: ItemMetadata = {},
   options: IndexOptions = {},
+  service?: DatabaseService,
 ): Promise<IndexResult> {
   try {
     const content = await readFile(filePath, "utf-8");
@@ -120,7 +126,7 @@ export async function indexFile(
       filePath,
     };
 
-    return indexText(content, fileMetadata, options);
+    return indexText(content, fileMetadata, options, service);
   } catch (error) {
     return {
       itemsIndexed: 0,
@@ -135,6 +141,7 @@ export async function indexFile(
 export async function indexGist(
   gistUrl: string,
   options: IndexOptions = {},
+  service?: DatabaseService,
 ): Promise<IndexResult> {
   const result: IndexResult = {
     itemsIndexed: 0,
@@ -178,7 +185,12 @@ export async function indexGist(
         description: gistData.description,
       };
 
-      const fileResult = await indexText(file.content, metadata, options);
+      const fileResult = await indexText(
+        file.content,
+        metadata,
+        options,
+        service,
+      );
 
       result.itemsIndexed += fileResult.itemsIndexed;
       result.chunksCreated += fileResult.chunksCreated;
@@ -200,6 +212,7 @@ export async function indexGist(
 export async function indexGitHubRepo(
   repoUrl: string,
   options: IndexOptions & { branch?: string; paths?: string[] } = {},
+  service?: DatabaseService,
 ): Promise<IndexResult> {
   const result: IndexResult = {
     itemsIndexed: 0,
@@ -226,6 +239,7 @@ export async function indexGitHubRepo(
         contentsUrl,
         { owner, repo, branch },
         options,
+        service,
       );
 
       result.itemsIndexed += filesResult.itemsIndexed;
@@ -249,6 +263,7 @@ async function indexGitHubPath(
   contentsUrl: string,
   repoInfo: { owner: string; repo: string; branch: string },
   options: IndexOptions,
+  service?: DatabaseService,
 ): Promise<IndexResult> {
   const result: IndexResult = {
     itemsIndexed: 0,
@@ -291,7 +306,12 @@ async function indexGitHubPath(
               path: item.path,
             };
 
-            const fileResult = await indexText(content, metadata, options);
+            const fileResult = await indexText(
+              content,
+              metadata,
+              options,
+              service,
+            );
 
             result.itemsIndexed += fileResult.itemsIndexed;
             result.chunksCreated += fileResult.chunksCreated;

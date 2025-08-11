@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { databaseService } from "../../core/database-service.js";
+import { createDatabaseOperations } from "../../core/database-operations.js";
 import { getDBConfig } from "./index.js";
 
 export async function handleInfo(args: string[]): Promise<void> {
@@ -12,10 +12,10 @@ export async function handleInfo(args: string[]): Promise<void> {
   });
 
   const dbConfig = await getDBConfig(parsed.values);
-  await databaseService.initialize(dbConfig);
+  const { withReadOnly } = createDatabaseOperations(dbConfig);
 
-  try {
-    const info = databaseService.getAdapterInfo();
+  await withReadOnly(async (service) => {
+    const info = service.getAdapterInfo();
 
     if (info) {
       console.log("Database Adapter Information:");
@@ -28,7 +28,5 @@ export async function handleInfo(args: string[]): Promise<void> {
     } else {
       console.log("No adapter information available");
     }
-  } finally {
-    await databaseService.close();
-  }
+  });
 }

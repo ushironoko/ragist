@@ -30,7 +30,6 @@ describe("createFactory", () => {
   });
 
   afterEach(async () => {
-    await factory.closeAll();
     vi.unstubAllEnvs();
   });
 
@@ -71,20 +70,7 @@ describe("createFactory", () => {
       // The dimension should be overridden, but custom should remain
     });
 
-    it("should use singleton pattern when requested", async () => {
-      const adapter1 = await factory.create(
-        { provider: "memory" },
-        { singleton: true },
-      );
-      const adapter2 = await factory.create(
-        { provider: "memory" },
-        { singleton: true },
-      );
-
-      expect(adapter1).toBe(adapter2);
-    });
-
-    it("should create new instances without singleton", async () => {
+    it("should create new instances each time", async () => {
       const adapter1 = await factory.create({ provider: "memory" });
       const adapter2 = await factory.create({ provider: "memory" });
 
@@ -132,34 +118,6 @@ describe("createFactory", () => {
 
       const adapter = await factory.createFromEnv();
       expect(adapter.getInfo().provider).toBe("sqlite");
-    });
-  });
-
-  describe("clearInstances", () => {
-    it("should clear all cached instances", async () => {
-      const adapter1 = await factory.create({}, { singleton: true });
-      factory.clearInstances();
-      const adapter2 = await factory.create({}, { singleton: true });
-
-      expect(adapter1).not.toBe(adapter2);
-    });
-  });
-
-  describe("closeAll", () => {
-    it("should close all cached instances", async () => {
-      const adapter1 = await factory.create({}, { singleton: true });
-      const adapter2 = await factory.create(
-        { options: { dimension: 512 } },
-        { singleton: true },
-      );
-
-      const closeSpy1 = vi.spyOn(adapter1, "close");
-      const closeSpy2 = vi.spyOn(adapter2, "close");
-
-      await factory.closeAll();
-
-      expect(closeSpy1).toHaveBeenCalled();
-      expect(closeSpy2).toHaveBeenCalled();
     });
   });
 });

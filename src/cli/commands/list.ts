@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { databaseService } from "../../core/database-service.js";
+import { createDatabaseOperations } from "../../core/database-operations.js";
 import { getDBConfig } from "./index.js";
 
 export async function handleList(args: string[]): Promise<void> {
@@ -14,10 +14,10 @@ export async function handleList(args: string[]): Promise<void> {
   });
 
   const dbConfig = await getDBConfig(parsed.values);
-  await databaseService.initialize(dbConfig);
+  const { withReadOnly } = createDatabaseOperations(dbConfig);
 
-  try {
-    const stats = await databaseService.getStats();
+  await withReadOnly(async (service) => {
+    const stats = await service.getStats();
 
     console.log(`Database Provider: ${dbConfig?.provider || "unknown"}`);
     console.log(`Total items: ${stats.totalItems}`);
@@ -34,7 +34,7 @@ export async function handleList(args: string[]): Promise<void> {
     if (!parsed.values.stats && stats.totalItems > 0) {
       console.log("\nRecent items:");
 
-      const items = await databaseService.listItems({ limit: 10 });
+      const items = await service.listItems({ limit: 10 });
 
       for (const item of items) {
         const metadata = item.metadata || {};
@@ -52,7 +52,5 @@ export async function handleList(args: string[]): Promise<void> {
         console.log();
       }
     }
-  } finally {
-    await databaseService.close();
-  }
+  });
 }
