@@ -15,8 +15,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.1(@types/node@24.2.1)
       ai:
-        specifier: 5.0.8
-        version: 5.0.8(zod@3.25.76)
+        specifier: 5.0.9
+        version: 5.0.9(zod@3.25.76)
       chalk:
         specifier: ^5.4.1
         version: 5.5.0
@@ -735,8 +735,8 @@ packages:
   '@vitest/utils@2.1.8':
     resolution: {integrity: sha512-dwSoui6djdwbfFmIgbIjX2ZhIoG7Ex/+xpxyiEgIGzjliY8xGkcpITKTlp6B4MgtGkF2ilvm97cPM96XZaAgcA==}
 
-  ai@5.0.8:
-    resolution: {integrity: sha512-qbnhj046UvG30V1S5WhjBn+RBGEAmi8PSZWqMhRsE3EPxvO5BcePXTZFA23e9MYyWS9zr4Vm8Mv3wQXwLmtIBw==}
+  ai@5.0.9:
+    resolution: {integrity: sha512-l7YdzsCTId7CDNNQ+roC0m4uDMmVIO9NpDC3bI2RxNDss3XpGIvsbHq7bT+IZzMYIqGbHK17HI0eiOOvtwzN6Q==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4
@@ -1745,7 +1745,7 @@ snapshots:
       loupe: 3.2.0
       tinyrainbow: 1.2.0
 
-  ai@5.0.8(zod@3.25.76):
+  ai@5.0.9(zod@3.25.76):
     dependencies:
       '@ai-sdk/gateway': 1.0.4(zod@3.25.76)
       '@ai-sdk/provider': 2.0.0

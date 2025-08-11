@@ -24,7 +24,7 @@
   "dependencies": {
     "@ai-sdk/google": "2.0.3",
     "@inquirer/prompts": "^7.8.1",
-    "ai": "5.0.8",
+    "ai": "5.0.9",
     "chalk": "^5.4.1",
     "ora": "^8.2.0",
     "sqlite-vec": "0.1.6"
