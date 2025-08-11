@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { DatabaseService, type SaveItemParams } from "./database-service.js";
+import {
+  type SaveItemParams,
+  createDatabaseService,
+} from "./database-service.js";
 import { registry } from "./vector-db/adapters/registry.js";
 import type { VectorDBConfig } from "./vector-db/adapters/types.js";
 
@@ -9,10 +12,10 @@ vi.mock("node:sqlite", () => ({
 }));
 
 describe("DatabaseService", () => {
-  let service: DatabaseService;
+  let service: ReturnType<typeof createDatabaseService>;
 
   beforeEach(() => {
-    service = new DatabaseService();
+    service = createDatabaseService();
     // Clear registry to ensure clean state
     registry.clear();
   });
@@ -188,7 +191,7 @@ describe("DatabaseService", () => {
     expect(stats.bySourceType.gist).toBe(1);
   });
 
-  test("singleton pattern works correctly", async () => {
+  test("creates independent adapter instances", async () => {
     const config: VectorDBConfig = {
       provider: "memory",
       options: {
@@ -204,14 +207,19 @@ describe("DatabaseService", () => {
       embedding: [0.1, 0.2, 0.3],
     });
     const count1 = await service.countItems();
+    expect(count1).toBe(1);
 
-    // Initialize again with same config (should use singleton)
-    await service.initialize(config);
+    // Create a new service instance and initialize with same config
+    // Each service now gets its own adapter instance
+    const service2 = createDatabaseService();
+    await service2.initialize(config);
 
-    // Count should remain the same due to singleton pattern
-    const count2 = await service.countItems();
-    expect(count1).toBe(count2);
-    expect(count2).toBe(1);
+    // Count should be 0 for the new instance
+    const count2 = await service2.countItems();
+    expect(count2).toBe(0);
+
+    // Clean up second service
+    await service2.close();
   });
 
   test("can close database connection", async () => {

@@ -21,6 +21,15 @@ import type {
 /**
  * Create a SQLite vector database adapter using closure pattern
  */
+// Type definitions for SQLite results
+interface SQLiteRunResult {
+  changes: number;
+  lastInsertRowid: number;
+}
+
+interface DatabaseSyncOptions {
+  allowExtension?: boolean;
+}
 export const createSQLiteAdapter = (
   config: VectorDBConfig,
 ): VectorDBAdapter => {
@@ -61,7 +70,7 @@ export const createSQLiteAdapter = (
         dbPath as string,
         {
           allowExtension: true,
-        } as any,
+        } as DatabaseSyncOptions,
       );
 
       // Try to load sqlite-vec extension - required for vector operations
@@ -72,9 +81,9 @@ export const createSQLiteAdapter = (
           db.loadExtension(extensionPath);
         } else {
           // Fallback to sqlite-vec's load method for older Node.js versions
-          sqliteVec.load(db as any);
+          sqliteVec.load(db);
         }
-      } catch (extError: any) {
+      } catch (extError) {
         // Close the database connection before throwing error
         if (db) {
           db.close();
@@ -93,7 +102,7 @@ Suggestions:
 2. Upgrade to Node.js 23.5.0 or later for SQLite extension support
 3. Ensure sqlite-vec is properly installed: npm install sqlite-vec
 
-Original error: ${extError.message}`;
+Original error: ${extError instanceof Error ? extError.message : String(extError)}`;
 
         throw new VectorDBError(errorMessage, {
           cause: extError,
@@ -170,7 +179,7 @@ Original error: ${extError.message}`;
           ?.prepare("INSERT INTO vec_documents (embedding) VALUES (?)")
           .run(
             new Uint8Array(new Float32Array(document.embedding).buffer),
-          ) as any;
+          ) as SQLiteRunResult;
 
         // Handle both real SQLite and mock responses
         vecRowid = result?.lastInsertRowid ?? 1;
@@ -211,16 +220,22 @@ Original error: ${extError.message}`;
         WHERE v.embedding MATCH ? AND k = ?
       `;
 
-      const queryParams: any[] = [
-        new Uint8Array(new Float32Array(embedding).buffer),
-        k,
-      ];
+      const queryParams: Array<
+        null | number | bigint | string | NodeJS.ArrayBufferView
+      > = [new Uint8Array(new Float32Array(embedding).buffer), k];
 
       // Add metadata filter if provided
       if (options?.filter) {
         // Build WHERE clause for JSON metadata
         const metadataFilters = Object.keys(options.filter).map((key) => {
-          queryParams.push(options.filter?.[key]);
+          const value = options.filter?.[key];
+          queryParams.push(
+            value === null || value === undefined
+              ? null
+              : typeof value === "object"
+                ? JSON.stringify(value)
+                : String(value),
+          );
           return `json_extract(d.metadata, '$.${key}') = ?`;
         });
 
@@ -319,7 +334,14 @@ Original error: ${extError.message}`;
       // Check if document exists
       const existing = db
         ?.prepare("SELECT * FROM documents WHERE id = ?")
-        .get(id) as any;
+        .get(id) as
+        | {
+            id: string;
+            content: string;
+            metadata: string | null;
+            vec_rowid: number | null;
+          }
+        | undefined;
 
       if (!existing) {
         throw new DocumentNotFoundError(id);
@@ -341,7 +363,9 @@ Original error: ${extError.message}`;
 
       // Update document fields
       const updateFields: string[] = [];
-      const updateValues: any[] = [];
+      const updateValues: Array<
+        null | number | bigint | string | NodeJS.ArrayBufferView
+      > = [];
 
       if (updates.content !== undefined) {
         updateFields.push("content = ?");
@@ -359,12 +383,12 @@ Original error: ${extError.message}`;
           `UPDATE documents SET ${updateFields.join(", ")} WHERE id = ?`,
         ).run(...updateValues);
       }
-    } catch (error: any) {
+    } catch (error) {
       if (error instanceof DocumentNotFoundError) {
         throw error;
       }
       // Preserve dimension validation errors
-      if (error.message?.includes("dimension")) {
+      if (error instanceof Error && error.message?.includes("dimension")) {
         throw error;
       }
       throw new VectorDBError(`Failed to update document: ${id}`, {
@@ -397,7 +421,7 @@ Original error: ${extError.message}`;
       // Delete from documents
       const result = db
         ?.prepare("DELETE FROM documents WHERE id = ?")
-        .run(id) as any;
+        .run(id) as SQLiteRunResult;
 
       if (!result.changes) {
         throw new DocumentNotFoundError(id);
@@ -458,14 +482,23 @@ Original error: ${extError.message}`;
 
     try {
       let query = "SELECT COUNT(*) as count FROM documents";
-      const queryParams: any[] = [];
+      const queryParams: Array<
+        null | number | bigint | string | NodeJS.ArrayBufferView
+      > = [];
 
       if (filter) {
         const whereClause = buildSQLWhereClause(filter);
         if (whereClause.whereClause) {
           // Build WHERE clause for JSON metadata
           const filterConditions = Object.keys(filter).map((key) => {
-            queryParams.push(filter[key]);
+            const value = filter[key];
+            queryParams.push(
+              value === null || value === undefined
+                ? null
+                : typeof value === "object"
+                  ? JSON.stringify(value)
+                  : String(value),
+            );
             return `json_extract(metadata, '$.${key}') = ?`;
           });
 
@@ -490,11 +523,20 @@ Original error: ${extError.message}`;
 
     try {
       let query = "SELECT * FROM documents";
-      const queryParams: any[] = [];
+      const queryParams: Array<
+        null | number | bigint | string | NodeJS.ArrayBufferView
+      > = [];
 
       if (options?.filter) {
         const filterConditions = Object.keys(options.filter).map((key) => {
-          queryParams.push(options.filter?.[key]);
+          const value = options.filter?.[key];
+          queryParams.push(
+            value === null || value === undefined
+              ? null
+              : typeof value === "object"
+                ? JSON.stringify(value)
+                : String(value),
+          );
           return `json_extract(metadata, '$.${key}') = ?`;
         });
 

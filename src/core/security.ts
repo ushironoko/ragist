@@ -158,17 +158,35 @@ export async function validateFilePath(
  * @returns true if the URL is from an allowed domain
  * @throws SecurityError if the URL is not allowed
  */
-export function validateExternalUrl(url: string): void {
+/**
+ * Parse and validate a URL with common security checks
+ * Shared utility to reduce duplication in URL validation functions
+ */
+function parseAndValidateUrl(url: string): URL {
   if (!url || typeof url !== "string") {
     throw new SecurityError("Invalid URL provided", "INVALID_URL");
   }
 
-  let parsedUrl: URL;
   try {
-    parsedUrl = new URL(url);
+    return new URL(url);
   } catch (error) {
     throw new SecurityError("Invalid URL format", "INVALID_URL_FORMAT");
   }
+}
+
+/**
+ * Check if a hostname belongs to an allowed domain
+ */
+function isHostnameAllowed(hostname: string): boolean {
+  const lowerHostname = hostname.toLowerCase();
+  return ALLOWED_DOMAINS.some(
+    (domain) =>
+      lowerHostname === domain || lowerHostname.endsWith(`.${domain}`),
+  );
+}
+
+export function validateExternalUrl(url: string): void {
+  const parsedUrl = parseAndValidateUrl(url);
 
   // Only allow HTTPS for external resources
   if (parsedUrl.protocol !== "https:") {
@@ -179,14 +197,9 @@ export function validateExternalUrl(url: string): void {
   }
 
   // Check if the domain is in the allowed list
-  const hostname = parsedUrl.hostname.toLowerCase();
-  const isAllowed = ALLOWED_DOMAINS.some(
-    (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
-  );
-
-  if (!isAllowed) {
+  if (!isHostnameAllowed(parsedUrl.hostname)) {
     throw new SecurityError(
-      `Domain "${hostname}" is not allowed. Allowed domains: ${ALLOWED_DOMAINS.join(", ")}`,
+      `Domain "${parsedUrl.hostname}" is not allowed. Allowed domains: ${ALLOWED_DOMAINS.join(", ")}`,
       "DOMAIN_NOT_ALLOWED",
     );
   }
@@ -205,7 +218,7 @@ export function validateGitHubRepoUrl(url: string): {
 } {
   validateExternalUrl(url);
 
-  const parsedUrl = new URL(url);
+  const parsedUrl = parseAndValidateUrl(url);
 
   // Ensure it's a GitHub URL
   if (!parsedUrl.hostname.endsWith("github.com")) {
@@ -261,7 +274,7 @@ export function validateGitHubRepoUrl(url: string): {
 export function validateGistUrl(url: string): string {
   validateExternalUrl(url);
 
-  const parsedUrl = new URL(url);
+  const parsedUrl = parseAndValidateUrl(url);
 
   // Ensure it's a Gist URL
   if (parsedUrl.hostname !== "gist.github.com") {

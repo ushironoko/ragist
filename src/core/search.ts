@@ -1,9 +1,20 @@
-import { databaseService } from "./database-service.js";
+import type { DatabaseService } from "./database-service.js";
 import { generateEmbedding } from "./embedding.js";
 import type { VectorSearchResult } from "./vector-db/adapters/types.js";
 
 export interface RerankOptions {
   boostFactor?: number;
+}
+
+/**
+ * Extract and normalize query words for text matching
+ * Shared utility to eliminate duplicate query processing logic
+ */
+function extractQueryWords(query: string): string[] {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
 }
 
 export function rerankResults<T extends { content: string; score: number }>(
@@ -13,10 +24,7 @@ export function rerankResults<T extends { content: string; score: number }>(
 ): T[] {
   const { boostFactor = 0.1 } = options;
 
-  const queryWords = query
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((word) => word.length > 0);
+  const queryWords = extractQueryWords(query);
 
   if (queryWords.length === 0) {
     return results;
@@ -49,13 +57,20 @@ export interface SemanticSearchOptions {
 export async function semanticSearch(
   query: string,
   options: SemanticSearchOptions = {},
+  service?: DatabaseService,
 ): Promise<VectorSearchResult[]> {
   const { k = 5, sourceType, rerank = true, rerankBoostFactor = 0.1 } = options;
 
   try {
     const queryEmbedding = await generateEmbedding(query);
 
-    const results = await databaseService.searchItems({
+    // Use provided service or fall back to singleton (for backward compatibility)
+    const dbService = service;
+    if (!dbService) {
+      throw new Error("Database service is required");
+    }
+
+    const results = await dbService.searchItems({
       embedding: queryEmbedding,
       k,
       sourceType,
@@ -69,7 +84,7 @@ export async function semanticSearch(
 
     return results;
   } catch (error) {
-    throw new Error(`Failed to perform semantic search for query: ${query}`, {
+    throw new Error("Failed to perform semantic search", {
       cause: error,
     });
   }
@@ -82,18 +97,20 @@ export interface HybridSearchOptions extends SemanticSearchOptions {
 export async function hybridSearch(
   query: string,
   options: HybridSearchOptions = {},
+  service?: DatabaseService,
 ): Promise<VectorSearchResult[]> {
   const { keywordWeight = 0.3, ...semanticOptions } = options;
 
-  const semanticResults = await semanticSearch(query, {
-    ...semanticOptions,
-    rerank: false,
-  });
+  const semanticResults = await semanticSearch(
+    query,
+    {
+      ...semanticOptions,
+      rerank: false,
+    },
+    service,
+  );
 
-  const queryWords = query
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((word) => word.length > 0);
+  const queryWords = extractQueryWords(query);
 
   const hybridResults = semanticResults.map((result) => {
     const contentLower = result.content.toLowerCase();

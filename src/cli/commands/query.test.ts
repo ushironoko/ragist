@@ -5,7 +5,19 @@ vi.mock("../../core/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),
     close: vi.fn(),
+    searchItems: vi.fn().mockResolvedValue([]),
   },
+  createDatabaseService: vi.fn(() => ({
+    initialize: vi.fn(),
+    close: vi.fn(),
+    searchItems: vi.fn().mockResolvedValue([]),
+    saveItem: vi.fn(),
+    saveItems: vi.fn(),
+    countItems: vi.fn(),
+    listItems: vi.fn(),
+    getStats: vi.fn(),
+    getAdapterInfo: vi.fn(),
+  })),
 }));
 
 vi.mock("../../core/search.js", () => ({
@@ -47,7 +59,7 @@ describe("handleQuery", () => {
   beforeEach(() => {
     console.log = vi.fn();
     console.error = vi.fn();
-    process.exit = vi.fn() as any;
+    process.exit = vi.fn() as unknown as typeof process.exit;
     vi.clearAllMocks();
   });
 
@@ -64,8 +76,9 @@ describe("handleQuery", () => {
     expect(semanticSearch).toHaveBeenCalledWith(
       "test query",
       expect.objectContaining({ k: 5, rerank: true }),
+      expect.any(Object),
     );
-    expect(console.log).toHaveBeenCalledWith('Searching for: "test query"\n');
+    expect(console.log).toHaveBeenCalledWith('Searching for: "test query\n');
     expect(console.log).toHaveBeenCalledWith("Found 1 results\n");
     expect(console.log).toHaveBeenCalledWith("1. Test Result");
   });
@@ -77,6 +90,7 @@ describe("handleQuery", () => {
     expect(hybridSearch).toHaveBeenCalledWith(
       "test query",
       expect.objectContaining({ k: 5, rerank: true }),
+      expect.any(Object),
     );
     expect(console.log).toHaveBeenCalledWith("1. Hybrid Result");
   });
@@ -90,7 +104,7 @@ describe("handleQuery", () => {
 
   it("handles no results", async () => {
     const { semanticSearch } = await import("../../core/search.js");
-    (semanticSearch as any).mockResolvedValueOnce([]);
+    vi.mocked(semanticSearch).mockResolvedValueOnce([]);
 
     await handleQuery(["test"]);
 

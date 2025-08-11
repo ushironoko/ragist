@@ -21,6 +21,30 @@ vi.mock("../../core/database-service.js", () => ({
       },
     ]),
   },
+  createDatabaseService: vi.fn(() => ({
+    initialize: vi.fn(),
+    close: vi.fn(),
+    getStats: vi.fn().mockResolvedValue({
+      totalItems: 5,
+      bySourceType: { text: 2, file: 3 },
+    }),
+    listItems: vi.fn().mockResolvedValue([
+      {
+        id: "12345678-abcd",
+        metadata: {
+          title: "Test Item",
+          url: "https://example.com",
+          sourceType: "text",
+          createdAt: "2024-01-01",
+        },
+      },
+    ]),
+    searchItems: vi.fn(),
+    saveItem: vi.fn(),
+    saveItems: vi.fn(),
+    countItems: vi.fn(),
+    getAdapterInfo: vi.fn(),
+  })),
 }));
 
 describe("handleList", () => {
@@ -55,11 +79,23 @@ describe("handleList", () => {
   });
 
   it("handles empty database", async () => {
-    const { databaseService } = await import("../../core/database-service.js");
-    (databaseService.getStats as any).mockResolvedValueOnce({
-      totalItems: 0,
-      bySourceType: {},
-    });
+    const { createDatabaseService } = await import(
+      "../../core/database-service.js"
+    );
+    vi.mocked(createDatabaseService).mockImplementationOnce(() => ({
+      initialize: vi.fn(),
+      close: vi.fn(),
+      getStats: vi.fn().mockResolvedValue({
+        totalItems: 0,
+        bySourceType: {},
+      }),
+      listItems: vi.fn().mockResolvedValue([]),
+      searchItems: vi.fn(),
+      saveItem: vi.fn(),
+      saveItems: vi.fn(),
+      countItems: vi.fn(),
+      getAdapterInfo: vi.fn(),
+    }));
 
     await handleList([]);
 

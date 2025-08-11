@@ -30,156 +30,202 @@ export interface SearchParams {
 /**
  * Database service that uses the vector database adapter
  */
-export class DatabaseService {
-  private adapter: VectorDBAdapter | null = null;
+/**
+ * Creates a standardized VectorDocument with metadata and timestamp
+ */
+const createDocument = ({
+  content,
+  embedding,
+  metadata = {},
+}: {
+  content: string;
+  embedding: number[];
+  metadata?: ItemMetadata;
+}): VectorDocument => ({
+  id: randomUUID(),
+  content,
+  embedding,
+  metadata: {
+    ...metadata,
+    createdAt: new Date().toISOString(),
+  },
+});
 
-  /**
-   * Initialize the database service
-   */
-  async initialize(
-    config?: Parameters<typeof factory.create>[0],
-  ): Promise<void> {
-    this.adapter = await factory.create(config, { singleton: true });
+/**
+ * Wraps adapter operations with standardized error handling
+ */
+const withErrorHandling = async <T>(
+  operation: () => Promise<T>,
+  errorMessage: string,
+): Promise<T> => {
+  try {
+    return await operation();
+  } catch (error) {
+    throw new Error(errorMessage, { cause: error });
   }
+};
+
+/**
+ * Type definition for the database service interface
+ */
+export interface DatabaseService {
+  initialize: (config?: Parameters<typeof factory.create>[0]) => Promise<void>;
+  saveItem: (params: SaveItemParams) => Promise<string>;
+  saveItems: (items: SaveItemParams[]) => Promise<string[]>;
+  searchItems: (params: SearchParams) => Promise<VectorSearchResult[]>;
+  countItems: (filter?: Record<string, unknown>) => Promise<number>;
+  listItems: (options?: {
+    limit?: number;
+    offset?: number;
+    filter?: Record<string, unknown>;
+  }) => Promise<VectorDocument[]>;
+  getStats: () => Promise<{
+    totalItems: number;
+    bySourceType: Record<string, number>;
+  }>;
+  close: () => Promise<void>;
+  getAdapterInfo: () => ReturnType<VectorDBAdapter["getInfo"]> | null;
+}
+
+export function createDatabaseService(): DatabaseService {
+  let adapter: VectorDBAdapter | null = null;
 
   /**
    * Get the adapter instance
    */
-  private getAdapter(): VectorDBAdapter {
-    if (!this.adapter) {
+  const getAdapter = (): VectorDBAdapter => {
+    if (!adapter) {
       throw new Error("Database service not initialized");
     }
-    return this.adapter;
-  }
+    return adapter;
+  };
+
+  /**
+   * Initialize the database service
+   */
+  const initialize = async (
+    config?: Parameters<typeof factory.create>[0],
+  ): Promise<void> => {
+    adapter = await factory.create(config);
+  };
 
   /**
    * Save an item to the database
    */
-  async saveItem(params: SaveItemParams): Promise<string> {
-    const { content, embedding, metadata = {} } = params;
-    const adapter = this.getAdapter();
+  const saveItem = async (params: SaveItemParams): Promise<string> => {
+    const { content, embedding, metadata } = params;
+    const document = createDocument({ content, embedding, metadata });
 
-    const document: VectorDocument = {
-      id: randomUUID(),
-      content,
-      embedding,
-      metadata: {
-        ...metadata,
-        createdAt: new Date().toISOString(),
-      },
-    };
-
-    try {
-      return await adapter.insert(document);
-    } catch (error) {
-      throw new Error("Failed to save item to database", {
-        cause: error,
-      });
-    }
-  }
+    return withErrorHandling(
+      () => getAdapter().insert(document),
+      "Failed to save item to database",
+    );
+  };
 
   /**
    * Save multiple items to the database
    */
-  async saveItems(items: SaveItemParams[]): Promise<string[]> {
-    const adapter = this.getAdapter();
-    const documents: VectorDocument[] = items.map((item) => ({
-      id: randomUUID(),
-      content: item.content,
-      embedding: item.embedding,
-      metadata: {
-        ...item.metadata,
-        createdAt: new Date().toISOString(),
-      },
-    }));
+  const saveItems = async (items: SaveItemParams[]): Promise<string[]> => {
+    const documents = items.map((item) =>
+      createDocument({
+        content: item.content,
+        embedding: item.embedding,
+        metadata: item.metadata,
+      }),
+    );
 
-    try {
-      return await adapter.insertBatch(documents);
-    } catch (error) {
-      throw new Error("Failed to save items to database", {
-        cause: error,
-      });
-    }
-  }
+    return withErrorHandling(
+      () => getAdapter().insertBatch(documents),
+      "Failed to save items to database",
+    );
+  };
 
   /**
    * Search for similar items
    */
-  async searchItems(params: SearchParams): Promise<VectorSearchResult[]> {
+  const searchItems = async (
+    params: SearchParams,
+  ): Promise<VectorSearchResult[]> => {
     const { embedding, k = 5, sourceType } = params;
-    const adapter = this.getAdapter();
-
     const filter = sourceType ? { sourceType } : undefined;
 
-    try {
-      return await adapter.search(embedding, { k, filter });
-    } catch (error) {
-      throw new Error("Failed to search items in database", {
-        cause: error,
-      });
-    }
-  }
+    return withErrorHandling(
+      () => getAdapter().search(embedding, { k, filter }),
+      "Failed to search items in database",
+    );
+  };
 
   /**
    * Count items in the database
    */
-  async countItems(filter?: Record<string, unknown>): Promise<number> {
-    const adapter = this.getAdapter();
-    return await adapter.count(filter);
-  }
+  const countItems = async (
+    filter?: Record<string, unknown>,
+  ): Promise<number> => {
+    const currentAdapter = getAdapter();
+    return await currentAdapter.count(filter);
+  };
 
   /**
    * List items in the database
    */
-  async listItems(options?: {
+  const listItems = async (options?: {
     limit?: number;
     offset?: number;
     filter?: Record<string, unknown>;
-  }): Promise<VectorDocument[]> {
-    const adapter = this.getAdapter();
-    return await adapter.list(options);
-  }
+  }): Promise<VectorDocument[]> => {
+    const currentAdapter = getAdapter();
+    return await currentAdapter.list(options);
+  };
 
   /**
    * Get database statistics
    */
-  async getStats(): Promise<{
+  const getStats = async (): Promise<{
     totalItems: number;
     bySourceType: Record<string, number>;
-  }> {
-    const adapter = this.getAdapter();
+  }> => {
+    const currentAdapter = getAdapter();
 
-    const totalItems = await adapter.count();
+    const totalItems = await currentAdapter.count();
     const sourceTypes = ["gist", "github", "file", "text"];
     const bySourceType: Record<string, number> = {};
 
     for (const type of sourceTypes) {
-      bySourceType[type] = await adapter.count({ sourceType: type });
+      bySourceType[type] = await currentAdapter.count({ sourceType: type });
     }
 
     return {
       totalItems,
       bySourceType,
     };
-  }
+  };
 
   /**
    * Close the database connection
    */
-  async close(): Promise<void> {
-    if (this.adapter) {
-      await this.adapter.close();
-      this.adapter = null;
+  const close = async (): Promise<void> => {
+    if (adapter) {
+      await adapter.close();
+      adapter = null;
     }
-  }
+  };
 
   /**
    * Get adapter information
    */
-  getAdapterInfo(): ReturnType<VectorDBAdapter["getInfo"]> | null {
-    return this.adapter?.getInfo() || null;
-  }
-}
+  const getAdapterInfo = (): ReturnType<VectorDBAdapter["getInfo"]> | null => {
+    return adapter?.getInfo() || null;
+  };
 
-// Default singleton instance
-export const databaseService = new DatabaseService();
+  return {
+    initialize,
+    saveItem,
+    saveItems,
+    searchItems,
+    countItems,
+    listItems,
+    getStats,
+    close,
+    getAdapterInfo,
+  };
+}

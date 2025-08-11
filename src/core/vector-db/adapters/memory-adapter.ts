@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { cosineSimilarity } from "../../embedding.js";
 import { VECTOR_DB_CONSTANTS } from "../constants.js";
 import { DocumentNotFoundError } from "../errors.js";
 import { applyMetadataFilter } from "../utils/filter.js";
@@ -12,26 +13,6 @@ import type {
   VectorDocument,
   VectorSearchResult,
 } from "./types.js";
-
-/**
- * Calculate cosine similarity between two vectors
- */
-const calculateSimilarity = (a: number[], b: number[]): number => {
-  if (a.length !== b.length) return 0;
-
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += (a[i] ?? 0) * (b[i] ?? 0);
-    normA += (a[i] ?? 0) * (a[i] ?? 0);
-    normB += (b[i] ?? 0) * (b[i] ?? 0);
-  }
-
-  const denominator = Math.sqrt(normA) * Math.sqrt(normB);
-  return denominator === 0 ? 0 : dotProduct / denominator;
-};
 
 /**
  * Create an in-memory vector database adapter using closure pattern
@@ -84,7 +65,7 @@ export const createMemoryAdapter = (
         continue;
       }
 
-      const score = calculateSimilarity(embedding, doc.embedding);
+      const score = cosineSimilarity(embedding, doc.embedding);
       results.push({ doc, score });
     }
 

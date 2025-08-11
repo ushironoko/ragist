@@ -1,6 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleIndex } from "./index.js";
 
+vi.mock("../../core/database-operations.js", () => ({
+  createDatabaseOperations: vi.fn(() => ({
+    withDatabase: vi.fn(async (operation) => {
+      const mockService = {
+        initialize: vi.fn(),
+        close: vi.fn(),
+        saveItems: vi.fn().mockResolvedValue(["id1", "id2"]),
+        searchItems: vi.fn(),
+        getStats: vi.fn(),
+        listItems: vi.fn(),
+        getAdapterInfo: vi.fn(),
+      };
+      return operation(mockService);
+    }),
+  })),
+}));
+
 vi.mock("../../core/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),
@@ -56,7 +73,7 @@ describe("handleIndex", () => {
   beforeEach(() => {
     console.log = vi.fn();
     console.error = vi.fn();
-    process.exit = vi.fn() as any;
+    process.exit = vi.fn() as unknown as typeof process.exit;
     vi.clearAllMocks();
   });
 
@@ -73,6 +90,7 @@ describe("handleIndex", () => {
     expect(indexText).toHaveBeenCalledWith(
       "Hello world",
       { title: "Test", url: undefined, sourceType: "text" },
+      expect.any(Object),
       expect.any(Object),
     );
     expect(console.log).toHaveBeenCalledWith("\nIndexing Results:");
@@ -93,7 +111,11 @@ describe("handleIndex", () => {
     await handleIndex(["--gist", "1234567890"]);
 
     const { indexGist } = await import("../../core/indexer.js");
-    expect(indexGist).toHaveBeenCalledWith("1234567890", expect.any(Object));
+    expect(indexGist).toHaveBeenCalledWith(
+      "1234567890",
+      expect.any(Object),
+      expect.any(Object),
+    );
     expect(console.log).toHaveBeenCalledWith("  Items indexed: 2");
     expect(console.log).toHaveBeenCalledWith("  Chunks created: 10");
   });
@@ -109,7 +131,7 @@ describe("handleIndex", () => {
 
   it("handles file not found error", async () => {
     const { existsSync } = await import("node:fs");
-    (existsSync as any).mockReturnValueOnce(false);
+    vi.mocked(existsSync).mockReturnValueOnce(false);
 
     await handleIndex(["--file", "nonexistent.txt"]);
 
@@ -128,7 +150,7 @@ describe("handleIndex", () => {
     const error = new SecurityError("Invalid path", "code");
 
     // Mock validateFilePath to reject with SecurityError
-    (validateFilePath as any).mockRejectedValueOnce(error);
+    vi.mocked(validateFilePath).mockRejectedValueOnce(error);
 
     try {
       await handleIndex(["--file", "../../../etc/passwd"]);

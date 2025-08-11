@@ -11,6 +11,21 @@ vi.mock("../../core/database-service.js", () => ({
       capabilities: ["vector-search", "hybrid-search"],
     }),
   },
+  createDatabaseService: vi.fn(() => ({
+    initialize: vi.fn(),
+    close: vi.fn(),
+    getAdapterInfo: vi.fn().mockReturnValue({
+      provider: "sqlite",
+      version: "1.0.0",
+      capabilities: ["vector-search", "hybrid-search"],
+    }),
+    searchItems: vi.fn(),
+    saveItem: vi.fn(),
+    saveItems: vi.fn(),
+    countItems: vi.fn(),
+    listItems: vi.fn(),
+    getStats: vi.fn(),
+  })),
 }));
 
 describe("handleInfo", () => {
@@ -37,8 +52,20 @@ describe("handleInfo", () => {
   });
 
   it("handles missing adapter info", async () => {
-    const { databaseService } = await import("../../core/database-service.js");
-    (databaseService.getAdapterInfo as any).mockReturnValueOnce(null);
+    const { createDatabaseService } = await import(
+      "../../core/database-service.js"
+    );
+    vi.mocked(createDatabaseService).mockImplementationOnce(() => ({
+      initialize: vi.fn(),
+      close: vi.fn(),
+      getAdapterInfo: vi.fn().mockReturnValue(null),
+      searchItems: vi.fn(),
+      saveItem: vi.fn(),
+      saveItems: vi.fn(),
+      countItems: vi.fn(),
+      listItems: vi.fn(),
+      getStats: vi.fn(),
+    }));
 
     await handleInfo([]);
 

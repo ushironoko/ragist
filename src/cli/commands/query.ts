@@ -1,5 +1,5 @@
 import { parseArgs } from "node:util";
-import { databaseService } from "../../core/database-service.js";
+import { createDatabaseOperations } from "../../core/database-operations.js";
 import {
   calculateSearchStats,
   hybridSearch,
@@ -28,9 +28,9 @@ export async function handleQuery(args: string[]): Promise<void> {
   }
 
   const dbConfig = await getDBConfig(parsed.values);
-  await databaseService.initialize(dbConfig);
+  const { withReadOnly } = createDatabaseOperations(dbConfig);
 
-  try {
+  await withReadOnly(async (service) => {
     const options = {
       k: parsed.values["top-k"]
         ? Number.parseInt(parsed.values["top-k"], 10)
@@ -39,11 +39,11 @@ export async function handleQuery(args: string[]): Promise<void> {
       rerank: !parsed.values["no-rerank"],
     };
 
-    console.log(`Searching for: "${query}"\n`);
+    console.log(`Searching for: "${query}\n`);
 
     const results = parsed.values.hybrid
-      ? await hybridSearch(query, options)
-      : await semanticSearch(query, options);
+      ? await hybridSearch(query, options, service)
+      : await semanticSearch(query, options, service);
 
     if (results.length === 0) {
       console.log("No results found");
@@ -93,7 +93,5 @@ export async function handleQuery(args: string[]): Promise<void> {
         console.log(`    ${type}: ${count}`);
       }
     }
-  } finally {
-    await databaseService.close();
-  }
+  });
 }
