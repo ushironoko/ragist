@@ -3,8 +3,12 @@ import { embed, embedMany } from "ai";
 
 // Use text-embedding-004 which supports multilingual text including Japanese
 // Note: text-embedding-005 is English-only, text-multilingual-embedding-002 requires Vertex AI
-export const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "text-embedding-004";
-export const EMBEDDING_DIMENSION = parseInt(process.env.EMBEDDING_DIMENSION || "768", 10);
+export const EMBEDDING_MODEL =
+  process.env.EMBEDDING_MODEL || "text-embedding-004";
+export const EMBEDDING_DIMENSION = Number.parseInt(
+  process.env.EMBEDDING_DIMENSION || "768",
+  10,
+);
 
 export interface EmbeddingOptions {
   model?: string;

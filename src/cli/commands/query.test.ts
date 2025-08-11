@@ -1,0 +1,99 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { handleQuery } from "./query.js";
+
+vi.mock("../../core/database-service.js", () => ({
+  databaseService: {
+    initialize: vi.fn(),
+    close: vi.fn(),
+  },
+}));
+
+vi.mock("../../core/search.js", () => ({
+  semanticSearch: vi.fn().mockResolvedValue([
+    {
+      content: "Test result content",
+      score: 0.95,
+      metadata: {
+        title: "Test Result",
+        url: "https://example.com",
+        sourceType: "text",
+      },
+    },
+  ]),
+  hybridSearch: vi.fn().mockResolvedValue([
+    {
+      content: "Hybrid result content",
+      score: 0.98,
+      metadata: {
+        title: "Hybrid Result",
+        sourceType: "file",
+      },
+    },
+  ]),
+  calculateSearchStats: vi.fn().mockReturnValue({
+    totalResults: 1,
+    averageScore: 0.95,
+    minScore: 0.95,
+    maxScore: 0.95,
+    sourceTypes: { text: 1 },
+  }),
+}));
+
+describe("handleQuery", () => {
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+  const originalProcessExit = process.exit;
+
+  beforeEach(() => {
+    console.log = vi.fn();
+    console.error = vi.fn();
+    process.exit = vi.fn() as any;
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    console.log = originalConsoleLog;
+    console.error = originalConsoleError;
+    process.exit = originalProcessExit;
+  });
+
+  it("performs semantic search", async () => {
+    await handleQuery(["test query"]);
+
+    const { semanticSearch } = await import("../../core/search.js");
+    expect(semanticSearch).toHaveBeenCalledWith(
+      "test query",
+      expect.objectContaining({ k: 5, rerank: true }),
+    );
+    expect(console.log).toHaveBeenCalledWith('Searching for: "test query"\n');
+    expect(console.log).toHaveBeenCalledWith("Found 1 results\n");
+    expect(console.log).toHaveBeenCalledWith("1. Test Result");
+  });
+
+  it("performs hybrid search", async () => {
+    await handleQuery(["--hybrid", "test query"]);
+
+    const { hybridSearch } = await import("../../core/search.js");
+    expect(hybridSearch).toHaveBeenCalledWith(
+      "test query",
+      expect.objectContaining({ k: 5, rerank: true }),
+    );
+    expect(console.log).toHaveBeenCalledWith("1. Hybrid Result");
+  });
+
+  it("handles empty query", async () => {
+    await handleQuery([]);
+
+    expect(console.error).toHaveBeenCalledWith("No query specified");
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it("handles no results", async () => {
+    const { semanticSearch } = await import("../../core/search.js");
+    (semanticSearch as any).mockResolvedValueOnce([]);
+
+    await handleQuery(["test"]);
+
+    expect(console.log).toHaveBeenCalledWith("No results found");
+  });
+});
