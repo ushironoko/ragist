@@ -429,68 +429,52 @@ async function indexGitHubPath(
 
 function isTextFile(filename: string): boolean {
   const textExtensions = [
+    // Documentation
     ".txt",
     ".md",
-    ".markdown",
-    ".rst",
-    ".asciidoc",
-    ".ts",
+
+    // JavaScript/TypeScript ecosystem
+    ".js",
     ".jsx",
     ".ts",
     ".tsx",
     ".mjs",
     ".cjs",
-    ".py",
-    ".rb",
-    ".go",
-    ".rust",
-    ".rs",
-    ".c",
-    ".cpp",
-    ".h",
-    ".hpp",
-    ".java",
-    ".kt",
-    ".scala",
-    ".swift",
-    ".m",
-    ".mm",
+
+    // Major programming languages
+    ".py", // Python
+    ".go", // Go
+    ".rs", // Rust
+    ".java", // Java
+    ".rb", // Ruby
+    ".c", // C
+    ".cpp", // C++
+    ".h", // C/C++ headers
+
+    // Web technologies
     ".html",
-    ".htm",
-    ".xml",
     ".css",
-    ".scss",
-    ".sass",
-    ".less",
     ".json",
+    ".xml",
+
+    // Configuration files
     ".yaml",
     ".yml",
     ".toml",
-    ".ini",
-    ".conf",
-    ".config",
+    ".env",
+
+    // Shell scripts
     ".sh",
     ".bash",
-    ".zsh",
-    ".fish",
-    ".ps1",
-    ".bat",
-    ".cmd",
+
+    // Database
     ".sql",
-    ".graphql",
-    ".proto",
+
+    // Frontend frameworks
     ".vue",
     ".svelte",
-    ".astro",
-    ".tex",
-    ".bib",
-    ".r",
-    ".R",
-    ".jl",
-    ".m",
-    ".mat",
   ];
 
-  const lowerName = filename.toLowerCase();
-  return textExtensions.some((ext) => lowerName.endsWith(ext));
+  const lowerFilename = filename.toLowerCase();
+  return textExtensions.some((ext) => lowerFilename.endsWith(ext));
 }
