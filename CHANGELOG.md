@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.0] - 2025-08-12
+
+- Merge pull request #33 from ushironoko/refactor-cli-helpers
+- refactor cli helpers
+- Merge pull request #32 from ushironoko/support-bulk-index
+- fix extensions
+- add test
+- support indexFiles
+- Merge pull request #31 from ushironoko/fix-security-review
+- fix format
+- fix security review workflow
+
+
 ## [0.0.2] - 2025-08-12
 
 - Merge pull request #30 from ushironoko/rename-brand
