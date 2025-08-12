@@ -235,8 +235,12 @@ To use custom adapters with the CLI, add them to your `ragist.config.json`:
 Then use the CLI normally:
 
 ```bash
+# The adapter specified in config will be used automatically
 npx @ushironoko/ragist index --file document.txt
 npx @ushironoko/ragist query "search query"
+
+# Or override with --provider option
+npx @ushironoko/ragist info --provider pinecone
 ```
 
 ### Method 2: For Programmatic Usage (withCustomRegistry)
@@ -287,10 +291,12 @@ Each adapter factory function must return an object implementing these methods:
 - `search()` - Vector similarity search
 - `update()` - Update document
 - `delete()` - Remove document
+- `deleteBatch()` - Remove multiple documents
 - `get()` - Retrieve by ID
 - `count()` - Count documents
 - `list()` - List with pagination
 - `close()` - Clean up resources
+- `getInfo()` - Return adapter information (provider, version, capabilities)
 
 ### Factory Functions
 
@@ -300,6 +306,10 @@ Adapters are created using factory functions that:
 2. Return a `Promise<VectorDBAdapter>`
 3. Handle async initialization and resource setup
 4. Return an object implementing all required methods
+
+**Important**: Export your adapter using one of these patterns:
+- Named export as `createAdapter`: `export { createYourAdapter as createAdapter }`
+- Default export: `export default createYourAdapter`
 
 ### Supported Adapters
 
