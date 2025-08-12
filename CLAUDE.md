@@ -19,10 +19,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The project provides a CLI tool with the following commands:
 - `npx gistdex init` or `npx gistdex --init` - Initialize database
 - `npx gistdex index` - Index content from various sources (Gist, GitHub, files, text)
+  - `--text "content"` - Index plain text
+  - `--file path/to/file` - Index a single file
+  - `--files "pattern"` - Index multiple files using glob patterns (comma-separated)
+  - `--gist url` - Index a GitHub Gist
+  - `--github url` - Index a GitHub repository
+  - `--chunk-size N` - Set chunk size (default: 1000)
+  - `--chunk-overlap N` - Set chunk overlap (default: 100)
 - `npx gistdex query` - Search indexed content using semantic/hybrid search
 - `npx gistdex list` - List all indexed items with metadata
 - `npx gistdex info` - Show vector database adapter information
 - `npx gistdex help` - Display help message
+
+#### Examples of Multiple File Indexing
+```bash
+# Index all TypeScript files in src directory
+npx gistdex index --files "src/**/*.ts"
+
+# Index multiple patterns (comma-separated)
+npx gistdex index --files "src/**/*.ts,docs/**/*.md,*.json"
+
+# Index with custom chunking parameters
+npx gistdex index --files "**/*.md" --chunk-size 1000 --chunk-overlap 200
+
+# Index all JavaScript and TypeScript files recursively
+npx gistdex index --files "**/*.{js,ts,jsx,tsx}"
+```
 
 ## Architecture Overview
 

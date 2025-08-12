@@ -91,6 +91,19 @@ Index a local file:
 npx @ushironoko/gistdex index --file ./document.md --title "My Document"
 ```
 
+Index multiple files with glob patterns:
+
+```bash
+# Index all TypeScript files in src directory
+npx @ushironoko/gistdex index --files "src/**/*.ts"
+
+# Index multiple patterns (comma-separated)
+npx @ushironoko/gistdex index --files "src/**/*.ts,docs/**/*.md,*.json"
+
+# Index with custom chunking parameters
+npx @ushironoko/gistdex index --files "**/*.md" --chunk-size 1000 --chunk-overlap 200
+```
+
 Index plain text:
 
 ```bash
