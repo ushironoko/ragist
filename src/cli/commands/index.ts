@@ -4,6 +4,7 @@ import { createConfigOperations } from "../../core/config-operations.js";
 import { createDatabaseOperations } from "../../core/database-operations.js";
 import {
   indexFile,
+  indexFiles,
   indexGist,
   indexGitHubRepo,
   indexText,
@@ -53,6 +54,7 @@ export async function handleIndex(args: string[]): Promise<void> {
       db: { type: "string" },
       text: { type: "string" },
       file: { type: "string" },
+      files: { type: "string" },
       gist: { type: "string" },
       github: { type: "string" },
       title: { type: "string" },
@@ -95,6 +97,19 @@ export async function handleIndex(args: string[]): Promise<void> {
           title: parsed.values.title,
           url: parsed.values.url,
           sourceType: "text",
+        },
+        options,
+        service,
+      );
+    } else if (parsed.values.files) {
+      // Handle multiple files with glob patterns
+      const patterns = parsed.values.files.split(",").map((p) => p.trim());
+
+      result = await indexFiles(
+        patterns,
+        {
+          title: parsed.values.title,
+          url: parsed.values.url,
         },
         options,
         service,
@@ -147,7 +162,7 @@ export async function handleIndex(args: string[]): Promise<void> {
       );
     } else {
       console.error(
-        "No content specified. Use --text, --file, --gist, or --github",
+        "No content specified. Use --text, --file, --files, --gist, or --github",
       );
       process.exit(1);
       return;

@@ -10,7 +10,8 @@ Commands:
       --provider <name>  Vector DB provider (default: sqlite)
       --db <path>        Database file path (for SQLite)
       --text <text>      Index plain text
-      --file <path>      Index a local file (restricted to current directory and subdirectories)
+      --file <path>      Index a single local file (restricted to current directory and subdirectories)
+      --files <patterns> Index multiple files using glob patterns (comma-separated)
       --gist <url>       Index a GitHub Gist (only gist.github.com URLs allowed)
       --github <url>     Index a GitHub repository (only github.com URLs allowed)
       --title <title>    Title for the indexed content
@@ -66,8 +67,12 @@ Examples:
   # Index a Gist
   gistdex index --gist https://gist.github.com/user/abc123
   
-  # Index with a specific provider
+  # Index a single file
   gistdex index --provider sqlite --db mydata.db --file ./document.md
+  
+  # Index multiple files with glob patterns
+  gistdex index --files "data/*.md"
+  gistdex index --files "**/*.txt,docs/*.md"
   
   # Search indexed content
   gistdex query "vector search implementation"
