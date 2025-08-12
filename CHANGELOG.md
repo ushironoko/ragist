@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.1.1] - 2025-08-12
+
+- fix README
+
+
 ## [2.1.0] - 2025-08-12
 
 - Merge pull request #29 from ushironoko/fix-custom-adapter
