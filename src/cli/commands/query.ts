@@ -27,8 +27,8 @@ export async function handleQuery(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  const dbConfig = await getDBConfig(parsed.values);
-  const { withReadOnly } = createDatabaseOperations(dbConfig);
+  const { config: dbConfig, customAdapters } = await getDBConfig(parsed.values);
+  const { withReadOnly } = createDatabaseOperations(dbConfig, customAdapters);
 
   await withReadOnly(async (service) => {
     const options = {

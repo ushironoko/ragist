@@ -81,6 +81,15 @@ export interface YourAdapterConfig extends VectorDBConfig {
 
 /**
  * Factory function to create your custom adapter
+ *
+ * IMPORTANT: Export your adapter using one of these patterns:
+ * 1. Named export as 'createAdapter' (RECOMMENDED):
+ *    export { createYourAdapter as createAdapter };
+ * 2. Default export:
+ *    export default createYourAdapter;
+ * 3. Provider-specific name (auto-detected):
+ *    export const createYourProviderAdapter = ...
+ *
  * @param config - Configuration for the adapter
  * @returns Promise<VectorDBAdapter> instance
  */
@@ -202,3 +211,9 @@ export const createYourAdapter = async (
     },
   };
 };
+
+// RECOMMENDED: Export with standard name for auto-detection
+export { createYourAdapter as createAdapter };
+
+// OR use default export:
+// export default createYourAdapter;

@@ -11,8 +11,8 @@ export async function handleInfo(args: string[]): Promise<void> {
     allowPositionals: false,
   });
 
-  const dbConfig = await getDBConfig(parsed.values);
-  const { withReadOnly } = createDatabaseOperations(dbConfig);
+  const { config: dbConfig, customAdapters } = await getDBConfig(parsed.values);
+  const { withReadOnly } = createDatabaseOperations(dbConfig, customAdapters);
 
   await withReadOnly(async (service) => {
     const info = service.getAdapterInfo();
