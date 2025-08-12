@@ -163,7 +163,9 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
       ),
     );
     console.log(
-      chalk.gray("2. Run 'npx gistdex query \"your search query\"' to search\n"),
+      chalk.gray(
+        "2. Run 'npx gistdex query \"your search query\"' to search\n",
+      ),
     );
     console.log(
       chalk.gray(
