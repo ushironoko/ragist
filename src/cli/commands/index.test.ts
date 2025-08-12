@@ -73,7 +73,8 @@ describe("handleIndex", () => {
   beforeEach(() => {
     console.log = vi.fn();
     console.error = vi.fn();
-    process.exit = vi.fn() as unknown as typeof process.exit;
+    // @ts-expect-error - Mocking process.exit for testing
+    process.exit = vi.fn();
     vi.clearAllMocks();
   });
 
@@ -182,7 +183,7 @@ describe("handleIndex", () => {
     await handleIndex([]);
 
     expect(console.error).toHaveBeenCalledWith(
-      "No content specified. Use --text, --file, --gist, or --github",
+      "No content specified. Use --text, --file, --files, --gist, or --github",
     );
     expect(process.exit).toHaveBeenCalledWith(1);
   });
