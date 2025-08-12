@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  type RagistConfig,
+  type GistdexConfig,
   createConfigOperations,
 } from "./config-operations.js";
 
@@ -34,7 +34,7 @@ describe("createConfigOperations", () => {
 
   describe("load", () => {
     it("should load configuration from file", async () => {
-      const mockConfig: RagistConfig = {
+      const mockConfig: GistdexConfig = {
         vectorDB: {
           provider: "sqlite",
           options: {
@@ -50,7 +50,7 @@ describe("createConfigOperations", () => {
       const config = await configOperations.load();
 
       expect(config).toEqual(mockConfig);
-      expect(readFile).toHaveBeenCalledWith("./ragist.config.json", "utf-8");
+      expect(readFile).toHaveBeenCalledWith("./gistdex.config.json", "utf-8");
     });
 
     it("should return default config when file does not exist", async () => {
@@ -59,7 +59,7 @@ describe("createConfigOperations", () => {
       const config = await configOperations.load();
 
       expect(config.vectorDB?.provider).toBe("sqlite");
-      expect(config.vectorDB?.options?.path).toBe("./ragist.db");
+      expect(config.vectorDB?.options?.path).toBe("./gistdex.db");
     });
 
     it("should override with environment variables", async () => {
@@ -73,7 +73,7 @@ describe("createConfigOperations", () => {
     });
 
     it("should load custom adapters configuration", async () => {
-      const mockConfig: RagistConfig = {
+      const mockConfig: GistdexConfig = {
         vectorDB: {
           provider: "custom-provider",
           options: {
@@ -98,7 +98,7 @@ describe("createConfigOperations", () => {
 
   describe("save", () => {
     it("should save configuration to file", async () => {
-      const config: RagistConfig = {
+      const config: GistdexConfig = {
         vectorDB: {
           provider: "sqlite",
           options: {
@@ -111,14 +111,14 @@ describe("createConfigOperations", () => {
       await configOperations.save(config);
 
       expect(writeFile).toHaveBeenCalledWith(
-        "ragist.config.json",
+        "gistdex.config.json",
         JSON.stringify(config, null, 2),
         "utf-8",
       );
     });
 
     it("should save custom adapters configuration", async () => {
-      const config: RagistConfig = {
+      const config: GistdexConfig = {
         vectorDB: {
           provider: "custom-provider",
           options: {
@@ -133,7 +133,7 @@ describe("createConfigOperations", () => {
       await configOperations.save(config);
 
       expect(writeFile).toHaveBeenCalledWith(
-        "ragist.config.json",
+        "gistdex.config.json",
         JSON.stringify(config, null, 2),
         "utf-8",
       );
@@ -142,7 +142,7 @@ describe("createConfigOperations", () => {
 
   describe("loadCustomAdapters", () => {
     it("should handle missing custom adapters gracefully", async () => {
-      const mockConfig: RagistConfig = {
+      const mockConfig: GistdexConfig = {
         vectorDB: {
           provider: "sqlite",
           options: {
@@ -163,7 +163,7 @@ describe("createConfigOperations", () => {
 
   describe("getVectorDBConfig", () => {
     it("should return vector DB configuration with CLI overrides", async () => {
-      const mockConfig: RagistConfig = {
+      const mockConfig: GistdexConfig = {
         vectorDB: {
           provider: "sqlite",
           options: {
@@ -187,7 +187,7 @@ describe("createConfigOperations", () => {
     });
 
     it("should preserve custom options when overriding provider", async () => {
-      const mockConfig: RagistConfig = {
+      const mockConfig: GistdexConfig = {
         vectorDB: {
           provider: "sqlite",
           options: {

@@ -1,7 +1,7 @@
 /**
- * @ushironoko/ragist - RAG search system with pluggable vector database support
+ * @ushironoko/gistdex - RAG search system with pluggable vector database support
  *
- * This module provides the public API for the ragist library.
+ * This module provides the public API for the gistdex library.
  */
 
 // Main API - Database service
@@ -23,7 +23,7 @@ export { semanticSearch, hybridSearch } from "./core/search.js";
 // Configuration
 export {
   createConfigOperations,
-  type RagistConfig,
+  type GistdexConfig,
 } from "./core/config-operations.js";
 
 // Types for vector database

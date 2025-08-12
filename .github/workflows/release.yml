@@ -146,13 +146,13 @@ jobs:
             ## Installation
             
             ```bash
-            pnpm add @ushironoko/ragist@${{ steps.bump.outputs.version }}
+            pnpm add @ushironoko/gistdex@${{ steps.bump.outputs.version }}
             ```
             
             or use directly:
             
             ```bash
-            npx @ushironoko/ragist@${{ steps.bump.outputs.version }}
+            npx @ushironoko/gistdex@${{ steps.bump.outputs.version }}
             ```
           draft: false
           prerelease: ${{ github.event.inputs.release-type == 'prerelease' }}

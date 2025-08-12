@@ -1,6 +1,6 @@
-# Ragist - Pluggable Vector Database Architecture
+# Gistdex - Pluggable Vector Database Architecture
 
-[![npm version](https://badge.fury.io/js/@ushironoko%2Fragist.svg)](https://www.npmjs.com/package/@ushironoko/ragist)
+[![npm version](https://badge.fury.io/js/@ushironoko%2Fgistdex.svg)](https://www.npmjs.com/package/@ushironoko/gistdex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 RAG (Retrieval-Augmented Generation) search system with pluggable vector database support.
@@ -27,46 +27,46 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
 ### Global Installation
 
 ```bash
-pnpm add -g @ushironoko/ragist
+pnpm add -g @ushironoko/gistdex
 ```
 
 ### Local Installation
 
 ```bash
-pnpm add @ushironoko/ragist
+pnpm add @ushironoko/gistdex
 ```
 
 ### Direct Usage (without installation)
 
 ```bash
-npx @ushironoko/ragist init
+npx @ushironoko/gistdex init
 ```
 
 ## Setup
 
-## Initialize Ragist
+## Initialize Gistdex
 
-Run the initialization command to set up Ragist:
+Run the initialization command to set up Gistdex:
 
 ```bash
-npx @ushironoko/ragist init
+npx @ushironoko/gistdex init
 ```
 
 This interactive command will:
 
 - Guide you through configuration options
 - Generate `.env` for default settings
-- Create `ragist.config.json` with your database preferences
+- Create `gistdex.config.json` with your database preferences
 - Initialize the vector database
 - Set up necessary tables and indexes
 
-**Note**: Google AI API key should never be stored in `ragist.config.json`. Always use environment variables or `.env` files for sensitive information.
+**Note**: Google AI API key should never be stored in `gistdex.config.json`. Always use environment variables or `.env` files for sensitive information.
 
 You can also specify options directly:
 
 ```bash
-npx @ushironoko/ragist init --provider memory  # Use in-memory database
-npx @ushironoko/ragist init --provider sqlite --db ./custom-path.db  # Custom SQLite path
+npx @ushironoko/gistdex init --provider memory  # Use in-memory database
+npx @ushironoko/gistdex init --provider sqlite --db ./custom-path.db  # Custom SQLite path
 ```
 
 ## Usage
@@ -76,31 +76,31 @@ npx @ushironoko/ragist init --provider sqlite --db ./custom-path.db  # Custom SQ
 Index a GitHub Gist:
 
 ```bash
-npx @ushironoko/ragist index --gist https://gist.github.com/user/abc123
+npx @ushironoko/gistdex index --gist https://gist.github.com/user/abc123
 ```
 
 Index a GitHub repository:
 
 ```bash
-npx @ushironoko/ragist index --github https://github.com/owner/repo --branch main --paths src,docs
+npx @ushironoko/gistdex index --github https://github.com/owner/repo --branch main --paths src,docs
 ```
 
 Index a local file:
 
 ```bash
-npx @ushironoko/ragist index --file ./document.md --title "My Document"
+npx @ushironoko/gistdex index --file ./document.md --title "My Document"
 ```
 
 Index plain text:
 
 ```bash
-npx @ushironoko/ragist index --text "Your text content here" --title "Text Title"
+npx @ushironoko/gistdex index --text "Your text content here" --title "Text Title"
 ```
 
 Use specific provider:
 
 ```bash
-npx @ushironoko/ragist index --provider memory --file ./test.md
+npx @ushironoko/gistdex index --provider memory --file ./test.md
 ```
 
 ### Search
@@ -108,32 +108,32 @@ npx @ushironoko/ragist index --provider memory --file ./test.md
 Basic search:
 
 ```bash
-npx @ushironoko/ragist query "vector search implementation"
+npx @ushironoko/gistdex query "vector search implementation"
 ```
 
 Search with options:
 
 ```bash
-npx @ushironoko/ragist query --top-k 10 --type gist "embeddings"
+npx @ushironoko/gistdex query --top-k 10 --type gist "embeddings"
 ```
 
 Hybrid search (combines semantic and keyword matching):
 
 ```bash
-npx @ushironoko/ragist query --hybrid "search query"
+npx @ushironoko/gistdex query --hybrid "search query"
 ```
 
 Query with specific provider:
 
 ```bash
-npx @ushironoko/ragist query --provider sqlite "search query"
+npx @ushironoko/gistdex query --provider sqlite "search query"
 ```
 
 ### List Indexed Content
 
 ```bash
-npx @ushironoko/ragist list
-npx @ushironoko/ragist list --stats  # Show statistics only
+npx @ushironoko/gistdex list
+npx @ushironoko/gistdex list --stats  # Show statistics only
 ```
 
 ### Adapter Information
@@ -141,7 +141,7 @@ npx @ushironoko/ragist list --stats  # Show statistics only
 Show adapter information:
 
 ```bash
-npx @ushironoko/ragist info --provider sqlite
+npx @ushironoko/gistdex info --provider sqlite
 ```
 
 ## Programmatic Usage
@@ -154,10 +154,10 @@ import {
   semanticSearch,
   indexText,
   createConfigOperations,
-} from "@ushironoko/ragist";
+} from "@ushironoko/gistdex";
 
 // Option 1: Using database operations (recommended)
-import { createDatabaseOperations } from "@ushironoko/ragist";
+import { createDatabaseOperations } from "@ushironoko/gistdex";
 
 const operations = createDatabaseOperations({
   provider: "sqlite",
@@ -215,7 +215,7 @@ See `templates/adapter-template.ts` for a complete template to create your own a
 
 ### Method 1: For CLI Usage (Configuration-based)
 
-To use custom adapters with the CLI, add them to your `ragist.config.json`:
+To use custom adapters with the CLI, add them to your `gistdex.config.json`:
 
 ```json
 {
@@ -223,7 +223,7 @@ To use custom adapters with the CLI, add them to your `ragist.config.json`:
     "provider": "pinecone",
     "options": {
       "environment": "us-east1-gcp",
-      "index": "ragist"
+      "index": "gistdex"
     }
   },
   "customAdapters": {
@@ -236,11 +236,11 @@ Then use the CLI normally:
 
 ```bash
 # The adapter specified in config will be used automatically
-npx @ushironoko/ragist index --file document.txt
-npx @ushironoko/ragist query "search query"
+npx @ushironoko/gistdex index --file document.txt
+npx @ushironoko/gistdex query "search query"
 
 # Or override with --provider option
-npx @ushironoko/ragist info --provider pinecone
+npx @ushironoko/gistdex info --provider pinecone
 ```
 
 ### Method 2: For Programmatic Usage (withCustomRegistry)
@@ -248,7 +248,7 @@ npx @ushironoko/ragist info --provider pinecone
 Use `withCustomRegistry` for scoped, isolated usage in code:
 
 ```typescript
-import { withCustomRegistry, createFactory, createDatabaseService } from "@ushironoko/ragist";
+import { withCustomRegistry, createFactory, createDatabaseService } from "@ushironoko/gistdex";
 import { createPineconeAdapter } from "./pinecone-adapter";
 
 // Use custom adapter in an isolated scope
@@ -263,7 +263,7 @@ await withCustomRegistry(
       options: {
         apiKey: "your-key",
         environment: "us-east1-gcp",
-        index: "ragist"
+        index: "gistdex"
       },
     });
 

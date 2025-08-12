@@ -7,7 +7,7 @@ import type {
   VectorDBConfig,
 } from "./vector-db/adapters/types.js";
 
-export interface RagistConfig {
+export interface GistdexConfig {
   vectorDB?: VectorDBConfig;
   customAdapters?: Record<string, string>; // provider -> adapter file path
   embedding?: {
@@ -28,28 +28,28 @@ export interface RagistConfig {
 }
 
 /**
- * Creates configuration operations for managing Ragist configuration
+ * Creates configuration operations for managing Gistdex configuration
  */
-export const createConfigOperations = (configPath = "ragist.config.json") => {
-  let cachedConfig: RagistConfig | null = null;
+export const createConfigOperations = (configPath = "gistdex.config.json") => {
+  let cachedConfig: GistdexConfig | null = null;
 
   /**
    * Load configuration from file
    */
-  const loadConfigFile = async (path?: string): Promise<RagistConfig> => {
+  const loadConfigFile = async (path?: string): Promise<GistdexConfig> => {
     const paths = path
       ? [path]
       : [
-          "./ragist.config.json",
-          "./.ragistrc.json",
-          join(homedir(), ".ragist", "config.json"),
+          "./gistdex.config.json",
+          "./.gistdexrc.json",
+          join(homedir(), ".gistdex", "config.json"),
         ];
 
     for (const p of paths) {
       if (existsSync(p)) {
         try {
           const content = await readFile(p, "utf-8");
-          return JSON.parse(content) as RagistConfig;
+          return JSON.parse(content) as GistdexConfig;
         } catch {
           // Continue to next path
         }
@@ -62,8 +62,8 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
   /**
    * Load configuration from environment variables
    */
-  const loadFromEnv = (): RagistConfig => {
-    const config: RagistConfig = {};
+  const loadFromEnv = (): GistdexConfig => {
+    const config: GistdexConfig = {};
 
     // Vector DB configuration
     if (process.env.VECTOR_DB_PROVIDER) {
@@ -132,8 +132,8 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
   /**
    * Merge multiple configurations
    */
-  const mergeConfigs = (...configs: RagistConfig[]): RagistConfig => {
-    const result: RagistConfig = {};
+  const mergeConfigs = (...configs: GistdexConfig[]): GistdexConfig => {
+    const result: GistdexConfig = {};
 
     for (const config of configs) {
       if (config.vectorDB) {
@@ -182,7 +182,7 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
   /**
    * Apply default configuration values
    */
-  const applyDefaults = (config: RagistConfig): RagistConfig => {
+  const applyDefaults = (config: GistdexConfig): GistdexConfig => {
     const result = { ...config };
 
     // Apply defaults if not set
@@ -190,13 +190,13 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
       result.vectorDB = {
         provider: "sqlite",
         options: {
-          path: "./ragist.db",
+          path: "./gistdex.db",
           dimension: 768,
         },
       };
     } else if (!result.vectorDB.options) {
       result.vectorDB.options = {
-        path: "./ragist.db",
+        path: "./gistdex.db",
         dimension: 768,
       };
     } else {
@@ -209,7 +209,7 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
         result.vectorDB.provider === "sqlite" &&
         !result.vectorDB.options.path
       ) {
-        result.vectorDB.options.path = "./ragist.db";
+        result.vectorDB.options.path = "./gistdex.db";
       }
     }
 
@@ -220,7 +220,7 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
    * Load configuration from various sources
    * Priority: CLI args > Environment variables > Config file > Defaults
    */
-  const load = async (path?: string): Promise<RagistConfig> => {
+  const load = async (path?: string): Promise<GistdexConfig> => {
     if (cachedConfig && !path) {
       return cachedConfig;
     }
@@ -244,7 +244,7 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
   /**
    * Save configuration to file
    */
-  const save = async (config: RagistConfig): Promise<void> => {
+  const save = async (config: GistdexConfig): Promise<void> => {
     await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
     cachedConfig = config;
   };
@@ -253,7 +253,7 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
    * Load custom adapter factories from file paths
    */
   const loadCustomAdapters = async (
-    config: RagistConfig,
+    config: GistdexConfig,
   ): Promise<Map<string, AdapterFactory>> => {
     const adapters = new Map<string, AdapterFactory>();
 
@@ -347,7 +347,7 @@ export const createConfigOperations = (configPath = "ragist.config.json") => {
     let dbConfig = config.vectorDB || {
       provider: "sqlite",
       options: {
-        path: "./ragist.db",
+        path: "./gistdex.db",
         dimension: 768,
       },
     };

@@ -21,7 +21,7 @@ const DEFAULT_CONFIG = {
   vectorDB: {
     provider: "sqlite",
     options: {
-      path: "./ragist.db",
+      path: "./gistdex.db",
       dimension: 768,
     },
   },
@@ -46,16 +46,16 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
   const { force = false, silent = false } = options;
 
   if (!silent) {
-    console.log(chalk.bold.cyan("\n🎨 Welcome to Ragist Setup!\n"));
+    console.log(chalk.bold.cyan("\n🎨 Welcome to Gistdex Setup!\n"));
     console.log(
       chalk.gray(
-        "This utility will help you create a .env file and ragist.config.json\n",
+        "This utility will help you create a .env file and gistdex.config.json\n",
       ),
     );
   }
 
   const envPath = join(cwd(), ".env");
-  const configPath = join(cwd(), "ragist.config.json");
+  const configPath = join(cwd(), "gistdex.config.json");
 
   // Check for existing files
   const envExists = existsSync(envPath);
@@ -64,7 +64,7 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
   if ((envExists || configExists) && !force) {
     const existingFiles = [];
     if (envExists) existingFiles.push(".env");
-    if (configExists) existingFiles.push("ragist.config.json");
+    if (configExists) existingFiles.push("gistdex.config.json");
 
     console.log(
       chalk.yellow(
@@ -124,7 +124,7 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
     if (provider === "sqlite") {
       dbPath = await input({
         message: "Database file path:",
-        default: "./ragist.db",
+        default: "./gistdex.db",
       });
     }
 
@@ -149,25 +149,27 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
     await createEnvFile(envPath, config);
     envSpinner.succeed(chalk.green("Created .env file"));
 
-    // Create ragist.config.json
-    const configSpinner = ora("Creating ragist.config.json...").start();
+    // Create gistdex.config.json
+    const configSpinner = ora("Creating gistdex.config.json...").start();
     await createConfigFile(configPath, config);
-    configSpinner.succeed(chalk.green("Created ragist.config.json"));
+    configSpinner.succeed(chalk.green("Created gistdex.config.json"));
 
     // Success message
     console.log(chalk.bold.green("\n✅ Setup complete!\n"));
     console.log(chalk.bold("Next steps:"));
     console.log(
       chalk.gray(
-        "1. Run 'npx ragist index --file ./README.md' to index your first document",
+        "1. Run 'npx gistdex index --file ./README.md' to index your first document",
       ),
     );
     console.log(
-      chalk.gray("2. Run 'npx ragist query \"your search query\"' to search\n"),
+      chalk.gray(
+        "2. Run 'npx gistdex query \"your search query\"' to search\n",
+      ),
     );
     console.log(
       chalk.gray(
-        "For more information, visit: https://github.com/your-repo/ragist\n",
+        "For more information, visit: https://github.com/ushironoko/gistdex\n",
       ),
     );
   } catch (error) {
@@ -205,7 +207,7 @@ async function createEnvFile(path: string, config: InitConfig): Promise<void> {
 
   lines.push(
     "",
-    "# SQLite Database Path (Optional, default: ragist.db)",
+    "# SQLite Database Path (Optional, default: gistdex.db)",
     "# Only used when VECTOR_DB_PROVIDER=sqlite",
   );
 
@@ -213,12 +215,12 @@ async function createEnvFile(path: string, config: InitConfig): Promise<void> {
   if (
     config.provider === "sqlite" &&
     config.dbPath &&
-    config.dbPath !== "./ragist.db" &&
-    config.dbPath !== "ragist.db"
+    config.dbPath !== "./gistdex.db" &&
+    config.dbPath !== "gistdex.db"
   ) {
     lines.push(`SQLITE_DB_PATH=${config.dbPath}`);
   } else {
-    lines.push("# SQLITE_DB_PATH=ragist.db");
+    lines.push("# SQLITE_DB_PATH=gistdex.db");
   }
 
   lines.push(

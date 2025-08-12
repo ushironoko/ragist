@@ -1,4 +1,4 @@
-# Suggested Commands for Ragist Development
+# Suggested Commands for Gistdex Development
 
 ## Development Commands
 ```bash
@@ -49,18 +49,18 @@ npx biome format --write .
 ## CLI Usage
 ```bash
 # Index content
-ragist index --file path/to/file.txt
-ragist index --gist <gist-id>
-ragist index --github <owner/repo>
+gistdex index --file path/to/file.txt
+gistdex index --gist <gist-id>
+gistdex index --github <owner/repo>
 
 # Search content
-ragist query "search term"
+gistdex query "search term"
 
 # List indexed items
-ragist list
+gistdex list
 
 # Show help
-ragist help
+gistdex help
 ```
 
 ## System Commands (Linux)

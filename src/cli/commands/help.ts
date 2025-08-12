@@ -1,8 +1,8 @@
 export function showHelp(): void {
   console.log(`
-Ragist - RAG Search System for Gist and GitHub Repositories
+Gistdex - RAG Search System for Gist and GitHub Repositories
 
-Usage: ragist <command> [options]
+Usage: gistdex <command> [options]
 
 Commands:
   index    Index content into the database
@@ -43,7 +43,7 @@ Commands:
   help     Show this help message
 
 Special Commands:
-  init, --init   Initialize a new Ragist project with .env and config files
+  init, --init   Initialize a new Gistdex project with .env and config files
                  Creates an interactive setup wizard for configuration
 
 Environment Variables:
@@ -64,17 +64,17 @@ Security:
 
 Examples:
   # Index a Gist
-  ragist index --gist https://gist.github.com/user/abc123
+  gistdex index --gist https://gist.github.com/user/abc123
   
   # Index with a specific provider
-  ragist index --provider sqlite --db mydata.db --file ./document.md
+  gistdex index --provider sqlite --db mydata.db --file ./document.md
   
   # Search indexed content
-  ragist query "vector search implementation"
+  gistdex query "vector search implementation"
   
   # Use environment configuration
   export VECTOR_DB_PROVIDER=sqlite
   export SQLITE_DB_PATH=./my-database.db
-  ragist query "embeddings"
+  gistdex query "embeddings"
 `);
 }

@@ -1,6 +1,6 @@
 import { mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   SecurityError,
@@ -17,7 +17,7 @@ describe("Security Module", () => {
 
   beforeEach(async () => {
     // Create a temporary test directory
-    testDir = join(tmpdir(), `ragist-test-${Date.now()}`);
+    testDir = join(tmpdir(), `gistdex-test-${Date.now()}`);
     await mkdir(testDir, { recursive: true });
 
     // Create a test file

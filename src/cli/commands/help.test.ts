@@ -21,7 +21,7 @@ describe("showHelp", () => {
     // more specific, e.g., toHaveBeenCalledTimes(1)
     expect(console.log).toHaveBeenCalled();
     const helpText = vi.mocked(console.log).mock.calls[0][0];
-    expect(helpText).toContain("Ragist - RAG Search System");
+    expect(helpText).toContain("Gistdex - RAG Search System");
     expect(helpText).toContain("Commands:");
     expect(helpText).toContain("index");
     expect(helpText).toContain("query");
