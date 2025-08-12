@@ -7,6 +7,8 @@ import {
 } from "../../core/search.js";
 import { getDBConfig } from "./index.js";
 
+import { handleCliError } from "../utils/error-handler.js";
+
 export async function handleQuery(args: string[]): Promise<void> {
   const parsed = parseArgs({
     args,
@@ -23,8 +25,7 @@ export async function handleQuery(args: string[]): Promise<void> {
 
   const query = parsed.positionals.join(" ").trim();
   if (!query) {
-    console.error("No query specified");
-    process.exit(1);
+    handleCliError(new Error("No query specified"));
   }
 
   const { config: dbConfig, customAdapters } = await getDBConfig(parsed.values);

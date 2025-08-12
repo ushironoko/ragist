@@ -65,6 +65,33 @@ vi.mock("node:fs", () => ({
   existsSync: vi.fn().mockReturnValue(true),
 }));
 
+// Mock sqlite-vec to avoid loading native modules in tests
+vi.mock("sqlite-vec", () => ({
+  default: vi.fn(),
+}));
+
+// Mock the sqlite adapter factory to avoid sqlite dependency
+vi.mock("../../core/vector-db/adapters/sqlite-adapter.js", () => ({
+  createSQLiteAdapter: vi.fn(() =>
+    Promise.resolve({
+      initialize: vi.fn(),
+      close: vi.fn(),
+      saveItems: vi.fn(),
+      searchItems: vi.fn(),
+      getItem: vi.fn(),
+      updateItem: vi.fn(),
+      deleteItem: vi.fn(),
+      listItems: vi.fn(),
+      getStats: vi.fn(),
+      getAdapterInfo: vi.fn(() => ({
+        name: "SQLite",
+        version: "1.0.0",
+        description: "Mock SQLite adapter",
+      })),
+    }),
+  ),
+}));
+
 describe("handleIndex", () => {
   const originalConsoleLog = console.log;
   const originalConsoleError = console.error;
@@ -174,7 +201,9 @@ describe("handleIndex", () => {
       // Should not throw, process.exit is mocked
     }
 
-    expect(console.error).toHaveBeenCalledWith("Security error: Invalid path");
+    expect(console.error).toHaveBeenCalledWith(
+      "Error: Security error - File access is restricted to prevent unauthorized access: Invalid path",
+    );
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
@@ -183,7 +212,7 @@ describe("handleIndex", () => {
     await handleIndex([]);
 
     expect(console.error).toHaveBeenCalledWith(
-      "No content specified. Use --text, --file, --files, --gist, or --github",
+      "Error: No content specified. Use --text, --file, --files, --gist, or --github",
     );
     expect(process.exit).toHaveBeenCalledWith(1);
   });

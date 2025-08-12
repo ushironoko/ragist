@@ -110,7 +110,7 @@ describe("handleQuery", () => {
   it("handles empty query", async () => {
     await handleQuery([]);
 
-    expect(console.error).toHaveBeenCalledWith("No query specified");
+    expect(console.error).toHaveBeenCalledWith("Error: No query specified");
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
