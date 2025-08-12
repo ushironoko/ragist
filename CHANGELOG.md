@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.0] - 2025-08-12
+
+- Merge pull request #29 from ushironoko/fix-custom-adapter
+- fix memories
+- fix custom adapter
+- fix
+
+
 ## [2.0.0] - 2025-08-11
 
 ## [1.0.0] - 2025-08-11
