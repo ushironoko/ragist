@@ -12,6 +12,9 @@ import {
 import { SecurityError, validateFilePath } from "../../core/security.js";
 import type { createFactory } from "../../core/vector-db/adapters/factory.js";
 import type { AdapterFactory } from "../../core/vector-db/adapters/types.js";
+import { displayErrors } from "../utils/cli-helpers.js";
+import { handleCliError } from "../utils/error-handler.js";
+import { createProgressReporter } from "../utils/progress.js";
 
 export async function getDBConfig(values: {
   provider?: string;
@@ -78,14 +81,14 @@ export async function handleIndex(args: string[]): Promise<void> {
       chunkOverlap: parsed.values["chunk-overlap"]
         ? Number.parseInt(parsed.values["chunk-overlap"], 10)
         : 100,
-      onProgress: (message: string, progress?: number) => {
+      onProgress: createProgressReporter("Indexing", (message, progress) => {
         if (progress !== undefined) {
           const percentage = Math.round(progress * 100);
           console.log(`${message} [${percentage}%]`);
         } else {
           console.log(message);
         }
-      },
+      }),
     };
 
     let result: Awaited<ReturnType<typeof indexText>>;
@@ -119,8 +122,7 @@ export async function handleIndex(args: string[]): Promise<void> {
         const filePath = await validateFilePath(parsed.values.file);
 
         if (!existsSync(filePath)) {
-          console.error(`File not found: ${filePath}`);
-          process.exit(1);
+          handleCliError(new Error(`File not found: ${filePath}`));
         }
 
         result = await indexFile(
@@ -134,14 +136,10 @@ export async function handleIndex(args: string[]): Promise<void> {
         );
       } catch (error) {
         if (error instanceof SecurityError) {
-          console.error(`Security error: ${error.message}`);
-          console.error(
-            "File access is restricted to prevent unauthorized file system access.",
+          handleCliError(
+            error,
+            "Security error - File access is restricted to prevent unauthorized access",
           );
-          console.error(
-            "Please ensure the file is in an allowed directory (current directory or subdirectories).",
-          );
-          process.exit(1);
         }
         throw error;
       }
@@ -161,10 +159,11 @@ export async function handleIndex(args: string[]): Promise<void> {
         service,
       );
     } else {
-      console.error(
-        "No content specified. Use --text, --file, --files, --gist, or --github",
+      handleCliError(
+        new Error(
+          "No content specified. Use --text, --file, --files, --gist, or --github",
+        ),
       );
-      process.exit(1);
       return;
     }
 
@@ -172,11 +171,6 @@ export async function handleIndex(args: string[]): Promise<void> {
     console.log(`  Items indexed: ${result.itemsIndexed}`);
     console.log(`  Chunks created: ${result.chunksCreated}`);
 
-    if (result.errors.length > 0) {
-      console.error("\nErrors encountered:");
-      for (const error of result.errors) {
-        console.error(`  - ${error}`);
-      }
-    }
+    displayErrors(result.errors);
   });
 }
