@@ -49,7 +49,7 @@ async function main(): Promise<void> {
 
   if (!Object.keys(COMMANDS).includes(command)) {
     console.error(`Unknown command: ${command}`);
-    console.error("Run 'ragist help' for usage information");
+    console.error("Run 'gistdex help' for usage information");
     process.exit(1);
   }
 

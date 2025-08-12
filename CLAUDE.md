@@ -17,12 +17,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### CLI Commands
 The project provides a CLI tool with the following commands:
-- `npx ragist init` or `npx ragist --init` - Initialize database
-- `npx ragist index` - Index content from various sources (Gist, GitHub, files, text)
-- `npx ragist query` - Search indexed content using semantic/hybrid search
-- `npx ragist list` - List all indexed items with metadata
-- `npx ragist info` - Show vector database adapter information
-- `npx ragist help` - Display help message
+- `npx gistdex init` or `npx gistdex --init` - Initialize database
+- `npx gistdex index` - Index content from various sources (Gist, GitHub, files, text)
+- `npx gistdex query` - Search indexed content using semantic/hybrid search
+- `npx gistdex list` - List all indexed items with metadata
+- `npx gistdex info` - Show vector database adapter information
+- `npx gistdex help` - Display help message
 
 ## Architecture Overview
 
@@ -85,10 +85,10 @@ The system uses a **functional composition pattern** for vector databases, elimi
 2. Load configuration from multiple sources (priority order):
    - CLI arguments
    - Environment variables
-   - Config files (`./ragist.config.json`, `./.ragistrc.json`, `~/.ragist/config.json`)
+   - Config files (`./gistdex.config.json`, `./.gistdexrc.json`, `~/.gistdex/config.json`)
    - Default values
 3. Support for custom adapters via `customAdapters` field in config
-4. Configuration structure (`RagistConfig`):
+4. Configuration structure (`GistdexConfig`):
    - `vectorDB`: Database provider and options
    - `customAdapters`: Map of provider names to adapter file paths
    - `embedding`: Model and dimension settings
@@ -149,13 +149,13 @@ CHUNK_OVERLAP=200
 BATCH_SIZE=100
 ```
 
-#### Configuration File (ragist.config.json)
+#### Configuration File (gistdex.config.json)
 ```json
 {
   "vectorDB": {
     "provider": "sqlite",
     "options": {
-      "path": "./ragist.db",
+      "path": "./gistdex.db",
       "dimension": 768
     }
   },
@@ -183,7 +183,7 @@ BATCH_SIZE=100
 ## Project Structure
 
 ```
-ragist/
+gistdex/
 ├── src/
 │   ├── cli/           # CLI implementation
 │   │   ├── index.ts   # Main CLI entry

@@ -8,7 +8,7 @@
  *
  * Method 1: Using withCustomRegistry (Recommended for scoped usage):
  * ```typescript
- * import { withCustomRegistry } from "ragist";
+ * import { withCustomRegistry } from "@ushironoko/gistdex";
  * import { createYourAdapter } from "./your-adapter";
  *
  * await withCustomRegistry(
@@ -25,7 +25,7 @@
  *
  * Method 2: Using withRegistry (Full control):
  * ```typescript
- * import { withRegistry } from "ragist";
+ * import { withRegistry } from "@ushironoko/gistdex";
  * import { createYourAdapter } from "./your-adapter";
  *
  * await withRegistry(async (registry) => {
@@ -40,7 +40,7 @@
  *
  * Method 3: Using createBaseAdapter (Reduce code duplication):
  * ```typescript
- * import { createBaseAdapter, type StorageOperations } from "ragist";
+ * import { createBaseAdapter, type StorageOperations } from "@ushironoko/gistdex";
  *
  * const createYourStorage = (config: YourAdapterConfig): StorageOperations => {
  *   // Implement only storage-specific operations

@@ -2,7 +2,7 @@
   "vectorDB": {
     "provider": "sqlite",
     "options": {
-      "path": "./ragist.db",
+      "path": "./gistdex.db",
       "dimension": 768
     }
   },

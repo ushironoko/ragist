@@ -1,11 +1,11 @@
 {
-  "name": "@ushironoko/ragist",
-  "version": "2.1.1",
-  "description": "RAG search system for Gist and GitHub repositories",
+  "name": "@ushironoko/gistdex",
+  "version": "0.0.1",
+  "description": "RAG search system for Gist, GitHub, and Local Files.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "ragist": "dist/cli/index.js"
+    "gistdex": "dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -47,12 +47,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ushironoko/ragist.git"
+    "url": "git+https://github.com/ushironoko/gistdex.git"
   },
   "bugs": {
-    "url": "https://github.com/ushironoko/ragist/issues"
+    "url": "https://github.com/ushironoko/gistdex/issues"
   },
-  "homepage": "https://github.com/ushironoko/ragist#readme",
+  "homepage": "https://github.com/ushironoko/gistdex#readme",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
