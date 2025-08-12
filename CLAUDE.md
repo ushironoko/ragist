@@ -90,6 +90,7 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 - **TypeScript**: Compiles to JavaScript for execution, uses `.js` extensions in imports for compiled code
 - **Error Handling**: All async operations must handle errors properly
 - **Security**: Input validation required for all user inputs, no secrets in code
+- **Function-based Programming**: Function-based coding is strongly recommended. Class-based coding is prohibited in principle.
 
 ## Adding New Vector Database Adapters
 

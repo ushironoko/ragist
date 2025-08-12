@@ -21,28 +21,36 @@ export {
 export { semanticSearch, hybridSearch } from "./core/search.js";
 
 // Configuration
-export { ConfigManager, type RagistConfig } from "./core/config.js";
+export {
+  createConfigOperations,
+  type RagistConfig,
+} from "./core/config-operations.js";
 
 // Types for vector database
-export {
-  type VectorDBAdapter,
-  type VectorDocument,
-  type VectorSearchResult,
-  type VectorDBConfig,
-  type SearchOptions,
-  type ListOptions,
+export type {
+  VectorDBAdapter,
+  VectorDocument,
+  VectorSearchResult,
+  VectorDBConfig,
+  SearchOptions,
+  ListOptions,
 } from "./core/vector-db/adapters/types.js";
 
 // Custom adapter creation
-export { withCustomRegistry } from "./core/vector-db/adapters/registry-operations.js";
+export {
+  withCustomRegistry,
+  withRegistry,
+} from "./core/vector-db/adapters/registry-operations.js";
 export {
   createRegistry,
   type RegistryInterface,
 } from "./core/vector-db/adapters/registry.js";
+export { createFactory } from "./core/vector-db/adapters/factory.js";
 export {
   createBaseAdapter,
   type StorageOperations,
 } from "./core/vector-db/adapters/base-adapter.js";
+export { createDatabaseOperations } from "./core/database-operations.js";
 
 // Built-in adapters (for direct use or reference)
 export { createSQLiteAdapter } from "./core/vector-db/adapters/sqlite-adapter.js";

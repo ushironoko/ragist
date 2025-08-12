@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { createConfigOperations } from "../../core/config-operations.js";
 import { createDatabaseOperations } from "../../core/database-operations.js";
 import {
   indexFile,
@@ -9,27 +10,38 @@ import {
 } from "../../core/indexer.js";
 import { SecurityError, validateFilePath } from "../../core/security.js";
 import type { createFactory } from "../../core/vector-db/adapters/factory.js";
+import type { AdapterFactory } from "../../core/vector-db/adapters/types.js";
 
 export async function getDBConfig(values: {
   provider?: string;
   db?: string;
   [key: string]: string | boolean | undefined;
-}): Promise<Parameters<ReturnType<typeof createFactory>["create"]>[0]> {
-  const provider =
-    values.provider || process.env.VECTOR_DB_PROVIDER || "sqlite";
+}): Promise<{
+  config: Parameters<ReturnType<typeof createFactory>["create"]>[0];
+  customAdapters?: Map<string, AdapterFactory>;
+}> {
+  const configOps = createConfigOperations();
+  const dbConfig = await configOps.getVectorDBConfig(values);
 
-  const options: Record<string, unknown> = {};
+  // Load custom adapters if needed
+  const loadedConfig = await configOps.load();
+  let customAdapters: Map<string, AdapterFactory> | undefined;
 
-  if (provider === "sqlite") {
-    options.path = values.db || process.env.SQLITE_DB_PATH || "ragist.db";
-    options.dimension = process.env.EMBEDDING_DIMENSION
-      ? Number.parseInt(process.env.EMBEDDING_DIMENSION, 10)
-      : 768;
+  if (
+    loadedConfig.customAdapters &&
+    Object.keys(loadedConfig.customAdapters).length > 0
+  ) {
+    try {
+      customAdapters = await configOps.loadCustomAdapters(loadedConfig);
+    } catch (error) {
+      console.error("Warning: Failed to load custom adapters:", error);
+      // Continue without custom adapters
+    }
   }
 
   return {
-    provider,
-    options,
+    config: dbConfig,
+    customAdapters,
   };
 }
 
@@ -53,8 +65,8 @@ export async function handleIndex(args: string[]): Promise<void> {
     allowPositionals: false,
   });
 
-  const dbConfig = await getDBConfig(parsed.values);
-  const dbOperations = createDatabaseOperations(dbConfig);
+  const { config: dbConfig, customAdapters } = await getDBConfig(parsed.values);
+  const dbOperations = createDatabaseOperations(dbConfig, customAdapters);
 
   await dbOperations.withDatabase(async (service) => {
     const options = {
@@ -138,7 +150,7 @@ export async function handleIndex(args: string[]): Promise<void> {
         "No content specified. Use --text, --file, --gist, or --github",
       );
       process.exit(1);
-      return; // Exit early to prevent undefined error
+      return;
     }
 
     console.log("\nIndexing Results:");

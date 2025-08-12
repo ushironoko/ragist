@@ -6,6 +6,10 @@
       "dimension": 768
     }
   },
+  "customAdapters": {
+    "pinecone": "./adapters/pinecone-adapter.js",
+    "weaviate": "./adapters/weaviate-adapter.js"
+  },
   "embedding": {
     "model": "text-embedding-004",
     "dimension": 768

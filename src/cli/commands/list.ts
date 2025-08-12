@@ -13,8 +13,8 @@ export async function handleList(args: string[]): Promise<void> {
     allowPositionals: false,
   });
 
-  const dbConfig = await getDBConfig(parsed.values);
-  const { withReadOnly } = createDatabaseOperations(dbConfig);
+  const { config: dbConfig, customAdapters } = await getDBConfig(parsed.values);
+  const { withReadOnly } = createDatabaseOperations(dbConfig, customAdapters);
 
   await withReadOnly(async (service) => {
     const stats = await service.getStats();

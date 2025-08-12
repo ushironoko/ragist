@@ -1,7 +1,13 @@
 import { createDatabaseService } from "./database-service.js";
 import { createFactory } from "./vector-db/adapters/factory.js";
-import { withRegistry } from "./vector-db/adapters/registry-operations.js";
-import type { VectorDBConfig } from "./vector-db/adapters/types.js";
+import {
+  withCustomRegistry,
+  withRegistry,
+} from "./vector-db/adapters/registry-operations.js";
+import type {
+  AdapterFactory,
+  VectorDBConfig,
+} from "./vector-db/adapters/types.js";
 
 /**
  * Database service interface for type safety
@@ -40,6 +46,7 @@ export interface DatabaseOperations {
  */
 export const createDatabaseOperations = (
   config?: Partial<VectorDBConfig>,
+  customAdapters?: Map<string, AdapterFactory>,
 ): DatabaseOperations => {
   /**
    * Core pattern: Initialize → Execute → Cleanup
@@ -48,6 +55,23 @@ export const createDatabaseOperations = (
   const withDatabase = async <T>(
     operation: (service: DatabaseServiceInterface) => Promise<T>,
   ): Promise<T> => {
+    // If custom adapters are provided, use withCustomRegistry
+    if (customAdapters && customAdapters.size > 0) {
+      return withCustomRegistry(customAdapters, async (registry) => {
+        const factory = createFactory(registry);
+        const service = createDatabaseService(factory);
+
+        try {
+          await service.initialize(config);
+          return await operation(service);
+        } finally {
+          // Always cleanup, even if operation fails
+          await service.close();
+        }
+      });
+    }
+
+    // Otherwise use the default registry
     return withRegistry(async (registry) => {
       const factory = createFactory(registry);
       const service = createDatabaseService(factory);
