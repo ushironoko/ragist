@@ -1,9 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { glob, readFile } from "node:fs/promises";
 import { chunkText } from "./chunking.js";
 import type { DatabaseService, ItemMetadata } from "./database-service.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
 import {
   SecurityError,
+  validateFilePath,
   validateGistUrl,
   validateGitHubRepoUrl,
 } from "./security.js";
@@ -136,6 +137,99 @@ export async function indexFile(
       ],
     };
   }
+}
+
+export async function indexFiles(
+  patterns: string[],
+  metadata: ItemMetadata = {},
+  options: IndexOptions = {},
+  service?: DatabaseService,
+): Promise<IndexResult> {
+  const result: IndexResult = {
+    itemsIndexed: 0,
+    chunksCreated: 0,
+    errors: [],
+  };
+
+  const { onProgress } = options;
+
+  try {
+    // Collect all matching files
+    const allFiles = new Set<string>();
+
+    for (const pattern of patterns) {
+      try {
+        // Use glob to find matching files
+        for await (const match of glob(pattern, {
+          exclude: (path: string) => path.includes("node_modules"),
+        })) {
+          // Validate each file path for security
+          try {
+            const validatedPath = await validateFilePath(match);
+            allFiles.add(validatedPath);
+          } catch (error) {
+            if (error instanceof SecurityError) {
+              result.errors.push(
+                `Security error for ${match}: ${error.message}`,
+              );
+            }
+          }
+        }
+      } catch (error) {
+        result.errors.push(
+          `Failed to process pattern ${pattern}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    const fileArray = Array.from(allFiles);
+
+    if (fileArray.length === 0) {
+      result.errors.push("No files matched the specified patterns");
+      return result;
+    }
+
+    if (onProgress) {
+      onProgress(`Found ${fileArray.length} files to index`);
+    }
+
+    // Process each file
+    for (let i = 0; i < fileArray.length; i++) {
+      const filePath = fileArray[i];
+      if (!filePath) continue;
+
+      if (onProgress) {
+        onProgress(
+          `Indexing file ${i + 1}/${fileArray.length}: ${filePath}`,
+          (i + 1) / fileArray.length,
+        );
+      }
+
+      const fileResult = await indexFile(
+        filePath,
+        {
+          ...metadata,
+          title: metadata.title || filePath,
+        },
+        options,
+        service,
+      );
+
+      result.itemsIndexed += fileResult.itemsIndexed;
+      result.chunksCreated += fileResult.chunksCreated;
+      result.errors.push(...fileResult.errors);
+    }
+
+    if (onProgress) {
+      onProgress("All files indexed", 1);
+    }
+  } catch (error) {
+    result.errors.push(
+      `Failed to index files: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  return result;
 }
 
 export async function indexGist(
@@ -335,68 +429,52 @@ async function indexGitHubPath(
 
 function isTextFile(filename: string): boolean {
   const textExtensions = [
+    // Documentation
     ".txt",
     ".md",
-    ".markdown",
-    ".rst",
-    ".asciidoc",
-    ".ts",
+
+    // JavaScript/TypeScript ecosystem
+    ".js",
     ".jsx",
     ".ts",
     ".tsx",
     ".mjs",
     ".cjs",
-    ".py",
-    ".rb",
-    ".go",
-    ".rust",
-    ".rs",
-    ".c",
-    ".cpp",
-    ".h",
-    ".hpp",
-    ".java",
-    ".kt",
-    ".scala",
-    ".swift",
-    ".m",
-    ".mm",
+
+    // Major programming languages
+    ".py", // Python
+    ".go", // Go
+    ".rs", // Rust
+    ".java", // Java
+    ".rb", // Ruby
+    ".c", // C
+    ".cpp", // C++
+    ".h", // C/C++ headers
+
+    // Web technologies
     ".html",
-    ".htm",
-    ".xml",
     ".css",
-    ".scss",
-    ".sass",
-    ".less",
     ".json",
+    ".xml",
+
+    // Configuration files
     ".yaml",
     ".yml",
     ".toml",
-    ".ini",
-    ".conf",
-    ".config",
+    ".env",
+
+    // Shell scripts
     ".sh",
     ".bash",
-    ".zsh",
-    ".fish",
-    ".ps1",
-    ".bat",
-    ".cmd",
+
+    // Database
     ".sql",
-    ".graphql",
-    ".proto",
+
+    // Frontend frameworks
     ".vue",
     ".svelte",
-    ".astro",
-    ".tex",
-    ".bib",
-    ".r",
-    ".R",
-    ".jl",
-    ".m",
-    ".mat",
   ];
 
-  const lowerName = filename.toLowerCase();
-  return textExtensions.some((ext) => lowerName.endsWith(ext));
+  const lowerFilename = filename.toLowerCase();
+  return textExtensions.some((ext) => lowerFilename.endsWith(ext));
 }

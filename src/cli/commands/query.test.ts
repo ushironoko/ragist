@@ -64,7 +64,8 @@ describe("handleQuery", () => {
   beforeEach(() => {
     console.log = vi.fn();
     console.error = vi.fn();
-    process.exit = vi.fn() as unknown as typeof process.exit;
+    // @ts-expect-error - Mocking process.exit for testing
+    process.exit = vi.fn();
     vi.clearAllMocks();
   });
 
