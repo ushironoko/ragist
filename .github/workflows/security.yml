@@ -1,64 +1,22 @@
-name: Security Audit
-
-on:
-  schedule:
-    - cron: '0 2 * * 1' # 毎週月曜日2時
-  workflow_dispatch:
+name: Security Review
 
 permissions:
+  pull-requests: write # Needed for leaving PR comments
   contents: read
-  security-events: write
+
+on:
+  pull_request:
 
 jobs:
-  audit:
-    name: Dependency Audit
+  security:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version-file: '.node-version'
-          cache: 'pnpm'
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Run security audit
-        run: pnpm audit || true
-
-      - name: Check for vulnerabilities
-        run: pnpm audit --audit-level moderate || echo "Vulnerabilities found"
-
-  scorecard:
-    name: Scorecard Analysis
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      security-events: write
-      id-token: write
-      contents: read
-      actions: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: anthropics/claude-code-security-review@main
         with:
-          persist-credentials: false
-
-      - name: Run analysis
-        uses: ossf/scorecard-action@v2.4.0
-        with:
-          results_file: results.sarif
-          results_format: sarif
-          publish_results: true
-
-      - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.sarif
+          comment-pr: true
+          claude-api-key: ${{ secrets.CLAUDE_API_KEY }}
