@@ -16,15 +16,15 @@
   },
   "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "templates"],
   "scripts": {
-    "dev": "tsc --watch",
-    "build": "tsc",
+    "dev": "tsgo --watch",
+    "build": "tsgo",
     "start": "node dist/cli/index.js",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
     "lint": "biome check --write .",
     "format": "biome format --write .",
-    "tsc": "tsc --noEmit",
+    "tsc": "tsgo --noEmit",
     "prepublishOnly": "pnpm run lint && pnpm run tsc && pnpm run test && pnpm run build"
   },
   "keywords": [
@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@typescript/native-preview": "7.0.0-dev.20250804.1",
     "@types/node": "24.2.0",
     "@vitest/coverage-v8": "^2.1.8",
     "tsx": "4.19.2",

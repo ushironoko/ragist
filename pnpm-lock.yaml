@@ -33,6 +33,9 @@ importers:
       '@types/node':
         specifier: 24.2.0
         version: 24.2.0
+      '@typescript/native-preview':
+        specifier: 7.0.0-dev.20250804.1
+        version: 7.0.0-dev.20250804.1
       '@vitest/coverage-v8':
         specifier: ^2.1.8
         version: 2.1.9(vitest@2.1.8(@types/node@24.2.0))
@@ -693,6 +696,53 @@ packages:
 
   '@types/node@24.2.0':
     resolution: {integrity: sha512-3xyG3pMCq3oYCNg7/ZP+E1ooTaGB4cG8JWRsqqOYQdbWNY4zbaV0Ennrd7stjiJEFZCaybcIgpTjJWHRfBSIDw==}
+
+  '@typescript/native-preview-darwin-arm64@7.0.0-dev.20250804.1':
+    resolution: {integrity: sha512-Bn7ptzfXtXUmriod5fadXo5+j8VfeJmePm54IcbtqwxhyDkcvyHPhOhp2l7IMtpVOwuXTua/hid6HCHe0LXTaQ==}
+    engines: {node: '>=20.6.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@typescript/native-preview-darwin-x64@7.0.0-dev.20250804.1':
+    resolution: {integrity: sha512-WN4sCqnEfrvr7n+YfZR/Wme5FZ88ASY5p2Zcvbm1bMO1FCn2h7iPnInoMfynsoYmfcWQhZqEaSkmK6HGeJKuWQ==}
+    engines: {node: '>=20.6.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@typescript/native-preview-linux-arm64@7.0.0-dev.20250804.1':
+    resolution: {integrity: sha512-N5NHuiT9gBDl3+sW0OGJPeSZYAwYZGfMf2ES4ZDj1Pd4TDR2b6S47FckQVrGWzVDImoqZZsJan5gs3cofTE8nA==}
+    engines: {node: '>=20.6.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@typescript/native-preview-linux-arm@7.0.0-dev.20250804.1':
+    resolution: {integrity: sha512-emtoOuf+K8TK9JnQn8RsNs/mNiPQ/u5xR+N1S7IQFgiEBrngPzCKSwDrtPbY9xGh9mVg7aGa58+Y/hAtXudFwQ==}
+    engines: {node: '>=20.6.0'}
+    cpu: [arm]
+    os: [linux]
+
+  '@typescript/native-preview-linux-x64@7.0.0-dev.20250804.1':
+    resolution: {integrity: sha512-yT9JKfbuSh3hNybNqUHIsuoOvVsLka7JfRfNh2Hes1eJGVH04I4E5tKAlzI9Iy7OEWCovHZFblQRjp/3CJYxyA==}
+    engines: {node: '>=20.6.0'}
+    cpu: [x64]
+    os: [linux]
+
+  '@typescript/native-preview-win32-arm64@7.0.0-dev.20250804.1':
+    resolution: {integrity: sha512-da5LkGm/l1zzpaTc2FwQh1F3H1pYSAUpqHzskcPL//SDTfrQnkbN9dPn+CI8cHDRv8lCAQFXII+xFFLWPMNXyQ==}
+    engines: {node: '>=20.6.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@typescript/native-preview-win32-x64@7.0.0-dev.20250804.1':
+    resolution: {integrity: sha512-zC+Wzi8Lr+RGF69PHHnesyoImBTwkzdPD9aoHTrynrP8Fcv+oRAUQmQcI0JFB0cEzFxMQ1sUMdBrAikdveaz1g==}
+    engines: {node: '>=20.6.0'}
+    cpu: [x64]
+    os: [win32]
+
+  '@typescript/native-preview@7.0.0-dev.20250804.1':
+    resolution: {integrity: sha512-EVYSeheDmdLrvwWRW4RXl47rUMEst6JkO7hgvwYEF8TBQ4zrBWcMlCulhgI5MsvCrNf7hkVn6628bCkp/5Ik2A==}
+    engines: {node: '>=20.6.0'}
+    hasBin: true
 
   '@vitest/coverage-v8@2.1.9':
     resolution: {integrity: sha512-Z2cOr0ksM00MpEfyVE8KXIYPEcBFxdbLSs56L8PO0QQMxt/6bDj45uQfxoc96v05KW3clk7vvgP0qfDit9DmfQ==}
@@ -1682,6 +1732,37 @@ snapshots:
   '@types/node@24.2.0':
     dependencies:
       undici-types: 7.10.0
+
+  '@typescript/native-preview-darwin-arm64@7.0.0-dev.20250804.1':
+    optional: true
+
+  '@typescript/native-preview-darwin-x64@7.0.0-dev.20250804.1':
+    optional: true
+
+  '@typescript/native-preview-linux-arm64@7.0.0-dev.20250804.1':
+    optional: true
+
+  '@typescript/native-preview-linux-arm@7.0.0-dev.20250804.1':
+    optional: true
+
+  '@typescript/native-preview-linux-x64@7.0.0-dev.20250804.1':
+    optional: true
+
+  '@typescript/native-preview-win32-arm64@7.0.0-dev.20250804.1':
+    optional: true
+
+  '@typescript/native-preview-win32-x64@7.0.0-dev.20250804.1':
+    optional: true
+
+  '@typescript/native-preview@7.0.0-dev.20250804.1':
+    optionalDependencies:
+      '@typescript/native-preview-darwin-arm64': 7.0.0-dev.20250804.1
+      '@typescript/native-preview-darwin-x64': 7.0.0-dev.20250804.1
+      '@typescript/native-preview-linux-arm': 7.0.0-dev.20250804.1
+      '@typescript/native-preview-linux-arm64': 7.0.0-dev.20250804.1
+      '@typescript/native-preview-linux-x64': 7.0.0-dev.20250804.1
+      '@typescript/native-preview-win32-arm64': 7.0.0-dev.20250804.1
+      '@typescript/native-preview-win32-x64': 7.0.0-dev.20250804.1
 
   '@vitest/coverage-v8@2.1.9(vitest@2.1.8(@types/node@24.2.0))':
     dependencies:
