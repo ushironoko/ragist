@@ -14,7 +14,13 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "templates"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "templates"
+  ],
   "scripts": {
     "dev": "tsgo --watch",
     "build": "tsgo",
@@ -61,7 +67,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@microsoft/typescript-go": "^0.1.6",
+    "@typescript/native-preview": "7.0.0-dev.20250804.1",
     "@types/node": "24.2.0",
     "@vitest/coverage-v8": "^2.1.8",
     "tsx": "4.19.2",
