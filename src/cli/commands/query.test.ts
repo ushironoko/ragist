@@ -87,7 +87,7 @@ describe("handleQuery", () => {
       expect.objectContaining({ k: 5, rerank: true }),
       expect.any(Object),
     );
-    expect(console.log).toHaveBeenCalledWith('Searching for: "test query\n');
+    expect(console.log).toHaveBeenCalledWith('Searching for: "test query"\n');
     expect(console.log).toHaveBeenCalledWith("Found 1 results\n");
     expect(console.log).toHaveBeenCalledWith("1. Test Result");
   });

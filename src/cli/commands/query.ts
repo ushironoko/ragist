@@ -40,7 +40,7 @@ export async function handleQuery(args: string[]): Promise<void> {
       rerank: !parsed.values["no-rerank"],
     };
 
-    console.log(`Searching for: "${query}\n`);
+    console.log(`Searching for: "${query}"\n`);
 
     const results = parsed.values.hybrid
       ? await hybridSearch(query, options, service)
