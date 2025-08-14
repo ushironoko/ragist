@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.2] - 2025-08-14
+
+- Merge pull request #41 from ushironoko/migrate-to-gunshi
+- refactor
+- migrate to gunshi cli
+- fix format
+- Merge pull request #40 from ushironoko/add-claude-md-update-workflow
+- add workflow for CLAUDE.md update
+
+
 ## [0.1.1] - 2025-08-14
 
 - Merge pull request #39 from ushironoko/migrate-to-tsdown
