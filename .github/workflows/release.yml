@@ -71,27 +71,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Update CLAUDE.md documentation
-        uses: anthropics/claude-code-base-action@beta
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            Update the CLAUDE.md file to reflect the current state of the codebase.
-            Analyze the source code and update:
-            - Build and Development Commands section
-            - CLI Commands section with current command examples
-            - Architecture Overview section
-            - Any outdated information
-            
-            Keep the existing structure and format.
-            Ensure all commands and paths are accurate.
-            Update version references if needed.
-          append_system_prompt: |
-            This is an automated documentation update before release.
-            Focus on technical accuracy and completeness.
-          allowed_tools: "View,GlobTool,GrepTool,BatchTool"
-          timeout_minutes: "30"
-
       - name: Bump version
         id: bump
         run: |
@@ -134,8 +113,8 @@ jobs:
 
       - name: Commit changes
         run: |
-          git add package.json CHANGELOG.md CLAUDE.md
-          git commit -m "chore: release v${{ steps.bump.outputs.version }}" || echo "No changes to commit"
+          git add package.json CHANGELOG.md
+          git commit -m "chore: release v${{ steps.bump.outputs.version }}"
 
       - name: Create tag
         run: |
