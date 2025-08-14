@@ -1,6 +1,6 @@
 {
   "name": "@ushironoko/gistdex",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "RAG search system for Gist, GitHub, and Local Files.",
   "type": "module",
   "main": "dist/index.js",
@@ -14,7 +14,13 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "templates"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "templates"
+  ],
   "scripts": {
     "dev": "tsdown --watch",
     "build": "tsdown",

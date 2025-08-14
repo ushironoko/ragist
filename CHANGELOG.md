@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1] - 2025-08-14
+
+- Merge pull request #39 from ushironoko/migrate-to-tsdown
+- migrate to tsdown
+- Merge pull request #38 from ushironoko/claude/issue-36-20250813-0440
+- fix format
+- fix package
+- feat: migrate from tsc to tsgo
+- fix format
+- fix README
+
+
 ## [0.1.0] - 2025-08-12
 
 - Merge pull request #33 from ushironoko/refactor-cli-helpers
