@@ -16,8 +16,8 @@
   },
   "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "templates"],
   "scripts": {
-    "dev": "tsgo --watch",
-    "build": "tsgo",
+    "dev": "tsdown --watch",
+    "build": "tsdown",
     "start": "node dist/cli/index.js",
     "test": "vitest run",
     "test:watch": "vitest watch",
@@ -61,9 +61,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@typescript/native-preview": "7.0.0-dev.20250804.1",
     "@types/node": "24.2.0",
+    "@typescript/native-preview": "7.0.0-dev.20250804.1",
     "@vitest/coverage-v8": "^2.1.8",
+    "tsdown": "0.14.1",
     "tsx": "4.19.2",
     "typescript": "5.7.3",
     "vitest": "2.1.8"
