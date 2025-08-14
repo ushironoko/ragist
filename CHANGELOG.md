@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3] - 2025-08-14
+
+- Merge pull request #42 from ushironoko/revert-40-add-claude-md-update-workflow
+- fix format
+- Revert "add workflow for CLAUDE.md update"
+
+
 ## [0.1.2] - 2025-08-14
 
 - Merge pull request #41 from ushironoko/migrate-to-gunshi
