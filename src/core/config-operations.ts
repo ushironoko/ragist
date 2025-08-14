@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import { parseInteger } from "./utils/config-parser.js";
 import type {
   AdapterFactory,
   VectorDBConfig,
@@ -97,11 +98,9 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
       if (process.env.EMBEDDING_MODEL) {
         config.embedding.model = process.env.EMBEDDING_MODEL;
       }
-      if (process.env.EMBEDDING_DIMENSION) {
-        config.embedding.dimension = Number.parseInt(
-          process.env.EMBEDDING_DIMENSION,
-          10,
-        );
+      const embeddingDim = parseInteger(process.env.EMBEDDING_DIMENSION);
+      if (embeddingDim) {
+        config.embedding.dimension = embeddingDim;
       }
     }
 
@@ -112,17 +111,17 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
       process.env.BATCH_SIZE
     ) {
       config.indexing = {};
-      if (process.env.CHUNK_SIZE) {
-        config.indexing.chunkSize = Number.parseInt(process.env.CHUNK_SIZE, 10);
+      const chunkSize = parseInteger(process.env.CHUNK_SIZE);
+      if (chunkSize) {
+        config.indexing.chunkSize = chunkSize;
       }
-      if (process.env.CHUNK_OVERLAP) {
-        config.indexing.chunkOverlap = Number.parseInt(
-          process.env.CHUNK_OVERLAP,
-          10,
-        );
+      const chunkOverlap = parseInteger(process.env.CHUNK_OVERLAP);
+      if (chunkOverlap) {
+        config.indexing.chunkOverlap = chunkOverlap;
       }
-      if (process.env.BATCH_SIZE) {
-        config.indexing.batchSize = Number.parseInt(process.env.BATCH_SIZE, 10);
+      const batchSize = parseInteger(process.env.BATCH_SIZE);
+      if (batchSize) {
+        config.indexing.batchSize = batchSize;
       }
     }
 

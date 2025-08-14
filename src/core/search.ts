@@ -1,5 +1,6 @@
 import type { DatabaseService } from "./database-service.js";
 import { generateEmbedding } from "./embedding.js";
+import { sortByScore } from "./utils/ranking.js";
 import type { VectorSearchResult } from "./vector-db/adapters/types.js";
 
 export interface RerankOptions {
@@ -30,21 +31,21 @@ export function rerankResults<T extends { content: string; score: number }>(
     return results;
   }
 
-  return results
-    .map((result) => {
-      const contentLower = result.content.toLowerCase();
-      const matchCount = queryWords.filter((word) =>
-        contentLower.includes(word),
-      ).length;
+  const boostedResults = results.map((result) => {
+    const contentLower = result.content.toLowerCase();
+    const matchCount = queryWords.filter((word) =>
+      contentLower.includes(word),
+    ).length;
 
-      const boostedScore = result.score + matchCount * boostFactor;
+    const boostedScore = result.score + matchCount * boostFactor;
 
-      return {
-        ...result,
-        score: boostedScore,
-      };
-    })
-    .sort((a, b) => b.score - a.score);
+    return {
+      ...result,
+      score: boostedScore,
+    };
+  });
+
+  return sortByScore(boostedResults);
 }
 
 export interface SemanticSearchOptions {
@@ -131,7 +132,7 @@ export async function hybridSearch(
     };
   });
 
-  return hybridResults.sort((a, b) => b.score - a.score);
+  return sortByScore(hybridResults);
 }
 
 export interface SearchStats {
