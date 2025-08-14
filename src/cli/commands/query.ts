@@ -5,9 +5,9 @@ import {
   hybridSearch,
   semanticSearch,
 } from "../../core/search.js";
-import { getDBConfig } from "./index.js";
-
+import { parseCliInteger } from "../utils/arg-parser.js";
 import { handleCliError } from "../utils/error-handler.js";
+import { getDBConfig } from "./index.js";
 
 export async function handleQuery(args: string[]): Promise<void> {
   const parsed = parseArgs({
@@ -33,9 +33,7 @@ export async function handleQuery(args: string[]): Promise<void> {
 
   await withReadOnly(async (service) => {
     const options = {
-      k: parsed.values["top-k"]
-        ? Number.parseInt(parsed.values["top-k"], 10)
-        : 5,
+      k: parseCliInteger(parsed.values["top-k"], 5) ?? 5,
       sourceType: parsed.values.type,
       rerank: !parsed.values["no-rerank"],
     };

@@ -12,6 +12,7 @@ import {
 import { SecurityError, validateFilePath } from "../../core/security.js";
 import type { createFactory } from "../../core/vector-db/adapters/factory.js";
 import type { AdapterFactory } from "../../core/vector-db/adapters/types.js";
+import { parseCliInteger } from "../utils/arg-parser.js";
 import { displayErrors } from "../utils/cli-helpers.js";
 import { handleCliError } from "../utils/error-handler.js";
 import { createProgressReporter } from "../utils/progress.js";
@@ -75,12 +76,8 @@ export async function handleIndex(args: string[]): Promise<void> {
 
   await dbOperations.withDatabase(async (service) => {
     const options = {
-      chunkSize: parsed.values["chunk-size"]
-        ? Number.parseInt(parsed.values["chunk-size"], 10)
-        : 1000,
-      chunkOverlap: parsed.values["chunk-overlap"]
-        ? Number.parseInt(parsed.values["chunk-overlap"], 10)
-        : 100,
+      chunkSize: parseCliInteger(parsed.values["chunk-size"], 1000) ?? 1000,
+      chunkOverlap: parseCliInteger(parsed.values["chunk-overlap"], 100) ?? 100,
       onProgress: createProgressReporter("Indexing", (message, progress) => {
         if (progress !== undefined) {
           const percentage = Math.round(progress * 100);
