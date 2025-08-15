@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0] - 2025-08-15
+
+- Merge pull request #45 from ushironoko:refactor-original-contents
+- fix
+- fix format
+- feat: enhance document metadata and original content handling in SQLite adapter
+
+
 ## [0.2.0] - 2025-08-15
 
 - Merge pull request #44 from ushironoko:support-original-content
