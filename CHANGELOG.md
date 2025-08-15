@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0] - 2025-08-15
+
+- Merge pull request #44 from ushironoko:support-original-content
+- support show original contents&full
+- fix format
+
+
 ## [0.1.4] - 2025-08-15
 
 - Merge pull request #43 from ushironoko:fix-gunshi-use-define
