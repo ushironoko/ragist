@@ -102,7 +102,9 @@ Suggestions:
 2. Upgrade to Node.js 23.5.0 or later for SQLite extension support
 3. Ensure sqlite-vec is properly installed: npm install sqlite-vec
 
-Original error: ${extError instanceof Error ? extError.message : String(extError)}`;
+Original error: ${
+          extError instanceof Error ? extError.message : String(extError)
+        }`;
 
         throw new VectorDBError(errorMessage, {
           cause: extError,
@@ -111,17 +113,34 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
 
       // Create tables with vector support
       db.exec(`
+        CREATE TABLE IF NOT EXISTS sources (
+          source_id TEXT PRIMARY KEY,
+          original_content TEXT NOT NULL,
+          title TEXT,
+          url TEXT,
+          source_type TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
         CREATE TABLE IF NOT EXISTS documents (
           id TEXT PRIMARY KEY,
+          source_id TEXT,
           content TEXT NOT NULL,
           metadata TEXT,
           vec_rowid INTEGER,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE
         );
 
         CREATE VIRTUAL TABLE IF NOT EXISTS vec_documents 
         USING vec0(embedding float[${dimension}]);
+
+        CREATE INDEX IF NOT EXISTS idx_sources_source_type 
+        ON sources(source_type);
+
+        CREATE INDEX IF NOT EXISTS idx_documents_source_id 
+        ON documents(source_id);
 
         CREATE INDEX IF NOT EXISTS idx_documents_created_at 
         ON documents(created_at);
@@ -152,8 +171,44 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
 
     const id = generateDocumentId(document.id);
     validateDimension(document.embedding, dimension as number);
-    const metadataJson = document.metadata
-      ? JSON.stringify(document.metadata)
+
+    // Check for sourceId and originalContent in metadata
+    const sourceId = document.metadata?.sourceId;
+    let sourceIdToUse: string | null = null;
+
+    if (sourceId) {
+      // Check if source already exists
+      const existingSource = db
+        ?.prepare("SELECT source_id FROM sources WHERE source_id = ?")
+        .get(sourceId) as { source_id: string } | undefined;
+
+      if (!existingSource) {
+        // Extract source-related metadata for first chunk
+        const chunkIndex = document.metadata?.chunkIndex;
+        if (chunkIndex === 0) {
+          const originalContent = document.metadata?.originalContent;
+          if (originalContent) {
+            // Insert into sources table
+            const title = document.metadata?.title || null;
+            const url = document.metadata?.url || null;
+            const sourceType = document.metadata?.sourceType || null;
+
+            db?.prepare(
+              "INSERT INTO sources (source_id, original_content, title, url, source_type) VALUES (?, ?, ?, ?, ?)",
+            ).run(sourceId, originalContent, title, url, sourceType);
+          }
+        }
+      }
+      sourceIdToUse = sourceId;
+    }
+
+    // Create metadata without originalContent (since it's now in sources table)
+    const metadataForStorage = { ...document.metadata };
+    if (metadataForStorage && "originalContent" in metadataForStorage) {
+      delete metadataForStorage.originalContent;
+    }
+    const metadataJson = metadataForStorage
+      ? JSON.stringify(metadataForStorage)
       : null;
 
     try {
@@ -185,10 +240,10 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
         vecRowid = result?.lastInsertRowid ?? 1;
       }
 
-      // Insert or update document with vec_rowid reference
+      // Insert or update document with vec_rowid and source_id reference
       db?.prepare(
-        "INSERT OR REPLACE INTO documents (id, content, metadata, vec_rowid) VALUES (?, ?, ?, ?)",
-      ).run(id, document.content, metadataJson, vecRowid);
+        "INSERT OR REPLACE INTO documents (id, source_id, content, metadata, vec_rowid) VALUES (?, ?, ?, ?, ?)",
+      ).run(id, sourceIdToUse, document.content, metadataJson, vecRowid);
 
       return id;
     } catch (error) {
@@ -233,8 +288,8 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
             value === null || value === undefined
               ? null
               : typeof value === "object"
-                ? JSON.stringify(value)
-                : String(value),
+              ? JSON.stringify(value)
+              : String(value),
           );
           return `json_extract(d.metadata, '$.${key}') = ?`;
         });
@@ -284,9 +339,12 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
     ensureInitialized();
 
     try {
-      const row = db?.prepare("SELECT * FROM documents WHERE id = ?").get(id) as
+      const row = db
+        ?.prepare("SELECT * FROM documents WHERE id = ?")
+        .get(id) as
         | {
             id: string;
+            source_id: string | null;
             content: string;
             metadata: string | null;
             vec_rowid: number | null;
@@ -310,11 +368,37 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
         }
       }
 
+      // Parse metadata and ensure sourceId is included if source_id exists
+      let metadata = parseMetadata(row.metadata);
+      if (row.source_id && metadata) {
+        metadata.sourceId = row.source_id;
+      }
+
+      // Get source information if source_id exists
+      if (row.source_id) {
+        const sourceRow = db
+          ?.prepare("SELECT * FROM sources WHERE source_id = ?")
+          .get(row.source_id) as
+          | {
+              source_id: string;
+              original_content: string;
+              title: string | null;
+              url: string | null;
+              source_type: string | null;
+            }
+          | undefined;
+
+        // For backward compatibility, add originalContent to metadata for first chunk
+        if (sourceRow && metadata && metadata.chunkIndex === 0) {
+          metadata.originalContent = sourceRow.original_content;
+        }
+      }
+
       return {
         id: row.id,
         content: row.content,
         embedding,
-        metadata: parseMetadata(row.metadata),
+        metadata,
       };
     } catch (error) {
       throw new VectorDBError(`Failed to get document: ${id}`, {
@@ -496,8 +580,8 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
               value === null || value === undefined
                 ? null
                 : typeof value === "object"
-                  ? JSON.stringify(value)
-                  : String(value),
+                ? JSON.stringify(value)
+                : String(value),
             );
             return `json_extract(metadata, '$.${key}') = ?`;
           });
@@ -534,8 +618,8 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
             value === null || value === undefined
               ? null
               : typeof value === "object"
-                ? JSON.stringify(value)
-                : String(value),
+              ? JSON.stringify(value)
+              : String(value),
           );
           return `json_extract(metadata, '$.${key}') = ?`;
         });
@@ -555,6 +639,7 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
 
       const rows = db?.prepare(query).all(...queryParams) as Array<{
         id: string;
+        source_id: string | null;
         content: string;
         metadata: string | null;
         vec_rowid: number | null;
@@ -573,11 +658,17 @@ Original error: ${extError instanceof Error ? extError.message : String(extError
           }
         }
 
+        // Parse metadata and ensure sourceId is included if source_id exists
+        let metadata = parseMetadata(row.metadata);
+        if (row.source_id && metadata) {
+          metadata.sourceId = row.source_id;
+        }
+
         return {
           id: row.id,
           content: row.content,
           embedding,
-          metadata: parseMetadata(row.metadata),
+          metadata,
         };
       });
     } catch (error) {

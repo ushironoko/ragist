@@ -370,4 +370,177 @@ describe("createSQLiteAdapter", () => {
       await expect(testAdapter.close()).resolves.not.toThrow();
     });
   });
+
+  describe("sources table", () => {
+    it("should create sources table during initialization", async () => {
+      const mockExec = vi.fn();
+      vi.mocked(DatabaseSync as any).mockImplementationOnce(
+        () =>
+          ({
+            exec: mockExec,
+            prepare: vi.fn().mockImplementation(() => ({
+              run: vi.fn(),
+              get: vi.fn(),
+              all: vi.fn().mockReturnValue([]),
+            })),
+            close: vi.fn(),
+            loadExtension: vi.fn(),
+          }) as any,
+      );
+
+      const testAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+        options: { path: ":memory:", dimension: 768 },
+      });
+      await testAdapter.initialize();
+
+      // Check that exec was called with sources table creation
+      expect(mockExec).toHaveBeenCalled();
+      const execCall = mockExec.mock.calls[0][0] as string;
+      expect(execCall).toContain("CREATE TABLE IF NOT EXISTS sources");
+      expect(execCall).toContain("source_id TEXT PRIMARY KEY");
+      expect(execCall).toContain("original_content TEXT NOT NULL");
+
+      await testAdapter.close();
+    });
+
+    it("should insert source when document has sourceId metadata", async () => {
+      const mockPrepare = vi.fn();
+      vi.mocked(DatabaseSync as any).mockImplementationOnce(
+        () =>
+          ({
+            exec: vi.fn(),
+            prepare: mockPrepare.mockImplementation((query: string) => {
+              // Mock for checking existing source
+              if (query.includes("SELECT source_id FROM sources")) {
+                return {
+                  get: vi.fn().mockReturnValue(null),
+                };
+              }
+              // Mock for inserting into sources
+              if (query.includes("INSERT INTO sources")) {
+                return {
+                  run: vi.fn(),
+                };
+              }
+              // Default mocks for other queries
+              if (query.includes("SELECT vec_rowid FROM documents")) {
+                return {
+                  get: vi.fn().mockReturnValue(null),
+                };
+              }
+              if (query.includes("INSERT INTO vec_documents")) {
+                return {
+                  run: vi.fn().mockReturnValue({ lastInsertRowid: 1 }),
+                };
+              }
+              if (query.includes("INSERT OR REPLACE INTO documents")) {
+                return {
+                  run: vi.fn(),
+                };
+              }
+              return {
+                run: vi.fn(),
+                get: vi.fn(),
+                all: vi.fn().mockReturnValue([]),
+              };
+            }),
+            close: vi.fn(),
+            loadExtension: vi.fn(),
+          }) as any,
+      );
+
+      const testAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+        options: { dimension: 3 },
+      });
+      await testAdapter.initialize();
+
+      const doc: VectorDocument = {
+        content: "test chunk",
+        embedding: [0.1, 0.2, 0.3],
+        metadata: {
+          sourceId: "source-123",
+          chunkIndex: 0,
+          originalContent: "full original content",
+          title: "Test Title",
+          sourceType: "text",
+        },
+      };
+
+      await testAdapter.insert(doc);
+
+      // Verify that sources table was queried/updated
+      const prepareCallStrings = mockPrepare.mock.calls.map((call) => call[0]);
+      expect(prepareCallStrings.some((query) => 
+        query.includes("SELECT source_id FROM sources")
+      )).toBe(true);
+
+      await testAdapter.close();
+    });
+
+    it("should retrieve original content from sources table", async () => {
+      vi.mocked(DatabaseSync as any).mockImplementationOnce(
+        () =>
+          ({
+            exec: vi.fn(),
+            prepare: vi.fn().mockImplementation((query: string) => {
+              // Mock for getting document with source_id
+              if (query.includes("SELECT * FROM documents WHERE id")) {
+                return {
+                  get: vi.fn().mockReturnValue({
+                    id: "doc-123",
+                    content: "test chunk",
+                    metadata: JSON.stringify({
+                      sourceId: "source-123",
+                      chunkIndex: 0,
+                    }),
+                    vec_rowid: 1,
+                    source_id: "source-123",
+                  }),
+                };
+              }
+              // Mock for getting source
+              if (query.includes("SELECT * FROM sources")) {
+                return {
+                  get: vi.fn().mockReturnValue({
+                    source_id: "source-123",
+                    original_content: "full original content",
+                    title: "Test Title",
+                    source_type: "text",
+                  }),
+                };
+              }
+              // Mock for getting embedding
+              if (query.includes("SELECT embedding FROM vec_documents")) {
+                return {
+                  get: vi.fn().mockReturnValue({
+                    embedding: new Uint8Array(new Float32Array([0.1, 0.2, 0.3]).buffer),
+                  }),
+                };
+              }
+              return {
+                run: vi.fn(),
+                get: vi.fn(),
+                all: vi.fn().mockReturnValue([]),
+              };
+            }),
+            close: vi.fn(),
+            loadExtension: vi.fn(),
+          }) as any,
+      );
+
+      const testAdapter = createSQLiteAdapter({
+        provider: "sqlite",
+        options: { dimension: 3 },
+      });
+      await testAdapter.initialize();
+
+      const doc = await testAdapter.get("doc-123");
+      expect(doc).toBeDefined();
+      expect(doc?.metadata?.sourceId).toBe("source-123");
+
+      await testAdapter.close();
+    });
+  });
 });

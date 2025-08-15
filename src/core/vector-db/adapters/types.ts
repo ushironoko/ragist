@@ -2,18 +2,62 @@
  * Functional vector database types
  */
 
+/**
+ * Metadata that can be attached to vector documents
+ */
+export interface DocumentMetadata {
+  // Source identification
+  sourceId?: string;
+  sourceType?: "gist" | "github" | "file" | "text";
+  
+  // Content chunking
+  chunkIndex?: number;
+  totalChunks?: number;
+  originalContent?: string; // Stored in first chunk for backward compatibility
+  
+  // Document information
+  title?: string;
+  url?: string;
+  description?: string;
+  
+  // File-specific metadata
+  filePath?: string;
+  
+  // GitHub-specific metadata
+  owner?: string;
+  repo?: string;
+  branch?: string;
+  path?: string;
+  
+  // Gist-specific metadata
+  gistId?: string;
+  
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
+  
+  // Testing and other metadata
+  type?: string; // Used in tests
+  version?: number; // Used in tests
+  test?: boolean; // Used in tests
+  updated?: boolean; // Used in tests
+  
+  // Allow additional properties for extensibility
+  [key: string]: unknown;
+}
+
 export interface VectorDocument {
   id?: string;
   content: string;
   embedding: number[];
-  metadata?: Record<string, unknown>;
+  metadata?: DocumentMetadata;
 }
 
 export interface VectorSearchResult {
   id: string;
   content: string;
   score: number;
-  metadata?: Record<string, unknown>;
+  metadata?: DocumentMetadata;
 }
 
 export interface SearchOptions {
