@@ -10,32 +10,32 @@ export interface ItemMetadata {
   // Source identification
   sourceId?: string;
   sourceType?: "gist" | "github" | "file" | "text";
-  
+
   // Content chunking
   chunkIndex?: number;
   totalChunks?: number;
   originalContent?: string;
-  
+
   // Document information
   title?: string;
   url?: string;
   description?: string;
-  
+
   // File-specific metadata
   filePath?: string;
-  
+
   // GitHub-specific metadata
   owner?: string;
   repo?: string;
   branch?: string;
   path?: string;
-  
+
   // Gist-specific metadata
   gistId?: string;
-  
+
   // Timestamps
   createdAt?: string;
-  
+
   // Allow additional properties for extensibility
   [key: string]: unknown;
 }

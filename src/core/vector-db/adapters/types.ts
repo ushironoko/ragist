@@ -9,39 +9,39 @@ export interface DocumentMetadata {
   // Source identification
   sourceId?: string;
   sourceType?: "gist" | "github" | "file" | "text";
-  
+
   // Content chunking
   chunkIndex?: number;
   totalChunks?: number;
   originalContent?: string; // Stored in first chunk for backward compatibility
-  
+
   // Document information
   title?: string;
   url?: string;
   description?: string;
-  
+
   // File-specific metadata
   filePath?: string;
-  
+
   // GitHub-specific metadata
   owner?: string;
   repo?: string;
   branch?: string;
   path?: string;
-  
+
   // Gist-specific metadata
   gistId?: string;
-  
+
   // Timestamps
   createdAt?: string;
   updatedAt?: string;
-  
+
   // Testing and other metadata
   type?: string; // Used in tests
   version?: number; // Used in tests
   test?: boolean; // Used in tests
   updated?: boolean; // Used in tests
-  
+
   // Allow additional properties for extensibility
   [key: string]: unknown;
 }

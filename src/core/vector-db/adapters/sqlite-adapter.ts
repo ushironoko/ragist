@@ -288,8 +288,8 @@ Original error: ${
             value === null || value === undefined
               ? null
               : typeof value === "object"
-              ? JSON.stringify(value)
-              : String(value),
+                ? JSON.stringify(value)
+                : String(value),
           );
           return `json_extract(d.metadata, '$.${key}') = ?`;
         });
@@ -339,9 +339,7 @@ Original error: ${
     ensureInitialized();
 
     try {
-      const row = db
-        ?.prepare("SELECT * FROM documents WHERE id = ?")
-        .get(id) as
+      const row = db?.prepare("SELECT * FROM documents WHERE id = ?").get(id) as
         | {
             id: string;
             source_id: string | null;
@@ -369,7 +367,7 @@ Original error: ${
       }
 
       // Parse metadata and ensure sourceId is included if source_id exists
-      let metadata = parseMetadata(row.metadata);
+      const metadata = parseMetadata(row.metadata);
       if (row.source_id && metadata) {
         metadata.sourceId = row.source_id;
       }
@@ -580,8 +578,8 @@ Original error: ${
               value === null || value === undefined
                 ? null
                 : typeof value === "object"
-                ? JSON.stringify(value)
-                : String(value),
+                  ? JSON.stringify(value)
+                  : String(value),
             );
             return `json_extract(metadata, '$.${key}') = ?`;
           });
@@ -618,8 +616,8 @@ Original error: ${
             value === null || value === undefined
               ? null
               : typeof value === "object"
-              ? JSON.stringify(value)
-              : String(value),
+                ? JSON.stringify(value)
+                : String(value),
           );
           return `json_extract(metadata, '$.${key}') = ?`;
         });
@@ -659,7 +657,7 @@ Original error: ${
         }
 
         // Parse metadata and ensure sourceId is included if source_id exists
-        let metadata = parseMetadata(row.metadata);
+        const metadata = parseMetadata(row.metadata);
         if (row.source_id && metadata) {
           metadata.sourceId = row.source_id;
         }

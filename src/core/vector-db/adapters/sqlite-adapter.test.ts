@@ -472,9 +472,11 @@ describe("createSQLiteAdapter", () => {
 
       // Verify that sources table was queried/updated
       const prepareCallStrings = mockPrepare.mock.calls.map((call) => call[0]);
-      expect(prepareCallStrings.some((query) => 
-        query.includes("SELECT source_id FROM sources")
-      )).toBe(true);
+      expect(
+        prepareCallStrings.some((query) =>
+          query.includes("SELECT source_id FROM sources"),
+        ),
+      ).toBe(true);
 
       await testAdapter.close();
     });
@@ -515,7 +517,9 @@ describe("createSQLiteAdapter", () => {
               if (query.includes("SELECT embedding FROM vec_documents")) {
                 return {
                   get: vi.fn().mockReturnValue({
-                    embedding: new Uint8Array(new Float32Array([0.1, 0.2, 0.3]).buffer),
+                    embedding: new Uint8Array(
+                      new Float32Array([0.1, 0.2, 0.3]).buffer,
+                    ),
                   }),
                 };
               }
