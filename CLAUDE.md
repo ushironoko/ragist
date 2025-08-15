@@ -33,7 +33,9 @@ The project provides a CLI tool with the following commands:
   - `-n, --no-rerank` - Disable result re-ranking
   - `-f, --full` - Show full original source content (automatically retrieves from sourceId)
 - `npx gistdex list` - List all indexed items with metadata
+  - `--stats` - Show statistics only
 - `npx gistdex info` - Show vector database adapter information
+- `npx gistdex version` - Show CLI version (also `--version` or `-v`)
 - `npx gistdex help` - Display help message
 
 #### Examples of Multiple File Indexing
@@ -125,13 +127,16 @@ The system uses a **functional composition pattern** for vector databases, elimi
 - **security.ts** - Input validation and security utilities
 
 #### CLI Layer (`src/cli/`)
-- **index.ts** - Main CLI entry point with command routing
+- **index.ts** - Main CLI entry point with Map-based command routing using gunshi framework
 - **commands/init.ts** - Database initialization command
-- **commands/index.ts** - Content indexing command
+- **commands/index.ts** - Content indexing command (exports `getDBConfig` for backward compatibility)
 - **commands/query.ts** - Search query command
 - **commands/list.ts** - List indexed items command
 - **commands/info.ts** - Show adapter information command
+- **commands/version.ts** - Show CLI version command
 - **commands/help.ts** - Display help message command
+- **utils/command-handler.ts** - Command handler abstraction for common DB operations
+- **utils/config-helper.ts** - Configuration helper for loading DB config
 
 ### Configuration Flow
 1. Check for explicit `--provider` CLI argument
@@ -151,6 +156,24 @@ The system uses a **functional composition pattern** for vector databases, elimi
 ## Testing Strategy
 
 Tests are colocated with source files using `.test.ts` suffix. Run tests with coverage to ensure 80% threshold is met for branches, functions, lines, and statements.
+
+## Recent Architecture Improvements
+
+### Command Handler Abstraction (v0.3.0+)
+- Introduced `createCommandHandler` utility to eliminate code duplication in CLI commands
+- All command handlers now use consistent database connection management
+- Reduced code duplication by ~12% through abstraction
+- Commands use either `createReadOnlyCommandHandler` or `createWriteCommandHandler`
+
+### Version Management
+- CLI version is dynamically loaded from package.json
+- Version command available via `gistdex version`, `--version`, or `-v`
+- Package.json is included in published npm package for runtime access
+
+### Map-based Command Routing
+- CLI uses Map for command registration instead of switch statements
+- Commands are registered using `subCommands.set()` method
+- gunshi framework handles command routing and argument parsing
 
 ## Important Development Notes
 
@@ -239,11 +262,30 @@ BATCH_SIZE=100
 gistdex/
 ├── src/
 │   ├── cli/           # CLI implementation
-│   │   ├── index.ts   # Main CLI entry
-│   │   └── commands/  # Individual command handlers
+│   │   ├── index.ts   # Main CLI entry with gunshi framework
+│   │   ├── commands/  # Individual command handlers
+│   │   │   ├── init.ts     # Initialize database
+│   │   │   ├── index.ts    # Index content (with getDBConfig export)
+│   │   │   ├── query.ts    # Search content
+│   │   │   ├── list.ts     # List indexed items
+│   │   │   ├── info.ts     # Show adapter info
+│   │   │   ├── version.ts  # Show CLI version
+│   │   │   └── help.ts     # Show help message
+│   │   └── utils/     # CLI utilities
+│   │       ├── command-handler.ts  # Command abstraction
+│   │       ├── config-helper.ts    # Config loading
+│   │       ├── arg-parser.ts       # Argument parsing
+│   │       ├── error-handler.ts    # Error handling
+│   │       └── progress.ts         # Progress reporting
 │   ├── core/          # Core business logic
 │   │   ├── vector-db/ # Vector database layer
 │   │   │   ├── adapters/   # Database adapters
+│   │   │   │   ├── sqlite-adapter.ts  # SQLite implementation
+│   │   │   │   ├── memory-adapter.ts  # In-memory implementation
+│   │   │   │   ├── base-adapter.ts    # Base adapter functionality
+│   │   │   │   ├── registry.ts        # Adapter registry
+│   │   │   │   ├── factory.ts         # Adapter factory
+│   │   │   │   └── types.ts           # TypeScript types
 │   │   │   └── utils/      # Utility functions
 │   │   ├── database-service.ts    # Main service
 │   │   ├── database-operations.ts # Functional operations

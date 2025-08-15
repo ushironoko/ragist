@@ -179,6 +179,18 @@ Show adapter information:
 npx @ushironoko/gistdex info --provider sqlite
 ```
 
+### Version Information
+
+Show CLI version:
+
+```bash
+npx @ushironoko/gistdex version
+# or
+npx @ushironoko/gistdex --version
+# or  
+npx @ushironoko/gistdex -v
+```
+
 ## Programmatic Usage
 
 ```typescript

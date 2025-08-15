@@ -1,5 +1,4 @@
-import { createDatabaseOperations } from "../../core/database-operations.js";
-import { getDBConfig } from "./index.js";
+import { createReadOnlyCommandHandler } from "../utils/command-handler.js";
 
 export interface InfoContext {
   values: {
@@ -7,11 +6,8 @@ export interface InfoContext {
   };
 }
 
-export async function handleInfo(ctx: InfoContext): Promise<void> {
-  const { config: dbConfig, customAdapters } = await getDBConfig(ctx.values);
-  const { withReadOnly } = createDatabaseOperations(dbConfig, customAdapters);
-
-  await withReadOnly(async (service) => {
+export const handleInfo = createReadOnlyCommandHandler<InfoContext>(
+  async (service) => {
     const info = service.getAdapterInfo();
 
     if (info) {
@@ -25,5 +21,5 @@ export async function handleInfo(ctx: InfoContext): Promise<void> {
     } else {
       console.log("No adapter information available");
     }
-  });
-}
+  },
+);
