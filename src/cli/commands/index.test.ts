@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { IndexContext } from "./index.js";
 import { handleIndex } from "./index.js";
 
 vi.mock("../../core/database-operations.js", () => ({
@@ -112,7 +113,12 @@ describe("handleIndex", () => {
   });
 
   it("indexes text content", async () => {
-    await handleIndex(["--text", "Hello world", "--title", "Test"]);
+    await handleIndex({
+      values: {
+        text: "Hello world",
+        title: "Test",
+      },
+    });
 
     const { indexText } = await import("../../core/indexer.js");
     // TODO: The last two parameters are using expect.any(Object) which doesn't
@@ -130,7 +136,11 @@ describe("handleIndex", () => {
   });
 
   it("indexes file content", async () => {
-    await handleIndex(["--file", "test.txt"]);
+    await handleIndex({
+      values: {
+        file: "test.txt",
+      },
+    });
 
     const { indexFile } = await import("../../core/indexer.js");
     expect(indexFile).toHaveBeenCalled();
@@ -139,7 +149,11 @@ describe("handleIndex", () => {
   });
 
   it("indexes gist content", async () => {
-    await handleIndex(["--gist", "1234567890"]);
+    await handleIndex({
+      values: {
+        gist: "1234567890",
+      },
+    });
 
     const { indexGist } = await import("../../core/indexer.js");
     // TODO: Using expect.any(Object) for config and service parameters.
@@ -154,7 +168,12 @@ describe("handleIndex", () => {
   });
 
   it("indexes GitHub repository", async () => {
-    await handleIndex(["--github", "owner/repo", "--branch", "main"]);
+    await handleIndex({
+      values: {
+        github: "owner/repo",
+        branch: "main",
+      },
+    });
 
     const { indexGitHubRepo } = await import("../../core/indexer.js");
     expect(indexGitHubRepo).toHaveBeenCalled();
@@ -172,7 +191,11 @@ describe("handleIndex", () => {
     );
     vi.mocked(existsSync).mockReturnValueOnce(false);
 
-    await handleIndex(["--file", "nonexistent.txt"]);
+    await handleIndex({
+      values: {
+        file: "nonexistent.txt",
+      },
+    });
 
     expect(console.error).toHaveBeenCalledWith(
       "File not found: /absolute/path/nonexistent.txt",
@@ -192,7 +215,11 @@ describe("handleIndex", () => {
     vi.mocked(validateFilePath).mockRejectedValueOnce(error);
 
     try {
-      await handleIndex(["--file", "../../../etc/passwd"]);
+      await handleIndex({
+        values: {
+          file: "../../../etc/passwd",
+        },
+      });
     } catch (err) {
       // TODO: This catch block is intentionally swallowing errors because
       // process.exit is mocked and doesn't actually terminate the process.
@@ -209,7 +236,9 @@ describe("handleIndex", () => {
 
   it("shows error when no content specified", async () => {
     // process.exit prevents the rest of the function from executing
-    await handleIndex([]);
+    await handleIndex({
+      values: {},
+    });
 
     expect(console.error).toHaveBeenCalledWith(
       "Error: No content specified. Use --text, --file, --files, --gist, or --github",

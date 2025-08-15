@@ -17,19 +17,20 @@ Commands:
       --title <title>    Title for the indexed content
       --url <url>        URL for the indexed content
       --chunk-size <n>   Chunk size (default: 1000)
-      --chunk-overlap <n> Chunk overlap (default: 100)
+      --chunk-overlap <n> Chunk overlap (default: 200)
       --branch <branch>  GitHub branch (default: main)
       --paths <paths>    GitHub paths to index (comma-separated)
       
   query    Search indexed content
     Options:
-      --provider <name>  Vector DB provider (default: sqlite)
-      --db <path>        Database file path (for SQLite)
-      -k, --top-k <n>    Number of results (default: 5)
-      --type <type>      Source type filter (gist, github, file, text)
-      --hybrid           Use hybrid search
-      --no-rerank        Disable re-ranking
-      <query>            Search query
+      --provider <name>    Vector DB provider (default: sqlite)
+      --db <path>          Database file path (for SQLite)
+      -k, --top-k <n>      Number of results (default: 5)
+      -t, --type <type>    Source type filter (gist, github, file, text)
+      -y, --hybrid         Use hybrid search
+      -n, --no-rerank      Disable re-ranking
+      -f, --full           Show full original source content
+      <query>              Search query
       
   list     List indexed items
     Options:

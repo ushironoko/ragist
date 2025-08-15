@@ -1,17 +1,14 @@
-import { parseArgs } from "node:util";
 import { createDatabaseOperations } from "../../core/database-operations.js";
 import { getDBConfig } from "./index.js";
 
-export async function handleInfo(args: string[]): Promise<void> {
-  const parsed = parseArgs({
-    args,
-    options: {
-      provider: { type: "string" },
-    },
-    allowPositionals: false,
-  });
+export interface InfoContext {
+  values: {
+    provider?: string;
+  };
+}
 
-  const { config: dbConfig, customAdapters } = await getDBConfig(parsed.values);
+export async function handleInfo(ctx: InfoContext): Promise<void> {
+  const { config: dbConfig, customAdapters } = await getDBConfig(ctx.values);
   const { withReadOnly } = createDatabaseOperations(dbConfig, customAdapters);
 
   await withReadOnly(async (service) => {

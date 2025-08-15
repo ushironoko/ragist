@@ -143,6 +143,82 @@ export interface SearchStats {
   sourceTypes: Record<string, number>;
 }
 
+/**
+ * Retrieves the full original content from a search result by finding
+ * the first chunk with the same sourceId
+ */
+export async function getOriginalContent(
+  result: VectorSearchResult,
+  service: DatabaseService,
+): Promise<string | null> {
+  const sourceId = result.metadata?.sourceId as string | undefined;
+
+  if (!sourceId) {
+    // Fallback to the chunk content if no sourceId
+    return result.content;
+  }
+
+  try {
+    // Get all chunks with the same sourceId
+    const allDocs = await service.listItems({
+      limit: 1000, // Large limit to get all chunks
+      filter: { sourceId },
+    });
+
+    // Find the chunk with chunkIndex: 0 which contains originalContent
+    const firstChunk = allDocs.find(
+      (doc) => doc.metadata?.chunkIndex === 0 && doc.metadata?.originalContent,
+    );
+
+    if (firstChunk?.metadata?.originalContent) {
+      return firstChunk.metadata.originalContent as string;
+    }
+
+    // If no original content found, try to reconstruct from all chunks
+    const sortedChunks = allDocs
+      .filter((doc) => doc.metadata?.sourceId === sourceId)
+      .sort((a, b) => {
+        const indexA = (a.metadata?.chunkIndex as number) ?? 0;
+        const indexB = (b.metadata?.chunkIndex as number) ?? 0;
+        return indexA - indexB;
+      });
+
+    if (sortedChunks.length > 0) {
+      // Reconstruct content from chunks (considering overlap)
+      const chunkOverlap = 200; // Default overlap
+      const firstChunk = sortedChunks[0];
+      if (!firstChunk) {
+        return result.content;
+      }
+      let reconstructed = firstChunk.content;
+
+      for (let i = 1; i < sortedChunks.length; i++) {
+        const currentChunk = sortedChunks[i];
+        if (!currentChunk) continue;
+        const chunk = currentChunk.content;
+        // Try to remove overlap by finding common substring
+        const overlapStart = Math.max(0, reconstructed.length - chunkOverlap);
+        const overlapText = reconstructed.substring(overlapStart);
+        const overlapIndex = chunk.indexOf(overlapText);
+
+        if (overlapIndex === 0) {
+          // Found overlap, append only the new part
+          reconstructed += chunk.substring(overlapText.length);
+        } else {
+          // No clear overlap found, just append with a newline
+          reconstructed += `\n${chunk}`;
+        }
+      }
+
+      return reconstructed;
+    }
+  } catch (error) {
+    console.error("Error retrieving original content:", error);
+  }
+
+  return result.content;
+}
+
 export function calculateSearchStats(
   results: VectorSearchResult[],
 ): SearchStats {

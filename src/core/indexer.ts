@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { glob, readFile } from "node:fs/promises";
 import { chunkText } from "./chunking.js";
 import type { DatabaseService, ItemMetadata } from "./database-service.js";
@@ -30,7 +31,7 @@ export async function indexText(
 ): Promise<IndexResult> {
   const {
     chunkSize = 1000,
-    chunkOverlap = 100,
+    chunkOverlap = 200,
     batchSize = 100,
     onProgress,
   } = options;
@@ -76,13 +77,19 @@ export async function indexText(
       onProgress("Saving to database...");
     }
 
+    // Generate a unique source ID for this content
+    const sourceId = randomUUID();
+
     const items = chunks.map((chunk, i) => ({
       content: chunk,
       embedding: embeddings[i] ?? [],
       metadata: {
         ...metadata,
+        sourceId,
         chunkIndex: i,
         totalChunks: chunks.length,
+        // Store original content only in the first chunk to save space
+        ...(i === 0 ? { originalContent: text } : {}),
       },
     }));
 

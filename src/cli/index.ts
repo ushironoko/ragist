@@ -78,13 +78,7 @@ const indexCommand = define({
   description: "Index content into the database",
   args: indexArgs,
   run: async (ctx) => {
-    const args: string[] = [];
-    for (const [key, value] of Object.entries(ctx.values)) {
-      if (value !== undefined && value !== null) {
-        args.push(`--${key}`, String(value));
-      }
-    }
-    await handleIndex(args);
+    await handleIndex(ctx);
   },
 });
 
@@ -95,11 +89,25 @@ const queryArgs = {
     short: "k",
     description: "Number of results",
   },
-  type: { type: "string" as const, description: "Filter by source type" },
-  hybrid: { type: "boolean" as const, description: "Enable hybrid search" },
+  type: {
+    type: "string" as const,
+    short: "t",
+    description: "Filter by source type",
+  },
+  hybrid: {
+    type: "boolean" as const,
+    short: "y",
+    description: "Enable hybrid search",
+  },
   "no-rerank": {
     type: "boolean" as const,
+    short: "n",
     description: "Disable result reranking",
+  },
+  full: {
+    type: "boolean" as const,
+    short: "f",
+    description: "Show full original source content",
   },
 };
 
@@ -108,32 +116,22 @@ const queryCommand = define({
   description: "Search indexed content",
   args: queryArgs,
   run: async (ctx) => {
-    const args: string[] = [];
-    for (const [key, value] of Object.entries(ctx.values)) {
-      if (value !== undefined && value !== null) {
-        if (typeof value === "boolean" && value) {
-          args.push(`--${key}`);
-        } else if (typeof value !== "boolean") {
-          args.push(`--${key}`, String(value));
-        }
-      }
-    }
-    // Add positional arguments (query terms)
-    args.push(...ctx.positionals);
-    await handleQuery(args);
+    await handleQuery(ctx);
   },
 });
 
 const listCommand = define({
   name: "list",
   description: "List indexed items",
-  args: dbArgs,
+  args: {
+    ...dbArgs,
+    stats: {
+      type: "boolean" as const,
+      description: "Show only statistics",
+    },
+  },
   run: async (ctx) => {
-    const args: string[] = [];
-    if (ctx.values.provider)
-      args.push("--provider", String(ctx.values.provider));
-    if (ctx.values.db) args.push("--db", String(ctx.values.db));
-    await handleList(args);
+    await handleList(ctx);
   },
 });
 
@@ -142,11 +140,7 @@ const infoCommand = define({
   description: "Show database adapter information",
   args: dbArgs,
   run: async (ctx) => {
-    const args: string[] = [];
-    if (ctx.values.provider)
-      args.push("--provider", String(ctx.values.provider));
-    if (ctx.values.db) args.push("--db", String(ctx.values.db));
-    await handleInfo(args);
+    await handleInfo(ctx);
   },
 });
 

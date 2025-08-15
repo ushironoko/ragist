@@ -1,5 +1,4 @@
 import { existsSync } from "node:fs";
-import { parseArgs } from "node:util";
 import { createConfigOperations } from "../../core/config-operations.js";
 import { createDatabaseOperations } from "../../core/database-operations.js";
 import {
@@ -50,34 +49,32 @@ export async function getDBConfig(values: {
   };
 }
 
-export async function handleIndex(args: string[]): Promise<void> {
-  const parsed = parseArgs({
-    args,
-    options: {
-      provider: { type: "string" },
-      db: { type: "string" },
-      text: { type: "string" },
-      file: { type: "string" },
-      files: { type: "string" },
-      gist: { type: "string" },
-      github: { type: "string" },
-      title: { type: "string" },
-      url: { type: "string" },
-      "chunk-size": { type: "string" },
-      "chunk-overlap": { type: "string" },
-      branch: { type: "string" },
-      paths: { type: "string" },
-    },
-    allowPositionals: false,
-  });
+export interface IndexContext {
+  values: {
+    provider?: string;
+    db?: string;
+    text?: string;
+    file?: string;
+    files?: string;
+    gist?: string;
+    github?: string;
+    title?: string;
+    url?: string;
+    "chunk-size"?: string;
+    "chunk-overlap"?: string;
+    branch?: string;
+    paths?: string;
+  };
+}
 
-  const { config: dbConfig, customAdapters } = await getDBConfig(parsed.values);
+export async function handleIndex(ctx: IndexContext): Promise<void> {
+  const { config: dbConfig, customAdapters } = await getDBConfig(ctx.values);
   const dbOperations = createDatabaseOperations(dbConfig, customAdapters);
 
   await dbOperations.withDatabase(async (service) => {
     const options = {
-      chunkSize: parseCliInteger(parsed.values["chunk-size"], 1000) ?? 1000,
-      chunkOverlap: parseCliInteger(parsed.values["chunk-overlap"], 100) ?? 100,
+      chunkSize: parseCliInteger(ctx.values["chunk-size"], 1000) ?? 1000,
+      chunkOverlap: parseCliInteger(ctx.values["chunk-overlap"], 200) ?? 200,
       onProgress: createProgressReporter("Indexing", (message, progress) => {
         if (progress !== undefined) {
           const percentage = Math.round(progress * 100);
@@ -90,33 +87,33 @@ export async function handleIndex(args: string[]): Promise<void> {
 
     let result: Awaited<ReturnType<typeof indexText>>;
 
-    if (parsed.values.text) {
+    if (ctx.values.text) {
       result = await indexText(
-        parsed.values.text,
+        ctx.values.text,
         {
-          title: parsed.values.title,
-          url: parsed.values.url,
+          title: ctx.values.title,
+          url: ctx.values.url,
           sourceType: "text",
         },
         options,
         service,
       );
-    } else if (parsed.values.files) {
+    } else if (ctx.values.files) {
       // Handle multiple files with glob patterns
-      const patterns = parsed.values.files.split(",").map((p) => p.trim());
+      const patterns = ctx.values.files.split(",").map((p) => p.trim());
 
       result = await indexFiles(
         patterns,
         {
-          title: parsed.values.title,
-          url: parsed.values.url,
+          title: ctx.values.title,
+          url: ctx.values.url,
         },
         options,
         service,
       );
-    } else if (parsed.values.file) {
+    } else if (ctx.values.file) {
       try {
-        const filePath = await validateFilePath(parsed.values.file);
+        const filePath = await validateFilePath(ctx.values.file);
 
         if (!existsSync(filePath)) {
           handleCliError(new Error(`File not found: ${filePath}`));
@@ -125,8 +122,8 @@ export async function handleIndex(args: string[]): Promise<void> {
         result = await indexFile(
           filePath,
           {
-            title: parsed.values.title || parsed.values.file,
-            url: parsed.values.url,
+            title: ctx.values.title || ctx.values.file,
+            url: ctx.values.url,
           },
           options,
           service,
@@ -140,28 +137,23 @@ export async function handleIndex(args: string[]): Promise<void> {
         }
         throw error;
       }
-    } else if (parsed.values.gist) {
-      result = await indexGist(parsed.values.gist, options, service);
-    } else if (parsed.values.github) {
+    } else if (ctx.values.gist) {
+      result = await indexGist(ctx.values.gist, options, service);
+    } else if (ctx.values.github) {
       const githubOptions = {
         ...options,
-        branch: parsed.values.branch || "main",
-        paths: parsed.values.paths
-          ? parsed.values.paths.split(",").map((p) => p.trim())
+        branch: ctx.values.branch || "main",
+        paths: ctx.values.paths
+          ? ctx.values.paths.split(",").map((p) => p.trim())
           : [""],
       };
-      result = await indexGitHubRepo(
-        parsed.values.github,
-        githubOptions,
-        service,
-      );
+      result = await indexGitHubRepo(ctx.values.github, githubOptions, service);
     } else {
-      handleCliError(
+      return handleCliError(
         new Error(
           "No content specified. Use --text, --file, --files, --gist, or --github",
         ),
       );
-      return;
     }
 
     console.log("\nIndexing Results:");

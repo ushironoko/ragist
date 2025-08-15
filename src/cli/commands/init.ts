@@ -31,7 +31,7 @@ const DEFAULT_CONFIG = {
   },
   indexing: {
     chunkSize: 1000,
-    chunkOverlap: 100,
+    chunkOverlap: 200,
     batchSize: 100,
   },
   search: {

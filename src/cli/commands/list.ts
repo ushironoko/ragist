@@ -1,19 +1,16 @@
-import { parseArgs } from "node:util";
 import { createDatabaseOperations } from "../../core/database-operations.js";
 import { getDBConfig } from "./index.js";
 
-export async function handleList(args: string[]): Promise<void> {
-  const parsed = parseArgs({
-    args,
-    options: {
-      provider: { type: "string" },
-      db: { type: "string" },
-      stats: { type: "boolean" },
-    },
-    allowPositionals: false,
-  });
+export interface ListContext {
+  values: {
+    provider?: string;
+    db?: string;
+    stats?: boolean;
+  };
+}
 
-  const { config: dbConfig, customAdapters } = await getDBConfig(parsed.values);
+export async function handleList(ctx: ListContext): Promise<void> {
+  const { config: dbConfig, customAdapters } = await getDBConfig(ctx.values);
   const { withReadOnly } = createDatabaseOperations(dbConfig, customAdapters);
 
   await withReadOnly(async (service) => {
@@ -31,7 +28,7 @@ export async function handleList(args: string[]): Promise<void> {
       }
     }
 
-    if (!parsed.values.stats && stats.totalItems > 0) {
+    if (!ctx.values.stats && stats.totalItems > 0) {
       console.log("\nRecent items:");
 
       const items = await service.listItems({ limit: 10 });
