@@ -31,6 +31,7 @@ export type {
   VectorDBAdapter,
   VectorDocument,
   VectorSearchResult,
+  DocumentMetadata,
   VectorDBConfig,
   SearchOptions,
   ListOptions,

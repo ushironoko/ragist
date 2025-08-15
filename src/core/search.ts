@@ -151,7 +151,7 @@ export async function getOriginalContent(
   result: VectorSearchResult,
   service: DatabaseService,
 ): Promise<string | null> {
-  const sourceId = result.metadata?.sourceId as string | undefined;
+  const sourceId = result.metadata?.sourceId;
 
   if (!sourceId) {
     // Fallback to the chunk content if no sourceId
@@ -159,27 +159,42 @@ export async function getOriginalContent(
   }
 
   try {
-    // Get all chunks with the same sourceId
+    // First, try to get the first chunk with chunkIndex: 0
+    // The SQLite adapter now includes originalContent from sources table
     const allDocs = await service.listItems({
+      limit: 1,
+      filter: { sourceId, chunkIndex: 0 },
+    });
+
+    if (allDocs.length > 0) {
+      const firstChunk = allDocs[0];
+      // Check if originalContent is available (from sources table via adapter)
+      if (firstChunk?.metadata?.originalContent) {
+        return firstChunk.metadata.originalContent;
+      }
+    }
+
+    // Fallback: Get all chunks with the same sourceId
+    const allChunks = await service.listItems({
       limit: 1000, // Large limit to get all chunks
       filter: { sourceId },
     });
 
-    // Find the chunk with chunkIndex: 0 which contains originalContent
-    const firstChunk = allDocs.find(
+    // Find the chunk with chunkIndex: 0 which might contain originalContent
+    const firstChunk = allChunks.find(
       (doc) => doc.metadata?.chunkIndex === 0 && doc.metadata?.originalContent,
     );
 
     if (firstChunk?.metadata?.originalContent) {
-      return firstChunk.metadata.originalContent as string;
+      return firstChunk.metadata.originalContent;
     }
 
     // If no original content found, try to reconstruct from all chunks
-    const sortedChunks = allDocs
+    const sortedChunks = allChunks
       .filter((doc) => doc.metadata?.sourceId === sourceId)
       .sort((a, b) => {
-        const indexA = (a.metadata?.chunkIndex as number) ?? 0;
-        const indexB = (b.metadata?.chunkIndex as number) ?? 0;
+        const indexA = a.metadata?.chunkIndex ?? 0;
+        const indexB = b.metadata?.chunkIndex ?? 0;
         return indexA - indexB;
       });
 
