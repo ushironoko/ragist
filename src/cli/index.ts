@@ -13,12 +13,14 @@ try {
 }
 
 import { cli, define } from "gunshi";
+import packageJson from "../../package.json" with { type: "json" };
 import { showHelp } from "./commands/help.js";
 import { handleIndex } from "./commands/index.js";
 import { handleInfo } from "./commands/info.js";
 import { handleInit } from "./commands/init.js";
 import { handleList } from "./commands/list.js";
 import { handleQuery } from "./commands/query.js";
+import { showVersion } from "./commands/version.js";
 
 // Define common database args used by multiple commands
 const dbArgs = {
@@ -152,6 +154,14 @@ const helpCommand = define({
   },
 });
 
+const versionCommand = define({
+  name: "version",
+  description: "Show CLI version",
+  run: async () => {
+    showVersion();
+  },
+});
+
 // Create subcommands map for CLI
 const subCommands = new Map();
 
@@ -161,6 +171,7 @@ subCommands.set("index", indexCommand);
 subCommands.set("query", queryCommand);
 subCommands.set("list", listCommand);
 subCommands.set("info", infoCommand);
+subCommands.set("version", versionCommand);
 
 // Main entry point
 export async function main(): Promise<void> {
@@ -169,6 +180,12 @@ export async function main(): Promise<void> {
   // Handle special cases for backward compatibility
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
     showHelp();
+    process.exit(0);
+  }
+
+  // Handle --version flag
+  if (args[0] === "--version" || args[0] === "-v") {
+    showVersion();
     process.exit(0);
   }
 
@@ -182,7 +199,7 @@ export async function main(): Promise<void> {
 
   const cliOptions = {
     name: "gistdex",
-    version: "0.1.1",
+    version: packageJson.version,
     description:
       "A CLI tool for indexing and searching content using vector databases",
     subCommands,

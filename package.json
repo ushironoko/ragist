@@ -14,7 +14,14 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "templates"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "templates",
+    "package.json"
+  ],
   "scripts": {
     "dev": "tsdown --watch",
     "build": "tsdown",
