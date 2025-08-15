@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { main } from "./index.js";
 
 // Mock command handlers
@@ -29,6 +29,7 @@ vi.mock("./commands/info.js", () => ({
 // Mock gunshi
 vi.mock("gunshi", () => ({
   cli: vi.fn(() => Promise.resolve()),
+  define: vi.fn((command: any) => command),
 }));
 
 describe("CLI main entry point", () => {
