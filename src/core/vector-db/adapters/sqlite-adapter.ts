@@ -185,7 +185,7 @@ Original error: ${
       if (!existingSource) {
         // Extract source-related metadata for first chunk
         const chunkIndex = document.metadata?.chunkIndex;
-        if (chunkIndex === 0) {
+        if (chunkIndex === 0 || chunkIndex === undefined) {
           const originalContent = document.metadata?.originalContent;
           if (originalContent) {
             // Insert into sources table
@@ -338,15 +338,18 @@ Original error: ${
   const get = async (id: string): Promise<VectorDocument | null> => {
     ensureInitialized();
 
+    // Define a named interface for document row
+    interface DocumentRow {
+      id: string;
+      source_id: string | null;
+      content: string;
+      metadata: string | null;
+      vec_rowid: number | null;
+    }
+
     try {
       const row = db?.prepare("SELECT * FROM documents WHERE id = ?").get(id) as
-        | {
-            id: string;
-            source_id: string | null;
-            content: string;
-            metadata: string | null;
-            vec_rowid: number | null;
-          }
+        | DocumentRow
         | undefined;
 
       if (!row) {
@@ -387,7 +390,11 @@ Original error: ${
           | undefined;
 
         // For backward compatibility, add originalContent to metadata for first chunk
-        if (sourceRow && metadata && metadata.chunkIndex === 0) {
+        if (
+          sourceRow &&
+          metadata &&
+          (metadata.chunkIndex === 0 || metadata.chunkIndex === undefined)
+        ) {
           metadata.originalContent = sourceRow.original_content;
         }
       }
@@ -630,8 +637,7 @@ Original error: ${
       if (options?.limit) {
         query += ` LIMIT ${options.limit}`;
       }
-
-      if (options?.offset) {
+      if (options?.offset !== undefined) {
         query += ` OFFSET ${options.offset}`;
       }
 
