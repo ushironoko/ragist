@@ -34,13 +34,13 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
 ### Global Installation
 
 ```bash
-pnpm add -g @ushironoko/gistdex
+npm add -g @ushironoko/gistdex
 ```
 
 ### Local Installation
 
 ```bash
-pnpm add @ushironoko/gistdex
+npm add @ushironoko/gistdex
 ```
 
 ### Direct Usage (without installation)
@@ -158,6 +158,7 @@ npx @ushironoko/gistdex query --no-rerank "exact match"
 ```
 
 Query options:
+
 - `-k, --top-k <n>`: Number of results (default: 5)
 - `-t, --type <type>`: Filter by source type (gist, github, file, text)
 - `-y, --hybrid`: Enable hybrid search
@@ -187,9 +188,235 @@ Show CLI version:
 npx @ushironoko/gistdex version
 # or
 npx @ushironoko/gistdex --version
-# or  
+# or
 npx @ushironoko/gistdex -v
 ```
+
+## Complete Command Reference
+
+### `init` - Initialize Database
+
+Initialize a new Gistdex project with configuration files and database setup.
+
+```bash
+npx @ushironoko/gistdex init [options]
+# or
+npx @ushironoko/gistdex --init
+```
+
+**Options:**
+
+- `--provider <name>` - Vector database provider (default: sqlite)
+- `--db <path>` - Database file path for SQLite
+
+### `index` - Index Content
+
+Index content from various sources into the vector database.
+
+```bash
+npx @ushironoko/gistdex index [options]
+```
+
+**Options:**
+
+- `--provider <name>` - Vector database provider (default: sqlite)
+- `--db <path>` - Database file path for SQLite
+- `--text <content>` - Index plain text directly
+- `--file <path>` - Index a single file (restricted to current directory and subdirectories)
+- `--files <patterns>` - Index multiple files using glob patterns (comma-separated)
+- `--gist <url>` - Index a GitHub Gist (only gist.github.com URLs allowed)
+- `--github <url>` - Index a GitHub repository (only github.com URLs allowed)
+- `--title <title>` - Custom title for the indexed content
+- `--url <url>` - Custom URL metadata for the indexed content
+- `--chunk-size <n>` - Text chunk size in characters (default: 1000)
+- `--chunk-overlap <n>` - Overlap between chunks in characters (default: 200)
+- `--branch <branch>` - GitHub branch to index (default: main)
+- `--paths <paths>` - Comma-separated paths to index from GitHub repository
+
+### `query` - Search Content
+
+Search indexed content using semantic or hybrid search.
+
+```bash
+npx @ushironoko/gistdex query [options] <search-query>
+```
+
+**Options:**
+
+- `--provider <name>` - Vector database provider (default: sqlite)
+- `--db <path>` - Database file path for SQLite
+- `-k, --top-k <n>` - Number of results to return (default: 5)
+- `-t, --type <type>` - Filter by source type (gist, github, file, text)
+- `-y, --hybrid` - Enable hybrid search (combines semantic and keyword matching)
+- `-n, --no-rerank` - Disable result re-ranking
+- `-f, --full` - Show full original source content instead of chunks
+
+### `list` - List Indexed Items
+
+Display all indexed items with their metadata.
+
+```bash
+npx @ushironoko/gistdex list [options]
+```
+
+**Options:**
+
+- `--provider <name>` - Vector database provider (default: sqlite)
+- `--db <path>` - Database file path for SQLite
+- `--stats` - Show statistics only (total items, items by type)
+
+### `info` - Database Information
+
+Show information about the current vector database adapter.
+
+```bash
+npx @ushironoko/gistdex info [options]
+```
+
+**Options:**
+
+- `--provider <name>` - Vector database provider (default: sqlite)
+
+### `version` - Show Version
+
+Display the CLI version.
+
+```bash
+npx @ushironoko/gistdex version
+# Aliases:
+npx @ushironoko/gistdex --version
+npx @ushironoko/gistdex -v
+```
+
+### `help` - Show Help
+
+Display help information for all commands.
+
+```bash
+npx @ushironoko/gistdex help
+# or
+npx @ushironoko/gistdex --help
+# or
+npx @ushironoko/gistdex -h
+```
+
+## Architecture Diagram
+
+The following diagram illustrates the relationships between key modules in the Gistdex architecture:
+
+```mermaid
+graph TB
+    subgraph "CLI Layer"
+        CLI[cli/index.ts]
+        Commands[Commands]
+        CommandHandler[command-handler.ts]
+        ConfigHelper[config-helper.ts]
+    end
+
+    subgraph "Core Services"
+        DatabaseOps[database-operations.ts]
+        DatabaseService[database-service.ts]
+        ConfigOps[config-operations.ts]
+        Indexer[indexer.ts]
+        Search[search.ts]
+        Embedding[embedding.ts]
+        Chunking[chunking.ts]
+        Security[security.ts]
+    end
+
+    subgraph "Vector DB Layer"
+        Factory[factory.ts]
+        Registry[registry.ts]
+        Adapters[Adapters]
+        SQLiteAdapter[sqlite-adapter.ts]
+        MemoryAdapter[memory-adapter.ts]
+        BaseAdapter[base-adapter.ts]
+    end
+
+    subgraph "External Services"
+        GoogleAI[Google AI API]
+        SQLiteVec[sqlite-vec]
+    end
+
+    %% CLI Layer relationships
+    CLI --> Commands
+    Commands --> CommandHandler
+    CommandHandler --> ConfigHelper
+    CommandHandler --> DatabaseOps
+    ConfigHelper --> ConfigOps
+
+    %% Core Services relationships
+    DatabaseOps --> DatabaseService
+    DatabaseOps --> Factory
+    DatabaseService --> Factory
+    DatabaseService --> Indexer
+    DatabaseService --> Search
+    Indexer --> Embedding
+    Indexer --> Chunking
+    Indexer --> Security
+    Search --> Embedding
+
+    %% Vector DB Layer relationships
+    Factory --> Registry
+    Registry --> Adapters
+    Adapters --> SQLiteAdapter
+    Adapters --> MemoryAdapter
+    SQLiteAdapter -.-> BaseAdapter
+    MemoryAdapter -.-> BaseAdapter
+
+    %% External connections
+    Embedding --> GoogleAI
+    SQLiteAdapter --> SQLiteVec
+
+    %% Styling
+    classDef cli fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef core fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef db fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
+
+    class CLI,Commands,CommandHandler,ConfigHelper cli
+    class DatabaseOps,DatabaseService,ConfigOps,Indexer,Search,Embedding,Chunking,Security core
+    class Factory,Registry,Adapters,SQLiteAdapter,MemoryAdapter,BaseAdapter db
+    class GoogleAI,SQLiteVec external
+```
+
+### Module Relationships Explained
+
+#### CLI Layer
+
+- **cli/index.ts**: Main entry point that uses gunshi framework for command routing
+- **Commands**: Individual command handlers (init, index, query, list, info, version, help)
+- **command-handler.ts**: Abstracts common database operations for all commands
+- **config-helper.ts**: Handles configuration loading and merging from multiple sources
+
+#### Core Services
+
+- **database-operations.ts**: Provides functional composition patterns (`withDatabase`, `withReadOnly`)
+- **database-service.ts**: Main service orchestrating all database operations
+- **config-operations.ts**: Manages configuration from files, environment, and CLI arguments
+- **indexer.ts**: Handles content indexing from various sources (Gist, GitHub, files, text)
+- **search.ts**: Implements semantic and hybrid search algorithms
+- **embedding.ts**: Generates vector embeddings using Google AI
+- **chunking.ts**: Splits content into overlapping chunks for indexing
+- **security.ts**: Validates file paths and URLs for security
+
+#### Vector DB Layer
+
+- **factory.ts**: Creates adapter instances based on configuration
+- **registry.ts**: Manages registration of available adapters
+- **Adapters**: Interface implemented by all database adapters
+- **sqlite-adapter.ts**: SQLite with sqlite-vec extension for local storage
+- **memory-adapter.ts**: In-memory storage for testing
+- **base-adapter.ts**: Shared functionality for adapters
+
+#### Data Flow
+
+1. CLI commands receive user input
+2. CommandHandler abstracts database connection management
+3. DatabaseOperations provides scoped database access
+4. DatabaseService coordinates between adapters and business logic
+5. Adapters handle actual data persistence
+6. External services (Google AI, sqlite-vec) provide specialized functionality
 
 ## Programmatic Usage
 
@@ -355,6 +582,7 @@ Adapters are created using factory functions that:
 4. Return an object implementing all required methods
 
 **Important**: Export your adapter using one of these patterns:
+
 - Named export as `createAdapter`: `export { createYourAdapter as createAdapter }`
 - Default export: `export default createYourAdapter`
 
