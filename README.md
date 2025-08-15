@@ -17,6 +17,13 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
 - **Easy Migration**: Switch between databases without changing application code
 - **Configuration-based**: Select database via configuration file or environment variables
 
+### 🔍 Smart Content Retrieval
+
+- **Efficient Chunking**: Small chunks (default 1000 chars) for precise search
+- **Full Content Recovery**: Automatically retrieves complete original content with `--full` flag
+- **Source Tracking**: Each chunk is linked to its original source via unique IDs
+- **Overlap Management**: Intelligent overlap handling when reconstructing content
+
 ## Requirements
 
 - Node.js >= 24.2.0
@@ -101,7 +108,7 @@ npx @ushironoko/gistdex index --files "src/**/*.ts"
 npx @ushironoko/gistdex index --files "src/**/*.ts,docs/**/*.md,*.json"
 
 # Index with custom chunking parameters
-npx @ushironoko/gistdex index --files "**/*.md" --chunk-size 1000 --chunk-overlap 200
+npx @ushironoko/gistdex index --files "**/*.md" --chunk-size 2000 --chunk-overlap 200
 ```
 
 Index plain text:
@@ -124,23 +131,38 @@ Basic search:
 npx @ushironoko/gistdex query "vector search implementation"
 ```
 
-Search with options:
+Search with full original content:
 
 ```bash
-npx @ushironoko/gistdex query --top-k 10 --type gist "embeddings"
+# Show full content for each result
+npx @ushironoko/gistdex query --full "search query"
+
+# Get single result with full content as raw output
+npx @ushironoko/gistdex query -k 1 -f "specific search"
 ```
 
-Hybrid search (combines semantic and keyword matching):
+Advanced search options:
 
 ```bash
+# Get more results
+npx @ushironoko/gistdex query --top-k 10 "embeddings"
+
+# Filter by source type
+npx @ushironoko/gistdex query --type gist "gist content"
+
+# Hybrid search (semantic + keyword)
 npx @ushironoko/gistdex query --hybrid "search query"
+
+# Disable re-ranking
+npx @ushironoko/gistdex query --no-rerank "exact match"
 ```
 
-Query with specific provider:
-
-```bash
-npx @ushironoko/gistdex query --provider sqlite "search query"
-```
+Query options:
+- `-k, --top-k <n>`: Number of results (default: 5)
+- `-t, --type <type>`: Filter by source type (gist, github, file, text)
+- `-y, --hybrid`: Enable hybrid search
+- `-n, --no-rerank`: Disable result re-ranking
+- `-f, --full`: Show full original source content (not just chunks)
 
 ### List Indexed Content
 

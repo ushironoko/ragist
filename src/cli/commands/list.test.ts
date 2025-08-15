@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ListContext } from "./list.js";
 import { handleList } from "./list.js";
 
 // Mock node:sqlite to avoid import errors
@@ -65,7 +66,9 @@ describe("handleList", () => {
   });
 
   it("lists items with stats", async () => {
-    await handleList([]);
+    await handleList({
+      values: {},
+    });
 
     expect(console.log).toHaveBeenCalledWith("Database Provider: sqlite");
     expect(console.log).toHaveBeenCalledWith("Total items: 5");
@@ -77,7 +80,11 @@ describe("handleList", () => {
   });
 
   it("shows stats only when flag is set", async () => {
-    await handleList(["--stats"]);
+    await handleList({
+      values: {
+        stats: true,
+      },
+    });
 
     expect(console.log).toHaveBeenCalledWith("Total items: 5");
     expect(console.log).not.toHaveBeenCalledWith("\nRecent items:");
@@ -102,7 +109,9 @@ describe("handleList", () => {
       getAdapterInfo: vi.fn(),
     }));
 
-    await handleList([]);
+    await handleList({
+      values: {},
+    });
 
     expect(console.log).toHaveBeenCalledWith("Total items: 0");
     expect(console.log).not.toHaveBeenCalledWith("\nRecent items:");

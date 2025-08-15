@@ -25,8 +25,13 @@ The project provides a CLI tool with the following commands:
   - `--gist url` - Index a GitHub Gist
   - `--github url` - Index a GitHub repository
   - `--chunk-size N` - Set chunk size (default: 1000)
-  - `--chunk-overlap N` - Set chunk overlap (default: 100)
+  - `--chunk-overlap N` - Set chunk overlap (default: 200)
 - `npx gistdex query` - Search indexed content using semantic/hybrid search
+  - `-k, --top-k <n>` - Number of results (default: 5)
+  - `-t, --type <type>` - Filter by source type (gist, github, file, text)
+  - `-y, --hybrid` - Enable hybrid search (semantic + keyword)
+  - `-n, --no-rerank` - Disable result re-ranking
+  - `-f, --full` - Show full original source content (automatically retrieves from sourceId)
 - `npx gistdex list` - List all indexed items with metadata
 - `npx gistdex info` - Show vector database adapter information
 - `npx gistdex help` - Display help message
@@ -40,13 +45,39 @@ npx gistdex index --files "src/**/*.ts"
 npx gistdex index --files "src/**/*.ts,docs/**/*.md,*.json"
 
 # Index with custom chunking parameters
-npx gistdex index --files "**/*.md" --chunk-size 1000 --chunk-overlap 200
+npx gistdex index --files "**/*.md" --chunk-size 2000 --chunk-overlap 200
 
 # Index all JavaScript and TypeScript files recursively
 npx gistdex index --files "**/*.{js,ts,jsx,tsx}"
 ```
 
+#### Examples of Full Content Retrieval
+```bash
+# Search and show full original content for each result
+npx gistdex query --full "search term"
+
+# Get single result with complete original content as raw output
+npx gistdex query -k 1 -f "specific search"
+
+# Combine with other options
+npx gistdex query --type gist --full "gist content"
+npx gistdex query --hybrid -k 1 -f "exact match"
+```
+
 ## Architecture Overview
+
+### Smart Content Chunking & Retrieval
+The system uses an intelligent chunking strategy that:
+1. **Indexes with small chunks** (default 1000 chars) for precise semantic search
+2. **Preserves original content** by storing it with the first chunk (chunkIndex: 0)
+3. **Groups chunks** using unique sourceId for each indexed content
+4. **Reconstructs full content** on demand by retrieving all chunks with the same sourceId
+5. **Handles overlaps** intelligently when reconstructing from multiple chunks
+
+This approach provides:
+- Efficient storage (original content stored once)
+- Precise search (small chunks for better matching)
+- Complete retrieval (full content available with --full flag)
 
 ### Pluggable Vector Database Architecture
 The system uses a **functional composition pattern** for vector databases, eliminating global state and ensuring proper resource management:
@@ -88,8 +119,8 @@ The system uses a **functional composition pattern** for vector databases, elimi
 - **database-operations.ts** - Functional composition patterns for database operations (`withDatabase`, `withReadOnly`, `withTransaction`)
 - **embedding.ts** - Google AI text-embedding-004 model integration (768 dimensions)
 - **chunking.ts** - Text chunking with configurable size and overlap
-- **search.ts** - Semantic and hybrid search implementation
-- **indexer.ts** - Content indexing from multiple sources (Gist, GitHub, files)
+- **search.ts** - Semantic and hybrid search implementation with `getOriginalContent` for full content retrieval
+- **indexer.ts** - Content indexing from multiple sources with sourceId generation for chunk grouping
 - **config-operations.ts** - Configuration management with functional composition pattern
 - **security.ts** - Input validation and security utilities
 
