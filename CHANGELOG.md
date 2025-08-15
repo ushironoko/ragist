@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.4] - 2025-08-15
+
+- Merge pull request #43 from ushironoko:fix-gunshi-use-define
+- fix:use define for gunshi
+
+
 ## [0.1.3] - 2025-08-14
 
 - Merge pull request #42 from ushironoko/revert-40-add-claude-md-update-workflow
