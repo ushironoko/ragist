@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0] - 2025-08-15
+
+- Merge pull request #48 from ushironoko:refactor-commands
+- refactor commands
+- Merge pull request #47 from ushironoko:support-version-command
+- feat: add version command and display CLI version
+- Merge pull request #46 from ushironoko:refactor-gunshi-subcommands
+- refactor subcommands
+
+
 ## [0.3.0] - 2025-08-15
 
 - Merge pull request #45 from ushironoko:refactor-original-contents
