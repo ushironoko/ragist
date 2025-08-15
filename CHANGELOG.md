@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.1] - 2025-08-15
+
+- fix README
+
+
 ## [0.4.0] - 2025-08-15
 
 - Merge pull request #48 from ushironoko:refactor-commands
