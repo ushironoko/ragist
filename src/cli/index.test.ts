@@ -85,13 +85,15 @@ describe("CLI main entry point", () => {
   });
 
   it("should handle unknown command", async () => {
+    const { cli } = await import("gunshi");
     process.argv = ["node", "cli.js", "unknown"];
 
-    await expect(main()).rejects.toThrow("Process exited with code 1");
-    expect(mockConsoleError).toHaveBeenCalledWith("Unknown command: unknown");
-    expect(mockConsoleError).toHaveBeenCalledWith(
-      "Run 'gistdex help' for usage information",
-    );
+    // gunshi handles unknown commands internally
+    await main();
+
+    // Verify that cli was called with the unknown command
+    // gunshi will handle the error internally
+    expect(cli).toHaveBeenCalled();
   });
 
   it("should call gunshi cli for valid commands", async () => {

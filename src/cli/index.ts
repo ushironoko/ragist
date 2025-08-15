@@ -152,7 +152,15 @@ const helpCommand = define({
   },
 });
 
-// Commands are now used directly in the switch statement below
+// Create subcommands map for CLI
+const subCommands = new Map();
+
+// Add commands using set method
+subCommands.set("init", initCommand);
+subCommands.set("index", indexCommand);
+subCommands.set("query", queryCommand);
+subCommands.set("list", listCommand);
+subCommands.set("info", infoCommand);
 
 // Main entry point
 export async function main(): Promise<void> {
@@ -164,52 +172,26 @@ export async function main(): Promise<void> {
     process.exit(0);
   }
 
-  if (args[0] === "help") {
-    showHelp();
-    process.exit(0);
-  }
-
   // Handle --init as alias for init command
-  if (args[0] === "--init") {
-    args[0] = "init";
+  if (args.some((arg) => arg === "--init")) {
+    const filteredArgs = args.filter((arg) => arg !== "--init");
+    filteredArgs.unshift("init");
+    args.length = 0;
+    args.push(...filteredArgs);
   }
-
-  // Get the command
-  const commandName = args[0];
 
   const cliOptions = {
     name: "gistdex",
     version: "0.1.1",
     description:
       "A CLI tool for indexing and searching content using vector databases",
+    subCommands,
   };
 
   try {
-    // Execute the command with remaining args based on commandName
-    switch (commandName) {
-      case "init":
-        await cli(args.slice(1), initCommand, cliOptions);
-        break;
-      case "index":
-        await cli(args.slice(1), indexCommand, cliOptions);
-        break;
-      case "query":
-        await cli(args.slice(1), queryCommand, cliOptions);
-        break;
-      case "list":
-        await cli(args.slice(1), listCommand, cliOptions);
-        break;
-      case "info":
-        await cli(args.slice(1), infoCommand, cliOptions);
-        break;
-      case "help":
-        await cli(args.slice(1), helpCommand, cliOptions);
-        break;
-      default:
-        console.error(`Unknown command: ${commandName}`);
-        console.error("Run 'gistdex help' for usage information");
-        process.exit(1);
-    }
+    // Use help command as the default/main command
+    // gunshi will handle command routing based on the first argument
+    await cli(args, helpCommand, cliOptions);
   } catch (error) {
     console.error(
       "Error:",
