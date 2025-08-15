@@ -1,4 +1,3 @@
-import { createDatabaseOperations } from "../../core/database-operations.js";
 import {
   calculateSearchStats,
   getOriginalContent,
@@ -6,8 +5,8 @@ import {
   semanticSearch,
 } from "../../core/search.js";
 import { parseCliInteger } from "../utils/arg-parser.js";
+import { createReadOnlyCommandHandler } from "../utils/command-handler.js";
 import { handleCliError } from "../utils/error-handler.js";
-import { getDBConfig } from "./index.js";
 
 interface QueryContext {
   values: {
@@ -22,16 +21,12 @@ interface QueryContext {
   positionals: string[];
 }
 
-export async function handleQuery(ctx: QueryContext): Promise<void> {
-  const query = ctx.positionals.join(" ").trim();
-  if (!query) {
-    handleCliError(new Error("No query specified"));
-  }
-
-  const { config: dbConfig, customAdapters } = await getDBConfig(ctx.values);
-  const { withReadOnly } = createDatabaseOperations(dbConfig, customAdapters);
-
-  await withReadOnly(async (service) => {
+export const handleQuery = createReadOnlyCommandHandler<QueryContext>(
+  async (service, ctx) => {
+    const query = ctx.positionals.join(" ").trim();
+    if (!query) {
+      handleCliError(new Error("No query specified"));
+    }
     const options = {
       k: parseCliInteger(ctx.values["top-k"], 5) ?? 5,
       sourceType: ctx.values.type,
@@ -122,5 +117,5 @@ export async function handleQuery(ctx: QueryContext): Promise<void> {
         }
       }
     }
-  });
-}
+  },
+);

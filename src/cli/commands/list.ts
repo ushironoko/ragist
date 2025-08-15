@@ -1,5 +1,5 @@
-import { createDatabaseOperations } from "../../core/database-operations.js";
-import { getDBConfig } from "./index.js";
+import { createReadOnlyCommandHandler } from "../utils/command-handler.js";
+import { getDBConfig } from "../utils/config-helper.js";
 
 export interface ListContext {
   values: {
@@ -9,11 +9,10 @@ export interface ListContext {
   };
 }
 
-export async function handleList(ctx: ListContext): Promise<void> {
-  const { config: dbConfig, customAdapters } = await getDBConfig(ctx.values);
-  const { withReadOnly } = createDatabaseOperations(dbConfig, customAdapters);
-
-  await withReadOnly(async (service) => {
+export const handleList = createReadOnlyCommandHandler<ListContext>(
+  async (service, ctx) => {
+    // Get dbConfig for displaying provider info
+    const { config: dbConfig } = await getDBConfig(ctx.values);
     const stats = await service.getStats();
 
     console.log(`Database Provider: ${dbConfig?.provider || "unknown"}`);
@@ -49,5 +48,5 @@ export async function handleList(ctx: ListContext): Promise<void> {
         console.log();
       }
     }
-  });
-}
+  },
+);

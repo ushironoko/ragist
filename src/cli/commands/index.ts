@@ -1,6 +1,4 @@
 import { existsSync } from "node:fs";
-import { createConfigOperations } from "../../core/config-operations.js";
-import { createDatabaseOperations } from "../../core/database-operations.js";
 import {
   indexFile,
   indexFiles,
@@ -9,45 +7,14 @@ import {
   indexText,
 } from "../../core/indexer.js";
 import { SecurityError, validateFilePath } from "../../core/security.js";
-import type { createFactory } from "../../core/vector-db/adapters/factory.js";
-import type { AdapterFactory } from "../../core/vector-db/adapters/types.js";
 import { parseCliInteger } from "../utils/arg-parser.js";
 import { displayErrors } from "../utils/cli-helpers.js";
+import { createWriteCommandHandler } from "../utils/command-handler.js";
 import { handleCliError } from "../utils/error-handler.js";
 import { createProgressReporter } from "../utils/progress.js";
 
-export async function getDBConfig(values: {
-  provider?: string;
-  db?: string;
-  [key: string]: string | boolean | undefined;
-}): Promise<{
-  config: Parameters<ReturnType<typeof createFactory>["create"]>[0];
-  customAdapters?: Map<string, AdapterFactory>;
-}> {
-  const configOps = createConfigOperations();
-  const dbConfig = await configOps.getVectorDBConfig(values);
-
-  // Load custom adapters if needed
-  const loadedConfig = await configOps.load();
-  let customAdapters: Map<string, AdapterFactory> | undefined;
-
-  if (
-    loadedConfig.customAdapters &&
-    Object.keys(loadedConfig.customAdapters).length > 0
-  ) {
-    try {
-      customAdapters = await configOps.loadCustomAdapters(loadedConfig);
-    } catch (error) {
-      console.error("Warning: Failed to load custom adapters:", error);
-      // Continue without custom adapters
-    }
-  }
-
-  return {
-    config: dbConfig,
-    customAdapters,
-  };
-}
+// Re-export from config-helper for backward compatibility
+export { getDBConfig } from "../utils/config-helper.js";
 
 export interface IndexContext {
   values: {
@@ -67,11 +34,8 @@ export interface IndexContext {
   };
 }
 
-export async function handleIndex(ctx: IndexContext): Promise<void> {
-  const { config: dbConfig, customAdapters } = await getDBConfig(ctx.values);
-  const dbOperations = createDatabaseOperations(dbConfig, customAdapters);
-
-  await dbOperations.withDatabase(async (service) => {
+export const handleIndex = createWriteCommandHandler<IndexContext>(
+  async (service, ctx) => {
     const options = {
       chunkSize: parseCliInteger(ctx.values["chunk-size"], 1000) ?? 1000,
       chunkOverlap: parseCliInteger(ctx.values["chunk-overlap"], 200) ?? 200,
@@ -161,5 +125,5 @@ export async function handleIndex(ctx: IndexContext): Promise<void> {
     console.log(`  Chunks created: ${result.chunksCreated}`);
 
     displayErrors(result.errors);
-  });
-}
+  },
+);
