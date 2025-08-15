@@ -10,6 +10,10 @@ vi.mock("./commands/help.js", () => ({
   showHelp: vi.fn(),
 }));
 
+vi.mock("./commands/version.js", () => ({
+  showVersion: vi.fn(),
+}));
+
 vi.mock("./commands/index.js", () => ({
   handleIndex: vi.fn(() => Promise.resolve()),
 }));
@@ -66,6 +70,30 @@ describe("CLI main entry point", () => {
 
     await expect(main()).rejects.toThrow("Process exited with code 0");
     expect(showHelp).toHaveBeenCalled();
+  });
+
+  it("should show version with --version flag", async () => {
+    const { showVersion } = await import("./commands/version.js");
+    process.argv = ["node", "cli.js", "--version"];
+
+    await expect(main()).rejects.toThrow("Process exited with code 0");
+    expect(showVersion).toHaveBeenCalled();
+  });
+
+  it("should show version with -v flag", async () => {
+    const { showVersion } = await import("./commands/version.js");
+    process.argv = ["node", "cli.js", "-v"];
+
+    await expect(main()).rejects.toThrow("Process exited with code 0");
+    expect(showVersion).toHaveBeenCalled();
+  });
+
+  it("should handle version command", async () => {
+    const { cli } = await import("gunshi");
+    process.argv = ["node", "cli.js", "version"];
+
+    await main();
+    expect(cli).toHaveBeenCalled();
   });
 
   it("should handle init command", async () => {

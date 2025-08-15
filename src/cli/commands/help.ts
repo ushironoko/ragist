@@ -42,6 +42,8 @@ Commands:
     Options:
       --provider <name>  Vector DB provider (default: sqlite)
       
+  version  Show CLI version
+  
   help     Show this help message
 
 Special Commands:
