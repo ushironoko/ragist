@@ -2,18 +2,18 @@
   "mcpServers": {
     "gistdex": {
       "command": "npx",
-      "args": ["--yes", "@ushironoko/gistdex@latest", "gistdex-mcp"],
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
       "description": "Gistdex MCP Server - RAG search system for Gist, GitHub, and local files. The database will be created in the current working directory. Specify 'cwd' field to set custom database location."
     },
     "gistdex-unix": {
       "command": "npx",
-      "args": ["--yes", "@ushironoko/gistdex@latest", "gistdex-mcp"],
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
       "cwd": "~/Documents/gistdex-data",
       "description": "Example for macOS/Linux: Database in ~/Documents/gistdex-data"
     },
     "gistdex-windows": {
       "command": "npx",
-      "args": ["--yes", "@ushironoko/gistdex@latest", "gistdex-mcp"],
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
       "cwd": "C:/Users/%USERNAME%/Documents/gistdex-data",
       "description": "Example for Windows: Database in Documents folder (use forward slashes or double backslashes)"
     }

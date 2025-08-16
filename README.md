@@ -179,10 +179,7 @@ Gistdex can be used as an MCP server, allowing LLMs to directly index and search
 #### Starting the MCP Server
 
 ```bash
-# Method 1: Using dedicated MCP binary (recommended)
-npx --yes @ushironoko/gistdex@latest gistdex-mcp
-
-# Method 2: Using CLI with --mcp flag
+# Start MCP server
 npx @ushironoko/gistdex --mcp
 # or
 npx @ushironoko/gistdex -m
@@ -197,14 +194,16 @@ Add the following configuration to your Claude Desktop's `claude_desktop_config.
   "mcpServers": {
     "gistdex": {
       "command": "npx",
-      "args": ["--yes", "@ushironoko/gistdex@latest", "gistdex-mcp"],
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
       "cwd": "~/Documents/gistdex-data"
     }
   }
 }
 ```
 
-**Note**: The `--yes` flag ensures npx installs the package without prompting, preventing connection timeouts.
+**Important**: 
+- Set the `cwd` field to specify where the database will be created
+- The `--yes` flag ensures npx installs the package without prompting
 
 **Important**: Set the `cwd` field to specify where the database will be created. Without it, the database may be created in Claude Desktop's installation directory.
 

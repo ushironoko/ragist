@@ -180,15 +180,14 @@ async function startMCPServer(): Promise<void> {
   const __dirname = path.dirname(__filename);
   const serverPath = path.join(__dirname, "../mcp/server.js");
 
-  console.log("Starting Gistdex MCP server...");
-
+  // Do not output anything to stdout/stderr as it interferes with MCP communication
   const mcpServer = spawn(process.execPath, [serverPath], {
     stdio: "inherit",
     env: process.env,
   });
 
   mcpServer.on("error", (error) => {
-    console.error("Failed to start MCP server:", error);
+    // Cannot use console.error as it would interfere with MCP
     process.exit(1);
   });
 

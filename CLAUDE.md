@@ -38,7 +38,6 @@ The project provides a CLI tool with the following commands:
 - `npx gistdex version` - Show CLI version (also `--version` or `-v`)
 - `npx gistdex help` - Display help message
 - `npx gistdex --mcp` or `-m` - Start MCP (Model Context Protocol) server for LLM integration
-- `npx --yes @ushironoko/gistdex@latest gistdex-mcp` - Start MCP server directly (recommended for Claude Desktop)
 
 #### Examples of Multiple File Indexing
 ```bash
@@ -72,10 +71,7 @@ npx gistdex query --hybrid -k 1 -f "exact match"
 The project includes an MCP (Model Context Protocol) server that allows LLMs to directly use Gistdex:
 
 ```bash
-# Method 1: Using dedicated MCP binary (recommended for Claude Desktop)
-npx --yes @ushironoko/gistdex@latest gistdex-mcp
-
-# Method 2: Using CLI with --mcp flag
+# Start MCP server
 npx gistdex --mcp
 # or
 npx gistdex -m
@@ -92,14 +88,12 @@ Configuration for Claude Desktop (add to `claude_desktop_config.json`):
   "mcpServers": {
     "gistdex": {
       "command": "npx",
-      "args": ["--yes", "@ushironoko/gistdex@latest", "gistdex-mcp"],
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
       "cwd": "~/Documents/gistdex-data"  // Important: Set where DB will be created
     }
   }
 }
 ```
-
-**Note**: The `--yes` flag ensures npx installs the package without prompting, preventing connection timeouts.
 
 ## Architecture Overview
 
