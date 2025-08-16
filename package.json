@@ -61,11 +61,13 @@
   "dependencies": {
     "@ai-sdk/google": "2.0.3",
     "@inquirer/prompts": "^7.8.1",
+    "@modelcontextprotocol/sdk": "1.17.3",
     "ai": "5.0.8",
     "chalk": "^5.4.1",
     "gunshi": "0.26.3",
     "ora": "^8.2.0",
-    "sqlite-vec": "0.1.6"
+    "sqlite-vec": "0.1.6",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

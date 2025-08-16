@@ -1,37 +1,9 @@
 #!/usr/bin/env node
 
-import { existsSync } from "node:fs";
+import { loadEnvironmentVariables } from "../core/utils/env-loader.js";
 
 // Load environment variables with fallback to system environment
-const envFilePath = ".env";
-const envFileExists = existsSync(envFilePath);
-
-if (envFileExists) {
-  try {
-    process.loadEnvFile(envFilePath);
-    if (process.env.NODE_ENV === "development") {
-      console.info("Loaded environment variables from .env file");
-    }
-  } catch (error) {
-    console.warn("Failed to load .env file:", error);
-  }
-} else {
-  // Check if required environment variables are already set
-  const hasRequiredEnvVars = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-
-  if (hasRequiredEnvVars) {
-    if (process.env.NODE_ENV === "development") {
-      console.info("Using environment variables from system");
-    }
-  } else {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        "Warning: .env file not found and GOOGLE_GENERATIVE_AI_API_KEY not set. " +
-          "Please set environment variables or create a .env file.",
-      );
-    }
-  }
-}
+loadEnvironmentVariables({ envFilePath: ".env" });
 
 import { cli, define } from "gunshi";
 import packageJson from "../../package.json" with { type: "json" };
@@ -195,6 +167,36 @@ subCommands.set("info", infoCommand);
 subCommands.set("version", versionCommand);
 
 // Main entry point
+/**
+ * Start the MCP server
+ */
+async function startMCPServer(): Promise<void> {
+  // Import and start the MCP server
+  const { spawn } = await import("node:child_process");
+  const path = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const serverPath = path.join(__dirname, "../mcp/server.js");
+
+  console.log("Starting Gistdex MCP server...");
+
+  const mcpServer = spawn(process.execPath, [serverPath], {
+    stdio: "inherit",
+    env: process.env,
+  });
+
+  mcpServer.on("error", (error) => {
+    console.error("Failed to start MCP server:", error);
+    process.exit(1);
+  });
+
+  mcpServer.on("exit", (code) => {
+    process.exit(code ?? 0);
+  });
+}
+
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
@@ -208,6 +210,12 @@ export async function main(): Promise<void> {
   if (args[0] === "--version" || args[0] === "-v") {
     showVersion();
     process.exit(0);
+  }
+
+  // Handle --mcp or -m flag to start MCP server
+  if (args[0] === "--mcp" || args[0] === "-m") {
+    await startMCPServer();
+    return; // This won't return as the server will take over the process
   }
 
   // Handle --init as alias for init command

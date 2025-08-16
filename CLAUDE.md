@@ -37,6 +37,7 @@ The project provides a CLI tool with the following commands:
 - `npx gistdex info` - Show vector database adapter information
 - `npx gistdex version` - Show CLI version (also `--version` or `-v`)
 - `npx gistdex help` - Display help message
+- `npx gistdex --mcp` or `-m` - Start MCP (Model Context Protocol) server for LLM integration
 
 #### Examples of Multiple File Indexing
 ```bash
@@ -64,6 +65,34 @@ npx gistdex query -k 1 -f "specific search"
 # Combine with other options
 npx gistdex query --type gist --full "gist content"
 npx gistdex query --hybrid -k 1 -f "exact match"
+```
+
+### MCP Server Mode
+The project includes an MCP (Model Context Protocol) server that allows LLMs to directly use Gistdex:
+
+```bash
+# Start MCP server
+npx gistdex --mcp
+# or
+npx gistdex -m
+```
+
+MCP tools available:
+- `gistdex_index` - Index content from various sources
+- `gistdex_query` - Search indexed content
+- `gistdex_list` - List indexed items with statistics
+
+Configuration via `.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "gistdex": {
+      "command": "npx",
+      "args": ["@ushironoko/gistdex", "--mcp"],
+      "cwd": "~/Documents/gistdex-data"  // Important: Set where DB will be created
+    }
+  }
+}
 ```
 
 ## Architecture Overview
@@ -125,6 +154,16 @@ The system uses a **functional composition pattern** for vector databases, elimi
 - **indexer.ts** - Content indexing from multiple sources with sourceId generation for chunk grouping
 - **config-operations.ts** - Configuration management with functional composition pattern
 - **security.ts** - Input validation and security utilities
+- **utils/env-loader.ts** - Environment variable loader with fallback to system environment
+- **utils/ranking.ts** - Result re-ranking algorithms for search optimization
+
+#### MCP Layer (`src/mcp/`)
+- **server.ts** - MCP server implementation using StdioServerTransport
+- **tools/index-tool.ts** - Tool handler for indexing content via MCP
+- **tools/query-tool.ts** - Tool handler for searching content via MCP
+- **tools/list-tool.ts** - Tool handler for listing indexed items via MCP
+- **utils/tool-handler.ts** - Common factory for creating type-safe tool handlers
+- **schemas/validation.ts** - Zod schemas for MCP tool input validation
 
 #### CLI Layer (`src/cli/`)
 - **index.ts** - Main CLI entry point with Map-based command routing using gunshi framework
@@ -158,6 +197,18 @@ The system uses a **functional composition pattern** for vector databases, elimi
 Tests are colocated with source files using `.test.ts` suffix. Run tests with coverage to ensure 80% threshold is met for branches, functions, lines, and statements.
 
 ## Recent Architecture Improvements
+
+### MCP Server Integration (v0.5.0+)
+- Added Model Context Protocol (MCP) server for LLM integration
+- Three MCP tools: `gistdex_index`, `gistdex_query`, `gistdex_list`
+- Common tool handler factory to eliminate code duplication
+- CLI supports `--mcp` flag to start server
+- Configurable via `.mcp.json` with `cwd` field for database location
+
+### Environment Variable Loading (v0.4.5+)
+- Unified environment loading with `env-loader.ts`
+- Fallback from `.env` file to system environment variables
+- Shared between CLI and MCP server
 
 ### Command Handler Abstraction (v0.3.0+)
 - Introduced `createCommandHandler` utility to eliminate code duplication in CLI commands
@@ -277,6 +328,16 @@ gistdex/
 │   │       ├── arg-parser.ts       # Argument parsing
 │   │       ├── error-handler.ts    # Error handling
 │   │       └── progress.ts         # Progress reporting
+│   ├── mcp/           # MCP server implementation
+│   │   ├── server.ts  # MCP server with StdioServerTransport
+│   │   ├── tools/     # MCP tool handlers
+│   │   │   ├── index-tool.ts  # Index content via MCP
+│   │   │   ├── query-tool.ts  # Search via MCP
+│   │   │   └── list-tool.ts   # List items via MCP
+│   │   ├── utils/     # MCP utilities
+│   │   │   └── tool-handler.ts # Tool handler factory
+│   │   └── schemas/   # Validation schemas
+│   │       └── validation.ts   # Zod schemas
 │   ├── core/          # Core business logic
 │   │   ├── vector-db/ # Vector database layer
 │   │   │   ├── adapters/   # Database adapters
@@ -294,7 +355,11 @@ gistdex/
 │   │   ├── chunking.ts            # Text chunking
 │   │   ├── search.ts              # Search implementation
 │   │   ├── indexer.ts             # Content indexing
-│   │   └── security.ts            # Security utilities
+│   │   ├── security.ts            # Security utilities
+│   │   └── utils/                 # Core utilities
+│   │       ├── env-loader.ts      # Environment variable loader
+│   │       ├── ranking.ts         # Search result ranking
+│   │       └── config-parser.ts   # Config parsing
 │   └── index.ts       # Library entry point
 ├── templates/         # Adapter templates
 ├── docs/             # Documentation
