@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.2] - 2025-08-16
+
+- chore: release v0.5.1
+- fix: remove --no-warnings from shebang for better compatibility
+
+
 ## [0.5.0] - 2025-08-16
 
 - Merge pull request #49 from ushironoko:support-mcp-for-local
