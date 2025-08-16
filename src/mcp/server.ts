@@ -32,7 +32,6 @@ const server = new Server(
   },
 );
 
-
 // Register tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
@@ -325,7 +324,7 @@ async function main() {
     await server.close();
     process.exit(0);
   });
-  
+
   process.on("SIGTERM", async () => {
     await server.close();
     process.exit(0);
@@ -336,10 +335,10 @@ async function main() {
 main().catch((error) => {
   // For debugging, write errors to a log file instead of stderr
   if (process.env.DEBUG_MCP) {
-    import("fs").then((fs) => {
+    import("node:fs").then((fs) => {
       fs.appendFileSync(
         "/tmp/gistdex-mcp-error.log",
-        `${new Date().toISOString()} Error: ${error.stack || error}\n`
+        `${new Date().toISOString()} Error: ${error.stack || error}\n`,
       );
     });
   }
