@@ -186,7 +186,7 @@ async function startMCPServer(): Promise<void> {
     env: process.env,
   });
 
-  mcpServer.on("error", (error) => {
+  mcpServer.on("error", () => {
     // Cannot use console.error as it would interfere with MCP
     process.exit(1);
   });
