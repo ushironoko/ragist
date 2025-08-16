@@ -172,6 +172,58 @@ npx @ushironoko/gistdex list
 npx @ushironoko/gistdex list --stats  # Show statistics only
 ```
 
+### MCP (Model Context Protocol) Server
+
+Gistdex can be used as an MCP server, allowing LLMs to directly index and search content.
+
+#### Starting the MCP Server
+
+```bash
+# Start MCP server
+npx @ushironoko/gistdex --mcp
+# or
+npx @ushironoko/gistdex -m
+```
+
+#### Configuring for Claude Desktop
+
+Create a `.mcp.json` file in your project or home directory:
+
+```json
+{
+  "mcpServers": {
+    "gistdex": {
+      "command": "npx",
+      "args": ["@ushironoko/gistdex", "--mcp"],
+      "cwd": "~/Documents/gistdex-data"
+    }
+  }
+}
+```
+
+**Important**: Set the `cwd` field to specify where the database will be created. Without it, the database may be created in Claude Desktop's installation directory.
+
+Recommended paths:
+
+**macOS/Linux:**
+- `~/Documents/gistdex-data` - User's Documents folder
+- `~/.gistdex` - Hidden folder in home directory
+- `/absolute/path/to/project` - Specific project directory
+
+**Windows:**
+- `C:\\Users\\%USERNAME%\\Documents\\gistdex-data` - User's Documents folder
+- `%USERPROFILE%\\gistdex-data` - User profile directory
+- `C:\\gistdex-data` - Root of C drive
+- `.\\gistdex-data` - Relative to current directory
+
+Note: On Windows, use double backslashes (`\\`) or forward slashes (`/`) in JSON files.
+
+#### MCP Tools Available
+
+- **gistdex_index**: Index content from various sources (text, file, gist, github)
+- **gistdex_query**: Search indexed content with semantic or hybrid search
+- **gistdex_list**: List indexed items with optional statistics
+
 ### Adapter Information
 
 Show adapter information:
@@ -313,6 +365,12 @@ graph TB
         ConfigHelper[config-helper.ts]
     end
 
+    subgraph "MCP Layer"
+        MCPServer[mcp/server.ts]
+        MCPTools[MCP Tools]
+        ToolHandler[tool-handler.ts]
+    end
+
     subgraph "Core Services"
         DatabaseOps[database-operations.ts]
         DatabaseService[database-service.ts]
@@ -340,10 +398,16 @@ graph TB
 
     %% CLI Layer relationships
     CLI --> Commands
+    CLI --> MCPServer
     Commands --> CommandHandler
     CommandHandler --> ConfigHelper
     CommandHandler --> DatabaseOps
     ConfigHelper --> ConfigOps
+    
+    %% MCP Layer relationships
+    MCPServer --> MCPTools
+    MCPTools --> ToolHandler
+    ToolHandler --> DatabaseOps
 
     %% Core Services relationships
     DatabaseOps --> DatabaseService
@@ -370,11 +434,13 @@ graph TB
 
     %% Styling with black text for readability in dark mode
     classDef cli fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    classDef mcp fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000
     classDef core fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
     classDef db fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px,color:#000
     classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
 
     class CLI,Commands,CommandHandler,ConfigHelper cli
+    class MCPServer,MCPTools,ToolHandler mcp
     class DatabaseOps,DatabaseService,ConfigOps,Indexer,Search,Embedding,Chunking,Security core
     class Factory,Registry,Adapters,SQLiteAdapter,MemoryAdapter,BaseAdapter db
     class GoogleAI,SQLiteVec external
@@ -384,10 +450,19 @@ graph TB
 
 #### CLI Layer
 
-- **cli/index.ts**: Main entry point that uses gunshi framework for command routing
+- **cli/index.ts**: Main entry point that uses gunshi framework for command routing, includes `--mcp` flag support
 - **Commands**: Individual command handlers (init, index, query, list, info, version, help)
 - **command-handler.ts**: Abstracts common database operations for all commands
 - **config-helper.ts**: Handles configuration loading and merging from multiple sources
+
+#### MCP Layer (Model Context Protocol)
+
+- **mcp/server.ts**: MCP server implementation using StdioServerTransport
+- **MCP Tools**: Three tools available via MCP protocol:
+  - `gistdex_index`: Index content from various sources
+  - `gistdex_query`: Search indexed content with semantic/hybrid search
+  - `gistdex_list`: List indexed items with statistics
+- **tool-handler.ts**: Common factory for creating type-safe tool handlers
 
 #### Core Services
 
@@ -399,6 +474,12 @@ graph TB
 - **embedding.ts**: Generates vector embeddings using Google AI
 - **chunking.ts**: Splits content into overlapping chunks for indexing
 - **security.ts**: Validates file paths and URLs for security
+
+#### Core Utilities
+
+- **env-loader.ts**: Common environment variable loader with fallback to system environment
+- **ranking.ts**: Result re-ranking algorithms for search optimization
+- **config-parser.ts**: Configuration parsing and validation utilities
 
 #### Vector DB Layer
 
