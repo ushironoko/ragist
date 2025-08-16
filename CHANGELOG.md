@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.4] - 2025-08-16
+
+- fix mcp
+
+
 ## [0.5.3] - 2025-08-16
 
 - fix: remove console.log from MCP server startup to prevent JSON-RPC interference
