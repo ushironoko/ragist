@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0] - 2025-08-16
+
+- Merge pull request #49 from ushironoko:support-mcp-for-local
+- support mcp
+- fix load env
+- fix README
+
+
 ## [0.4.1] - 2025-08-15
 
 - fix README
