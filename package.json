@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "gistdex": "dist/cli/index.js"
+    "gistdex": "dist/cli/index.js",
+    "gistdex-mcp": "dist/mcp/server.js"
   },
   "exports": {
     ".": {
