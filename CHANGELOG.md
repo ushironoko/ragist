@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3] - 2025-08-16
+
+- fix: remove console.log from MCP server startup to prevent JSON-RPC interference
+- fix: remove console.log from MCP server startup to prevent JSON-RPC interference
+- fix: add dedicated gistdex-mcp binary for stable MCP server startup
+
+
 ## [0.5.2] - 2025-08-16
 
 - chore: release v0.5.1
