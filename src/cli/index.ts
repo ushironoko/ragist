@@ -171,20 +171,29 @@ subCommands.set("version", versionCommand);
  * Start the MCP server
  */
 async function startMCPServer(): Promise<void> {
-  // Import and start the MCP server
+  // Import and start the MCP server using dedicated binary
   const { spawn } = await import("node:child_process");
   const path = await import("node:path");
   const { fileURLToPath } = await import("node:url");
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const serverPath = path.join(__dirname, "../mcp/server.js");
 
-  // Do not output anything to stdout/stderr as it interferes with MCP communication
-  const mcpServer = spawn(process.execPath, [serverPath], {
-    stdio: "inherit",
-    env: process.env,
-  });
+  // Use the dedicated gistdex-mcp binary to avoid Node.js warnings
+  const mcpBinaryPath = path.join(__dirname, "gistdex-mcp.js");
+
+  // Spawn the MCP server with suppressed warnings
+  const mcpServer = spawn(
+    process.execPath,
+    ["--no-warnings", "--no-deprecation", mcpBinaryPath],
+    {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        NODE_NO_WARNINGS: "1",
+      },
+    },
+  );
 
   mcpServer.on("error", () => {
     // Cannot use console.error as it would interfere with MCP

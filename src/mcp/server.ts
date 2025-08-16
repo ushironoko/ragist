@@ -308,7 +308,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 // Start server
-async function main() {
+export async function main() {
   // Load environment variables from .env file with fallback to system environment
   const { loadEnvironmentVariables } = await import(
     "../core/utils/env-loader.js"

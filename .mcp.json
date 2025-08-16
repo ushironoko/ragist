@@ -16,6 +16,11 @@
       "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
       "cwd": "C:/Users/%USERNAME%/Documents/gistdex-data",
       "description": "Example for Windows: Database in Documents folder (use forward slashes or double backslashes)"
+    },
+    "gistdex-test": {
+      "command": "node",
+      "args": ["dist/cli/index.js", "--mcp"],
+      "description": "Example for Windows: Database in Documents folder (use forward slashes or double backslashes)"
     }
   }
 }
