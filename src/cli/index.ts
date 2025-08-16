@@ -1,14 +1,35 @@
 #!/usr/bin/env node
 
-// Load environment variables from .env file
-try {
-  process.loadEnvFile(".env");
-} catch (error) {
-  // .envファイルが存在しない場合は警告のみ（開発環境）
-  if (process.env.NODE_ENV === "development") {
-    console.warn(
-      "Warning: .env file not found. Using environment variables only.",
-    );
+import { existsSync } from "node:fs";
+
+// Load environment variables with fallback to system environment
+const envFilePath = ".env";
+const envFileExists = existsSync(envFilePath);
+
+if (envFileExists) {
+  try {
+    process.loadEnvFile(envFilePath);
+    if (process.env.NODE_ENV === "development") {
+      console.info("Loaded environment variables from .env file");
+    }
+  } catch (error) {
+    console.warn("Failed to load .env file:", error);
+  }
+} else {
+  // Check if required environment variables are already set
+  const hasRequiredEnvVars = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+  if (hasRequiredEnvVars) {
+    if (process.env.NODE_ENV === "development") {
+      console.info("Using environment variables from system");
+    }
+  } else {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "Warning: .env file not found and GOOGLE_GENERATIVE_AI_API_KEY not set. " +
+          "Please set environment variables or create a .env file.",
+      );
+    }
   }
 }
 
