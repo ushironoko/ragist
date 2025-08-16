@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// Suppress warnings to avoid stderr output that interferes with MCP
+process.env.NODE_NO_WARNINGS = "1";
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -28,6 +31,7 @@ const server = new Server(
     },
   },
 );
+
 
 // Register tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -310,20 +314,34 @@ async function main() {
   const { loadEnvironmentVariables } = await import(
     "../core/utils/env-loader.js"
   );
-  loadEnvironmentVariables();
+  loadEnvironmentVariables({ silent: true });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Gistdex MCP server running on stdio");
+  // Do not output to stderr as it interferes with MCP communication
 
-  // Handle shutdown
+  // Handle shutdown gracefully
   process.on("SIGINT", async () => {
+    await server.close();
+    process.exit(0);
+  });
+  
+  process.on("SIGTERM", async () => {
     await server.close();
     process.exit(0);
   });
 }
 
+// Start the server but don't output errors to stderr as it interferes with MCP
 main().catch((error) => {
-  console.error("Server error:", error);
+  // For debugging, write errors to a log file instead of stderr
+  if (process.env.DEBUG_MCP) {
+    import("fs").then((fs) => {
+      fs.appendFileSync(
+        "/tmp/gistdex-mcp-error.log",
+        `${new Date().toISOString()} Error: ${error.stack || error}\n`
+      );
+    });
+  }
   process.exit(1);
 });
