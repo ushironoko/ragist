@@ -1,19 +1,28 @@
 {
   "mcpServers": {
     "gistdex": {
-      "command": "npx",
-      "args": [
-        "--yes",
-        "--loglevel=error",
-        "@ushironoko/gistdex@latest",
-        "--mcp"
-      ],
+      "command": "pnpm",
+      "args": ["dlx", "@ushironoko/gistdex@latest", "--mcp"],
+      "env": {
+        "NODE_NO_WARNINGS": "1"
+      },
       "description": "Gistdex MCP Server - RAG search system for Gist, GitHub, and local files. The database will be created in the current working directory. Specify 'cwd' field to set custom database location."
+    },
+    "gistdex-npx": {
+      "command": "npx",
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
+      "env": {
+        "NODE_NO_WARNINGS": "1"
+      },
+      "description": "Gistdex MCP Server (using npx) - Works the same as pnpm dlx, directly executing the package with --mcp flag."
     },
     "gistdex-local": {
       "command": "node",
-      "args": ["dist/cli/index.js", "--mcp"],
+      "args": ["--no-warnings", "dist/cli/index.js", "--mcp"],
       "cwd": ".",
+      "env": {
+        "NODE_NO_WARNINGS": "1"
+      },
       "description": "Local development test - runs built version from project directory"
     }
   }

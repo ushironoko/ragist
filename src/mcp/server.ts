@@ -1,6 +1,18 @@
 // MCP Server implementation
 // This module should only be imported and used via the CLI
 
+// Suppress Node.js experimental warnings (especially for SQLite)
+// This must be done before any imports that might trigger warnings
+process.removeAllListeners("warning");
+process.on("warning", (warning) => {
+  // Ignore experimental warnings to prevent MCP client disconnection
+  if (warning.name === "ExperimentalWarning") {
+    return;
+  }
+  // Log other warnings to stderr for debugging
+  console.error(warning.toString());
+});
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
