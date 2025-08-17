@@ -310,11 +310,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 export async function startMCPServer() {
   // Write immediately to stderr before any other code
   process.stderr.write("DEBUG: startMCPServer called\n");
-  
+
   try {
     // Write debug info to stderr
     process.stderr.write("MCP Server starting...\n");
-    
+
     // Override console methods to suppress output in MCP mode
     // Using noop utility function for better code clarity
     console.log = noopWithArgs;
@@ -329,10 +329,10 @@ export async function startMCPServer() {
 
     process.stderr.write("Creating transport...\n");
     const transport = new StdioServerTransport();
-    
+
     process.stderr.write("Connecting server...\n");
     await server.connect(transport);
-    
+
     process.stderr.write("Server connected successfully\n");
 
     // Handle shutdown gracefully
@@ -347,18 +347,21 @@ export async function startMCPServer() {
       await server.close();
       process.exit(0);
     });
-    
+
     // Catch unhandled errors
     process.on("uncaughtException", (error) => {
-      process.stderr.write(`Uncaught Exception: ${error.message}\n${error.stack}\n`);
+      process.stderr.write(
+        `Uncaught Exception: ${error.message}\n${error.stack}\n`,
+      );
       process.exit(1);
     });
-    
+
     process.on("unhandledRejection", (reason, promise) => {
-      process.stderr.write(`Unhandled Rejection at: ${promise}, reason: ${reason}\n`);
+      process.stderr.write(
+        `Unhandled Rejection at: ${promise}, reason: ${reason}\n`,
+      );
       process.exit(1);
     });
-    
   } catch (error) {
     // Log to stderr for debugging
     process.stderr.write(`MCP Server startup error: ${error}\n`);
