@@ -126,7 +126,7 @@ The system uses a **functional composition pattern** for vector databases, elimi
 
 #### Vector Database Layer (`src/core/vector-db/`)
 - **Built-in Adapters** (`src/core/vector-db/adapters/`):
-  - `sqlite-adapter.ts` - SQLite with sqlite-vec extension for local vector storage (async factory function)
+  - `sqlite-adapter.ts` - SQLite with sqlite-vec extension for local vector storage (uses better-sqlite3 internally)
   - `memory-adapter.ts` - In-memory storage for testing (async factory function)
   - `base-adapter.ts` - Base adapter with common functionality to reduce code duplication
   - `common-operations.ts` - Shared batch operations for adapters
@@ -225,6 +225,13 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 - CLI uses Map for command registration instead of switch statements
 - Commands are registered using `subCommands.set()` method
 - gunshi framework handles command routing and argument parsing
+
+### SQLite Adapter Modernization (v0.5.5+)
+- Replaced node:sqlite with better-sqlite3 for stable SQLite support
+- Eliminates experimental SQLite warnings in Node.js 24+
+- Prevents Claude Desktop disconnections in MCP server mode
+- Maintains full compatibility with sqlite-vec extension for vector operations
+- Transparent to users - still accessed as "sqlite" provider
 
 ## Important Development Notes
 

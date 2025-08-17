@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createFactory } from "./factory.js";
 import { createRegistry } from "./registry.js";
 
-// Mock SQLite to avoid actual database initialization in tests
-vi.mock("node:sqlite", () => ({
-  DatabaseSync: vi.fn().mockImplementation(() => ({
+// Mock better-sqlite3 to avoid actual database initialization in tests
+vi.mock("better-sqlite3", () => ({
+  default: vi.fn().mockImplementation(() => ({
     exec: vi.fn(),
     prepare: vi.fn().mockReturnValue({
       run: vi.fn(),
@@ -12,7 +12,6 @@ vi.mock("node:sqlite", () => ({
       all: vi.fn().mockReturnValue([]),
     }),
     close: vi.fn(),
-    loadExtension: vi.fn(),
   })),
 }));
 

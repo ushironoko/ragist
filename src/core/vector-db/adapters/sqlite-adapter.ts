@@ -1,4 +1,4 @@
-import { DatabaseSync } from "node:sqlite";
+import Database from "better-sqlite3";
 import * as sqliteVec from "sqlite-vec";
 import { VECTOR_DB_CONSTANTS } from "../constants.js";
 import {
@@ -20,21 +20,13 @@ import type {
 
 /**
  * Create a SQLite vector database adapter using closure pattern
+ * This adapter uses better-sqlite3 for stable SQLite support
  */
-// Type definitions for SQLite results
-interface SQLiteRunResult {
-  changes: number;
-  lastInsertRowid: number;
-}
-
-interface DatabaseSyncOptions {
-  allowExtension?: boolean;
-}
 export const createSQLiteAdapter = (
   config: VectorDBConfig,
 ): VectorDBAdapter => {
   // Private state
-  let db: DatabaseSync | null = null;
+  let db: Database.Database | null = null;
   const dbPath = config.options?.path ?? ":memory:";
   const dimension =
     config.options?.dimension ?? VECTOR_DB_CONSTANTS.DEFAULT_DIMENSION;
@@ -65,24 +57,12 @@ export const createSQLiteAdapter = (
     if (initialized) return;
 
     try {
-      // Node.js 23.5.0+ requires allowExtension option to load extensions
-      db = new DatabaseSync(
-        dbPath as string,
-        {
-          allowExtension: true,
-        } as DatabaseSyncOptions,
-      );
+      // Create database connection with better-sqlite3
+      db = new Database(dbPath as string);
 
-      // Try to load sqlite-vec extension - required for vector operations
+      // Load sqlite-vec extension for vector operations
       try {
-        // Node.js 23.5.0+ supports database.loadExtension()
-        if (typeof db.loadExtension === "function") {
-          const extensionPath = sqliteVec.getLoadablePath();
-          db.loadExtension(extensionPath);
-        } else {
-          // Fallback to sqlite-vec's load method for older Node.js versions
-          sqliteVec.load(db);
-        }
+        sqliteVec.load(db);
       } catch (extError) {
         // Close the database connection before throwing error
         if (db) {
@@ -94,13 +74,13 @@ export const createSQLiteAdapter = (
         const errorMessage = `SQLite vector extension (sqlite-vec) could not be loaded. 
 
 This is likely because:
-1. Your Node.js version (${process.version}) doesn't support SQLite extensions
-2. The sqlite-vec extension file is missing or incompatible
+1. The sqlite-vec extension file is missing or incompatible
+2. Your system doesn't support SQLite extensions
 
 Suggestions:
 1. Use the memory adapter instead: --provider memory
-2. Upgrade to Node.js 23.5.0 or later for SQLite extension support
-3. Ensure sqlite-vec is properly installed: npm install sqlite-vec
+2. Ensure sqlite-vec is properly installed: npm install sqlite-vec
+3. Try rebuilding native modules: npm rebuild sqlite-vec
 
 Original error: ${
           extError instanceof Error ? extError.message : String(extError)
@@ -199,217 +179,101 @@ Original error: ${
           }
         }
       }
-      sourceIdToUse = sourceId;
+      sourceIdToUse = sourceId as string;
     }
 
-    // Create metadata without originalContent (since it's now in sources table)
-    const metadataForStorage = { ...document.metadata };
-    if (metadataForStorage && "originalContent" in metadataForStorage) {
-      delete metadataForStorage.originalContent;
-    }
-    const metadataJson = metadataForStorage
-      ? JSON.stringify(metadataForStorage)
-      : null;
+    // Convert embedding array to Float32Array for sqlite-vec
+    const embeddingFloat32 = new Float32Array(document.embedding);
 
-    try {
-      // Check if document already exists to get its vec_rowid
-      const existing = db
-        ?.prepare("SELECT vec_rowid FROM documents WHERE id = ?")
-        .get(id) as { vec_rowid: number | null } | undefined;
+    // Insert vector into vec_documents table
+    const vecInsertStmt = db?.prepare(
+      "INSERT INTO vec_documents(embedding) VALUES (?)",
+    );
+    const vecResult = vecInsertStmt?.run(
+      embeddingFloat32,
+    ) as Database.RunResult;
+    const vecRowId = vecResult?.lastInsertRowid;
 
-      let vecRowid: number;
+    // Prepare metadata without originalContent (as it's stored in sources table)
+    const metadata = { ...document.metadata };
+    delete metadata.originalContent;
 
-      if (existing?.vec_rowid) {
-        // Update existing embedding
-        vecRowid = existing.vec_rowid;
-        db?.prepare(
-          "UPDATE vec_documents SET embedding = ? WHERE rowid = ?",
-        ).run(
-          new Uint8Array(new Float32Array(document.embedding).buffer),
-          vecRowid,
-        );
-      } else {
-        // Insert new embedding (let SQLite auto-assign rowid)
-        const result = db
-          ?.prepare("INSERT INTO vec_documents (embedding) VALUES (?)")
-          .run(
-            new Uint8Array(new Float32Array(document.embedding).buffer),
-          ) as SQLiteRunResult;
+    // Insert document with foreign key reference to vector
+    const docInsertStmt = db?.prepare(
+      `INSERT INTO documents (id, source_id, content, metadata, vec_rowid) 
+       VALUES (?, ?, ?, ?, ?)`,
+    );
+    docInsertStmt?.run(
+      id,
+      sourceIdToUse,
+      document.content,
+      metadata ? JSON.stringify(metadata) : null,
+      vecRowId,
+    );
 
-        // Handle both real SQLite and mock responses
-        vecRowid = result?.lastInsertRowid ?? 1;
-      }
-
-      // Insert or update document with vec_rowid and source_id reference
-      db?.prepare(
-        "INSERT OR REPLACE INTO documents (id, source_id, content, metadata, vec_rowid) VALUES (?, ?, ?, ?, ?)",
-      ).run(id, sourceIdToUse, document.content, metadataJson, vecRowid);
-
-      return id;
-    } catch (error) {
-      throw new VectorDBError(`Failed to insert document: ${id}`, {
-        cause: error,
-      });
-    }
-  };
-
-  // Search for similar documents
-  const search = async (
-    embedding: number[],
-    options?: SearchOptions,
-  ): Promise<VectorSearchResult[]> => {
-    ensureInitialized();
-
-    const k = options?.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
-
-    try {
-      // Use sqlite-vec extension with vec_rowid mapping
-      let query = `
-        SELECT 
-          d.id,
-          d.content,
-          d.metadata,
-          v.distance
-        FROM vec_documents v
-        JOIN documents d ON d.vec_rowid = v.rowid
-        WHERE v.embedding MATCH ? AND k = ?
-      `;
-
-      const queryParams: Array<
-        null | number | bigint | string | NodeJS.ArrayBufferView
-      > = [new Uint8Array(new Float32Array(embedding).buffer), k];
-
-      // Add metadata filter if provided
-      if (options?.filter) {
-        // Build WHERE clause for JSON metadata
-        const metadataFilters = Object.keys(options.filter).map((key) => {
-          const value = options.filter?.[key];
-          queryParams.push(
-            value === null || value === undefined
-              ? null
-              : typeof value === "object"
-                ? JSON.stringify(value)
-                : String(value),
-          );
-          return `json_extract(d.metadata, '$.${key}') = ?`;
-        });
-
-        if (metadataFilters.length > 0) {
-          query = `
-            SELECT 
-              d.id,
-              d.content,
-              d.metadata,
-              v.distance
-            FROM vec_documents v
-            JOIN documents d ON d.vec_rowid = v.rowid
-            WHERE v.embedding MATCH ? 
-              AND k = ?
-              AND ${metadataFilters.join(" AND ")}
-            ORDER BY v.distance ASC
-          `;
-        }
-      } else {
-        query += " ORDER BY v.distance ASC";
-      }
-
-      const results = db?.prepare(query).all(...queryParams) as Array<{
-        id: string;
-        content: string;
-        metadata: string | null;
-        distance: number;
-      }>;
-
-      return results.map((row) => ({
-        id: row.id,
-        content: row.content,
-        embedding: [], // Embeddings are not returned in search results
-        metadata: parseMetadata(row.metadata),
-        score: 1 - row.distance, // Convert distance to similarity score
-      }));
-    } catch (error) {
-      throw new VectorDBError("Failed to search documents", {
-        cause: error,
-      });
-    }
+    return id;
   };
 
   // Get a document by ID
   const get = async (id: string): Promise<VectorDocument | null> => {
     ensureInitialized();
 
-    // Define a named interface for document row
-    interface DocumentRow {
-      id: string;
-      source_id: string | null;
-      content: string;
-      metadata: string | null;
-      vec_rowid: number | null;
-    }
+    const query = `
+      SELECT d.id, d.source_id, d.content, d.metadata, v.embedding, 
+             s.original_content, s.title, s.url, s.source_type
+      FROM documents d
+      JOIN vec_documents v ON d.vec_rowid = v.rowid
+      LEFT JOIN sources s ON d.source_id = s.source_id
+      WHERE d.id = ?
+    `;
 
-    try {
-      const row = db?.prepare("SELECT * FROM documents WHERE id = ?").get(id) as
-        | DocumentRow
-        | undefined;
-
-      if (!row) {
-        return null;
-      }
-
-      // Get embedding from vec_documents if vec_rowid exists
-      let embedding: number[] = [];
-      if (row.vec_rowid) {
-        const vecRow = db
-          ?.prepare("SELECT embedding FROM vec_documents WHERE rowid = ?")
-          .get(row.vec_rowid) as { embedding: Uint8Array } | undefined;
-
-        if (vecRow?.embedding) {
-          // Convert Uint8Array back to number array
-          embedding = Array.from(new Float32Array(vecRow.embedding.buffer));
+    const result = db?.prepare(query).get(id) as
+      | {
+          id: string;
+          source_id: string | null;
+          content: string;
+          metadata: string | null;
+          embedding: Buffer;
+          original_content: string | null;
+          title: string | null;
+          url: string | null;
+          source_type: string | null;
         }
-      }
+      | undefined;
 
-      // Parse metadata and ensure sourceId is included if source_id exists
-      const metadata = parseMetadata(row.metadata);
-      if (row.source_id && metadata) {
-        metadata.sourceId = row.source_id;
-      }
+    if (!result) return null;
 
-      // Get source information if source_id exists
-      if (row.source_id) {
-        const sourceRow = db
-          ?.prepare("SELECT * FROM sources WHERE source_id = ?")
-          .get(row.source_id) as
-          | {
-              source_id: string;
-              original_content: string;
-              title: string | null;
-              url: string | null;
-              source_type: string | null;
-            }
-          | undefined;
+    let metadata = parseMetadata(result.metadata);
 
-        // For backward compatibility, add originalContent to metadata for first chunk
-        if (
-          sourceRow &&
-          metadata &&
-          (metadata.chunkIndex === 0 || metadata.chunkIndex === undefined)
-        ) {
-          metadata.originalContent = sourceRow.original_content;
-        }
-      }
-
-      return {
-        id: row.id,
-        content: row.content,
-        embedding,
-        metadata,
+    // Add source-related metadata if available
+    if (result.source_id) {
+      metadata = {
+        ...metadata,
+        sourceId: result.source_id,
       };
-    } catch (error) {
-      throw new VectorDBError(`Failed to get document: ${id}`, {
-        cause: error,
-      });
+
+      // Add originalContent only for first chunk (chunkIndex = 0)
+      if (metadata?.chunkIndex === 0 && result.original_content) {
+        metadata.originalContent = result.original_content;
+      }
+
+      if (result.title) metadata.title = result.title;
+      if (result.url) metadata.url = result.url;
+      if (result.source_type) metadata.sourceType = result.source_type;
     }
+
+    return {
+      id: result.id,
+      content: result.content,
+      embedding: Array.from(
+        new Float32Array(
+          result.embedding.buffer,
+          result.embedding.byteOffset,
+          result.embedding.length / 4,
+        ),
+      ),
+      metadata,
+    };
   };
 
   // Update a document
@@ -419,70 +283,58 @@ Original error: ${
   ): Promise<void> => {
     ensureInitialized();
 
-    try {
-      // Check if document exists
-      const existing = db
-        ?.prepare("SELECT * FROM documents WHERE id = ?")
-        .get(id) as
-        | {
-            id: string;
-            content: string;
-            metadata: string | null;
-            vec_rowid: number | null;
-          }
-        | undefined;
+    if (!id) {
+      throw new VectorDBError("Document ID is required for update");
+    }
 
-      if (!existing) {
-        throw new DocumentNotFoundError(id);
-      }
+    if (updates.embedding) {
+      validateDimension(updates.embedding, dimension as number);
+    }
 
-      // Update embedding if provided
-      if (updates.embedding) {
-        validateDimension(updates.embedding, dimension as number);
+    // Get the vec_rowid for the document
+    const existingDoc = db
+      ?.prepare("SELECT vec_rowid FROM documents WHERE id = ?")
+      .get(id) as { vec_rowid: number } | undefined;
 
-        if (existing.vec_rowid) {
-          db?.prepare(
-            "UPDATE vec_documents SET embedding = ? WHERE rowid = ?",
-          ).run(
-            new Uint8Array(new Float32Array(updates.embedding).buffer),
-            existing.vec_rowid,
-          );
-        }
-      }
+    if (!existingDoc) {
+      throw new DocumentNotFoundError(id);
+    }
 
-      // Update document fields
-      const updateFields: string[] = [];
-      const updateValues: Array<
-        null | number | bigint | string | NodeJS.ArrayBufferView
-      > = [];
+    // Update vector if provided
+    if (updates.embedding) {
+      const embeddingFloat32 = new Float32Array(updates.embedding);
+      const vecUpdateStmt = db?.prepare(
+        "UPDATE vec_documents SET embedding = ? WHERE rowid = ?",
+      );
+      vecUpdateStmt?.run(embeddingFloat32, existingDoc.vec_rowid);
+    }
 
-      if (updates.content !== undefined) {
-        updateFields.push("content = ?");
-        updateValues.push(updates.content);
-      }
+    // Prepare metadata without originalContent
+    const metadata = updates.metadata ? { ...updates.metadata } : undefined;
+    if (metadata) {
+      delete metadata.originalContent;
+    }
 
-      if (updates.metadata !== undefined) {
-        updateFields.push("metadata = ?");
-        updateValues.push(JSON.stringify(updates.metadata));
-      }
+    // Build update query dynamically based on what's being updated
+    const updateFields: string[] = [];
+    const updateValues: any[] = [];
 
-      if (updateFields.length > 0) {
-        updateValues.push(id);
-        db?.prepare(
-          `UPDATE documents SET ${updateFields.join(", ")} WHERE id = ?`,
-        ).run(...updateValues);
-      }
-    } catch (error) {
-      if (error instanceof DocumentNotFoundError) {
-        throw error;
-      }
-      // Preserve dimension validation errors
-      if (error instanceof Error && error.message?.includes("dimension")) {
-        throw error;
-      }
-      throw new VectorDBError(`Failed to update document: ${id}`, {
-        cause: error,
-      });
+    if (updates.content !== undefined) {
+      updateFields.push("content = ?");
+      updateValues.push(updates.content);
+    }
+
+    if (metadata !== undefined) {
+      updateFields.push("metadata = ?");
+      updateValues.push(JSON.stringify(metadata));
+    }
+
+    if (updateFields.length > 0) {
+      updateValues.push(id);
+      const docUpdateStmt = db?.prepare(
+        `UPDATE documents SET ${updateFields.join(", ")} WHERE id = ?`,
+      );
+      docUpdateStmt?.run(...updateValues);
     }
   };
 
@@ -490,237 +342,254 @@ Original error: ${
   const deleteDoc = async (id: string): Promise<void> => {
     ensureInitialized();
 
-    try {
-      // Get vec_rowid before deletion
-      const doc = db
-        ?.prepare("SELECT vec_rowid FROM documents WHERE id = ?")
-        .get(id) as { vec_rowid: number | null } | undefined;
+    // Get the vec_rowid and source_id before deletion
+    const doc = db
+      ?.prepare("SELECT vec_rowid, source_id FROM documents WHERE id = ?")
+      .get(id) as { vec_rowid: number; source_id: string | null } | undefined;
 
-      if (!doc) {
-        throw new DocumentNotFoundError(id);
-      }
+    if (!doc) {
+      throw new DocumentNotFoundError(id);
+    }
 
-      // Delete from vec_documents if vec_rowid exists
-      if (doc.vec_rowid) {
-        db?.prepare("DELETE FROM vec_documents WHERE rowid = ?").run(
-          doc.vec_rowid,
+    // Delete from documents table
+    const deleteDocStmt = db?.prepare("DELETE FROM documents WHERE id = ?");
+    deleteDocStmt?.run(id);
+
+    // Delete from vec_documents table
+    const deleteVecStmt = db?.prepare(
+      "DELETE FROM vec_documents WHERE rowid = ?",
+    );
+    deleteVecStmt?.run(doc.vec_rowid);
+
+    // Check if this was the last document for the source
+    if (doc.source_id) {
+      const remainingDocs = db
+        ?.prepare("SELECT COUNT(*) as count FROM documents WHERE source_id = ?")
+        .get(doc.source_id) as { count: number };
+
+      if (remainingDocs.count === 0) {
+        // Delete the source if no more documents reference it
+        const deleteSourceStmt = db?.prepare(
+          "DELETE FROM sources WHERE source_id = ?",
         );
+        deleteSourceStmt?.run(doc.source_id);
       }
-
-      // Delete from documents
-      const result = db
-        ?.prepare("DELETE FROM documents WHERE id = ?")
-        .run(id) as SQLiteRunResult;
-
-      if (!result.changes) {
-        throw new DocumentNotFoundError(id);
-      }
-    } catch (error) {
-      if (error instanceof DocumentNotFoundError) {
-        throw error;
-      }
-      throw new VectorDBError(`Failed to delete document: ${id}`, {
-        cause: error,
-      });
     }
   };
 
-  // Batch insert documents
-  const insertBatch = async (
-    documents: VectorDocument[],
-  ): Promise<string[]> => {
-    return batchOps.insertBatch(documents, insert);
-  };
-
-  // Batch delete documents
-  const deleteBatch = async (ids: string[]): Promise<void> => {
+  // Search for similar documents
+  const search = async (
+    embedding: number[],
+    options: SearchOptions = {},
+  ): Promise<VectorSearchResult[]> => {
     ensureInitialized();
 
-    try {
-      // Get all vec_rowids
-      const placeholders = ids.map(() => "?").join(",");
-      const docs = db
-        ?.prepare(
-          `SELECT vec_rowid FROM documents WHERE id IN (${placeholders})`,
-        )
-        .all(...ids) as Array<{ vec_rowid: number | null }>;
+    validateDimension(embedding, dimension as number);
 
-      // Delete from vec_documents
-      for (const doc of docs) {
-        if (doc.vec_rowid) {
-          db?.prepare("DELETE FROM vec_documents WHERE rowid = ?").run(
-            doc.vec_rowid,
-          );
+    const k = options.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
+    const { whereClause, params } = buildSQLWhereClause(options.filter);
+
+    // Build the base query for vector search
+    const baseQuery = `
+      SELECT 
+        d.id,
+        d.source_id,
+        d.content,
+        d.metadata,
+        v.distance,
+        v.embedding,
+        s.original_content,
+        s.title,
+        s.url,
+        s.source_type
+      FROM vec_documents v
+      JOIN documents d ON d.vec_rowid = v.rowid
+      LEFT JOIN sources s ON d.source_id = s.source_id
+    `;
+
+    // Build WHERE clause with vector search condition
+    const vectorCondition = `v.rowid IN (
+        SELECT rowid FROM vec_documents
+        WHERE embedding MATCH ?
+        ORDER BY distance
+        LIMIT ?
+      )`;
+
+    const query = whereClause
+      ? `${baseQuery} WHERE ${whereClause} AND ${vectorCondition} ORDER BY v.distance LIMIT ?`
+      : `${baseQuery} WHERE ${vectorCondition} ORDER BY v.distance LIMIT ?`;
+
+    // Execute the query
+    const stmt = db?.prepare(query);
+    const embeddingFloat32 = new Float32Array(embedding);
+    const results = stmt?.all(...params, embeddingFloat32, k, k) as Array<{
+      id: string;
+      source_id: string | null;
+      content: string;
+      metadata: string | null;
+      distance: number;
+      embedding: Buffer;
+      original_content: string | null;
+      title: string | null;
+      url: string | null;
+      source_type: string | null;
+    }>;
+
+    if (!results) return [];
+
+    return results.map((row) => {
+      let metadata = parseMetadata(row.metadata);
+
+      // Add source-related metadata if available
+      if (row.source_id) {
+        metadata = {
+          ...metadata,
+          sourceId: row.source_id,
+        };
+
+        // Add originalContent only for first chunk (chunkIndex = 0)
+        if (metadata?.chunkIndex === 0 && row.original_content) {
+          metadata.originalContent = row.original_content;
         }
+
+        if (row.title) metadata.title = row.title;
+        if (row.url) metadata.url = row.url;
+        if (row.source_type) metadata.sourceType = row.source_type;
       }
 
-      // Delete from documents
-      db?.prepare(`DELETE FROM documents WHERE id IN (${placeholders})`).run(
-        ...ids,
-      );
-    } catch (error) {
-      throw new VectorDBError("Failed to delete documents batch", {
-        cause: error,
-      });
-    }
+      return {
+        id: row.id,
+        content: row.content,
+        embedding: Array.from(
+          new Float32Array(
+            row.embedding.buffer,
+            row.embedding.byteOffset,
+            row.embedding.length / 4,
+          ),
+        ),
+        metadata,
+        score: 1 - row.distance, // Convert distance to similarity score
+      };
+    });
+  };
+
+  // List documents
+  const list = async (options: ListOptions = {}): Promise<VectorDocument[]> => {
+    ensureInitialized();
+
+    const limit = options.limit ?? VECTOR_DB_CONSTANTS.DEFAULT_LIST_LIMIT;
+    const offset = options.offset ?? 0;
+    const { whereClause, params } = buildSQLWhereClause(options.filter);
+
+    const baseQuery = `
+      SELECT d.id, d.source_id, d.content, d.metadata, v.embedding,
+             s.original_content, s.title, s.url, s.source_type
+      FROM documents d
+      JOIN vec_documents v ON d.vec_rowid = v.rowid
+      LEFT JOIN sources s ON d.source_id = s.source_id
+    `;
+
+    const query = whereClause
+      ? `${baseQuery} WHERE ${whereClause} ORDER BY d.created_at DESC LIMIT ? OFFSET ?`
+      : `${baseQuery} ORDER BY d.created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    const stmt = db?.prepare(query);
+    const results = stmt?.all(...params) as Array<{
+      id: string;
+      source_id: string | null;
+      content: string;
+      metadata: string | null;
+      embedding: Buffer;
+      original_content: string | null;
+      title: string | null;
+      url: string | null;
+      source_type: string | null;
+    }>;
+
+    if (!results) return [];
+
+    return results.map((row) => {
+      let metadata = parseMetadata(row.metadata);
+
+      // Add source-related metadata if available
+      if (row.source_id) {
+        metadata = {
+          ...metadata,
+          sourceId: row.source_id,
+        };
+
+        // Add originalContent only for first chunk (chunkIndex = 0)
+        if (metadata?.chunkIndex === 0 && row.original_content) {
+          metadata.originalContent = row.original_content;
+        }
+
+        if (row.title) metadata.title = row.title;
+        if (row.url) metadata.url = row.url;
+        if (row.source_type) metadata.sourceType = row.source_type;
+      }
+
+      return {
+        id: row.id,
+        content: row.content,
+        embedding: Array.from(
+          new Float32Array(
+            row.embedding.buffer,
+            row.embedding.byteOffset,
+            row.embedding.length / 4,
+          ),
+        ),
+        metadata,
+      };
+    });
   };
 
   // Count documents
   const count = async (filter?: Record<string, unknown>): Promise<number> => {
     ensureInitialized();
 
-    try {
-      let query = "SELECT COUNT(*) as count FROM documents";
-      const queryParams: Array<
-        null | number | bigint | string | NodeJS.ArrayBufferView
-      > = [];
+    const { whereClause, params } = buildSQLWhereClause(filter);
 
-      if (filter) {
-        const whereClause = buildSQLWhereClause(filter);
-        if (whereClause.whereClause) {
-          // Build WHERE clause for JSON metadata
-          const filterConditions = Object.keys(filter).map((key) => {
-            const value = filter[key];
-            queryParams.push(
-              value === null || value === undefined
-                ? null
-                : typeof value === "object"
-                  ? JSON.stringify(value)
-                  : String(value),
-            );
-            return `json_extract(metadata, '$.${key}') = ?`;
-          });
+    const query = whereClause
+      ? `SELECT COUNT(*) as count FROM documents WHERE ${whereClause}`
+      : "SELECT COUNT(*) as count FROM documents";
 
-          query += ` WHERE ${filterConditions.join(" AND ")}`;
-        }
-      }
-
-      const result = db?.prepare(query).get(...queryParams) as {
-        count: number;
-      };
-      return result.count;
-    } catch (error) {
-      throw new VectorDBError("Failed to count documents", {
-        cause: error,
-      });
-    }
+    const result = db?.prepare(query).get(...params) as { count: number };
+    return result?.count ?? 0;
   };
-
-  // List documents
-  const list = async (options?: ListOptions): Promise<VectorDocument[]> => {
-    ensureInitialized();
-
-    try {
-      let query = "SELECT * FROM documents";
-      const queryParams: Array<
-        null | number | bigint | string | NodeJS.ArrayBufferView
-      > = [];
-
-      if (options?.filter) {
-        const filterConditions = Object.keys(options.filter).map((key) => {
-          const value = options.filter?.[key];
-          queryParams.push(
-            value === null || value === undefined
-              ? null
-              : typeof value === "object"
-                ? JSON.stringify(value)
-                : String(value),
-          );
-          return `json_extract(metadata, '$.${key}') = ?`;
-        });
-
-        query += ` WHERE ${filterConditions.join(" AND ")}`;
-      }
-
-      query += " ORDER BY created_at DESC";
-
-      if (options?.limit) {
-        query += ` LIMIT ${options.limit}`;
-      }
-      if (options?.offset !== undefined) {
-        query += ` OFFSET ${options.offset}`;
-      }
-
-      const rows = db?.prepare(query).all(...queryParams) as Array<{
-        id: string;
-        source_id: string | null;
-        content: string;
-        metadata: string | null;
-        vec_rowid: number | null;
-      }>;
-
-      // Get embeddings for each document
-      return rows.map((row) => {
-        let embedding: number[] = [];
-        if (row.vec_rowid) {
-          const vecRow = db
-            ?.prepare("SELECT embedding FROM vec_documents WHERE rowid = ?")
-            .get(row.vec_rowid) as { embedding: Uint8Array } | undefined;
-
-          if (vecRow?.embedding) {
-            embedding = Array.from(new Float32Array(vecRow.embedding.buffer));
-          }
-        }
-
-        // Parse metadata and ensure sourceId is included if source_id exists
-        const metadata = parseMetadata(row.metadata);
-        if (row.source_id && metadata) {
-          metadata.sourceId = row.source_id;
-        }
-
-        return {
-          id: row.id,
-          content: row.content,
-          embedding,
-          metadata,
-        };
-      });
-    } catch (error) {
-      throw new VectorDBError("Failed to list documents", {
-        cause: error,
-      });
-    }
-  };
-
-  // Get adapter info
-  const getInfo = () => ({
-    provider: "sqlite",
-    version: "1.0.0",
-    capabilities: [
-      "vector-search",
-      "metadata-filter",
-      "batch-operations",
-      "persistence",
-    ],
-  });
 
   // Close the database connection
   const close = async (): Promise<void> => {
     if (db) {
-      try {
-        db.close();
-      } catch (error) {
-        console.error("Error closing SQLite database:", error);
-      } finally {
-        db = null;
-        initialized = false;
-      }
+      db.close();
+      db = null;
+      initialized = false;
     }
   };
 
-  // Return the adapter interface
+  // Get database information
+  const getInfo = () => {
+    return {
+      provider: "sqlite",
+      version: "1.0.0",
+      capabilities: ["vector-search", "metadata-filter", "batch-operations"],
+    };
+  };
+
+  // Return the adapter interface with batch operations
   return {
     initialize,
     insert,
-    search,
     get,
     update,
     delete: deleteDoc,
-    insertBatch,
-    deleteBatch,
-    count,
+    search,
     list,
-    getInfo,
+    count,
     close,
+    getInfo,
+    insertBatch: (documents: VectorDocument[]) =>
+      batchOps.insertBatch(documents, insert),
+    deleteBatch: (ids: string[]) => batchOps.deleteBatch(ids, deleteDoc),
   };
 };

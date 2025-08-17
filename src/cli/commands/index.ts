@@ -36,9 +36,10 @@ export interface IndexContext {
 
 export const handleIndex = createWriteCommandHandler<IndexContext>(
   async (service, ctx) => {
+    const values = ctx.values || {};
     const options = {
-      chunkSize: parseCliInteger(ctx.values["chunk-size"], 1000) ?? 1000,
-      chunkOverlap: parseCliInteger(ctx.values["chunk-overlap"], 200) ?? 200,
+      chunkSize: parseCliInteger(values["chunk-size"], 1000) ?? 1000,
+      chunkOverlap: parseCliInteger(values["chunk-overlap"], 200) ?? 200,
       onProgress: createProgressReporter("Indexing", (message, progress) => {
         if (progress !== undefined) {
           const percentage = Math.round(progress * 100);

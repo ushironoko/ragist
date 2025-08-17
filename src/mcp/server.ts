@@ -1,7 +1,5 @@
-#!/usr/bin/env node
-
-// Suppress warnings to avoid stderr output that interferes with MCP
-process.env.NODE_NO_WARNINGS = "1";
+// MCP Server implementation
+// This module should only be imported and used via the CLI
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -12,6 +10,7 @@ import {
 import { createConfigOperations } from "../core/config-operations.js";
 import { createDatabaseOperations } from "../core/database-operations.js";
 import type { DatabaseService } from "../core/database-service.js";
+import { noopWithArgs } from "../core/utils/noop.js";
 import { handleIndexTool } from "./tools/index-tool.js";
 import { handleListTool } from "./tools/list-tool.js";
 import { handleQueryTool } from "./tools/query-tool.js";
@@ -307,8 +306,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Start server
-export async function main() {
+// Start MCP server - this should only be called from the CLI
+export async function startMCPServer() {
+  // Override console methods to suppress output in MCP mode
+  // Using noop utility function for better code clarity
+  console.log = noopWithArgs;
+  console.error = noopWithArgs;
+
   // Load environment variables from .env file with fallback to system environment
   const { loadEnvironmentVariables } = await import(
     "../core/utils/env-loader.js"
@@ -317,7 +321,6 @@ export async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  // Do not output to stderr as it interferes with MCP communication
 
   // Handle shutdown gracefully
   process.on("SIGINT", async () => {
@@ -330,17 +333,3 @@ export async function main() {
     process.exit(0);
   });
 }
-
-// Start the server but don't output errors to stderr as it interferes with MCP
-main().catch((error) => {
-  // For debugging, write errors to a log file instead of stderr
-  if (process.env.DEBUG_MCP) {
-    import("node:fs").then((fs) => {
-      fs.appendFileSync(
-        "/tmp/gistdex-mcp-error.log",
-        `${new Date().toISOString()} Error: ${error.stack || error}\n`,
-      );
-    });
-  }
-  process.exit(1);
-});

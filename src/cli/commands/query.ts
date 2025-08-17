@@ -17,25 +17,35 @@ interface QueryContext {
     hybrid?: boolean;
     "no-rerank"?: boolean;
     full?: boolean;
+    [key: string]: string | boolean | undefined;
   };
-  positionals: string[];
+  positionals?: string[]; // gunshi provides positionals in the context
 }
 
 export const handleQuery = createReadOnlyCommandHandler<QueryContext>(
   async (service, ctx) => {
-    const query = ctx.positionals.join(" ").trim();
+    // Access positionals directly from the context
+    // gunshi provides positionals in the context
+    // Skip the first element if it's "query" (the subcommand name)
+    const positionals = ctx.positionals || [];
+    const filteredPositionals =
+      positionals[0] === "query" ? positionals.slice(1) : positionals;
+    const query = filteredPositionals.join(" ").trim();
+
     if (!query) {
       handleCliError(new Error("No query specified"));
     }
+
+    const values = ctx.values;
     const options = {
-      k: parseCliInteger(ctx.values["top-k"], 5) ?? 5,
-      sourceType: ctx.values.type,
-      rerank: !ctx.values["no-rerank"],
+      k: parseCliInteger(values["top-k"] as string | undefined, 5) ?? 5,
+      sourceType: values.type as string | undefined,
+      rerank: !values["no-rerank"],
     };
 
     console.log(`Searching for: "${query}"\n`);
 
-    const results = ctx.values.hybrid
+    const results = values.hybrid
       ? await hybridSearch(query, options, service)
       : await semanticSearch(query, options, service);
 
@@ -45,7 +55,7 @@ export const handleQuery = createReadOnlyCommandHandler<QueryContext>(
     }
 
     // Check if full content should be outputted without formatting
-    const useFullSingle = ctx.values.full === true && options.k === 1;
+    const useFullSingle = values.full === true && options.k === 1;
 
     if (useFullSingle && results.length === 1) {
       // Output full original content for single result
@@ -78,7 +88,7 @@ export const handleQuery = createReadOnlyCommandHandler<QueryContext>(
         console.log(`   Score: ${result.score.toFixed(3)}`);
         console.log(`   Type: ${metadata.sourceType || "unknown"}`);
 
-        const showFull = !!ctx.values.full;
+        const showFull = !!values.full;
         let contentToShow: string;
 
         if (showFull) {
