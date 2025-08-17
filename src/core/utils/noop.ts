@@ -10,7 +10,6 @@ export const noop = (): void => {
  * A no-operation function that accepts any arguments and does nothing.
  * Used as a placeholder for functions with parameters that should be disabled.
  */
-// biome-ignore lint/suspicious/noExplicitAny: noop function needs to accept any arguments
 export const noopWithArgs = (..._args: any[]): void => {
   // Intentionally empty
 };

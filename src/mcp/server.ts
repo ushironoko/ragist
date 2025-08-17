@@ -308,28 +308,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start MCP server - this should only be called from the CLI
 export async function startMCPServer() {
-  // Override console methods to suppress output in MCP mode
-  // Using noop utility function for better code clarity
-  console.log = noopWithArgs;
-  console.error = noopWithArgs;
+  try {
+    // Override console methods to suppress output in MCP mode
+    // Using noop utility function for better code clarity
+    console.log = noopWithArgs;
+    // Temporarily keep console.error for debugging
+    // console.error = noopWithArgs;
 
-  // Load environment variables from .env file with fallback to system environment
-  const { loadEnvironmentVariables } = await import(
-    "../core/utils/env-loader.js"
-  );
-  loadEnvironmentVariables({ silent: true });
+    // Load environment variables from .env file with fallback to system environment
+    const { loadEnvironmentVariables } = await import(
+      "../core/utils/env-loader.js"
+    );
+    loadEnvironmentVariables({ silent: true });
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
 
-  // Handle shutdown gracefully
-  process.on("SIGINT", async () => {
-    await server.close();
-    process.exit(0);
-  });
+    // Handle shutdown gracefully
+    process.on("SIGINT", async () => {
+      await server.close();
+      process.exit(0);
+    });
 
-  process.on("SIGTERM", async () => {
-    await server.close();
-    process.exit(0);
-  });
+    process.on("SIGTERM", async () => {
+      await server.close();
+      process.exit(0);
+    });
+  } catch (error) {
+    // Log to stderr for debugging
+    console.error("MCP Server startup error:", error);
+    process.exit(1);
+  }
 }
