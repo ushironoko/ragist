@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 
+// Debug: Log immediately when script starts (before imports)
+if (process.argv.includes("--mcp") || process.argv.includes("-m")) {
+  process.stderr.write("DEBUG: CLI process started with --mcp flag\n");
+  process.stderr.write(`DEBUG: Node version: ${process.version}\n`);
+  process.stderr.write(`DEBUG: Platform: ${process.platform}\n`);
+  process.stderr.write(`DEBUG: Args: ${process.argv.join(" ")}\n`);
+}
+
 import { loadEnvironmentVariables } from "../core/utils/env-loader.js";
 
 // Load environment variables with fallback to system environment

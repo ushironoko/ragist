@@ -5,6 +5,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
+  InitializeRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { createConfigOperations } from "../core/config-operations.js";
@@ -30,6 +31,33 @@ const server = new Server(
     },
   },
 );
+
+// Add explicit initialize handler for debugging
+server.setRequestHandler(InitializeRequestSchema, async (request) => {
+  process.stderr.write(
+    `DEBUG: Initialize request received: ${JSON.stringify(request.params)}\n`,
+  );
+
+  // Return proper initialize response
+  return {
+    protocolVersion: "2025-06-18",
+    capabilities: {
+      tools: {},
+    },
+    serverInfo: {
+      name: "gistdex-mcp",
+      version: "1.0.0",
+    },
+  };
+});
+
+// Add error handler for server
+server.onerror = (error) => {
+  process.stderr.write(`DEBUG: Server error: ${error}\n`);
+  if (error instanceof Error) {
+    process.stderr.write(`DEBUG: Error stack: ${error.stack}\n`);
+  }
+};
 
 // Register tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -310,6 +338,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 export async function startMCPServer() {
   // Write immediately to stderr before any other code
   process.stderr.write("DEBUG: startMCPServer called\n");
+  process.stderr.write(`DEBUG: Process argv: ${process.argv.join(" ")}\n`);
+  process.stderr.write(`DEBUG: Current directory: ${process.cwd()}\n`);
 
   try {
     // Write debug info to stderr
@@ -321,46 +351,68 @@ export async function startMCPServer() {
     // Temporarily keep console.error for debugging
     // console.error = noopWithArgs;
 
-    // Load environment variables from .env file with fallback to system environment
-    const { loadEnvironmentVariables } = await import(
-      "../core/utils/env-loader.js"
-    );
-    loadEnvironmentVariables({ silent: true });
+    // Don't load environment variables here - they're loaded in CLI already
 
     process.stderr.write("Creating transport...\n");
     const transport = new StdioServerTransport();
+
+    // Add transport error handling
+    transport.onerror = (error) => {
+      process.stderr.write(`DEBUG: Transport error: ${error}\n`);
+      if (error instanceof Error) {
+        process.stderr.write(`DEBUG: Transport error stack: ${error.stack}\n`);
+      }
+    };
+
+    transport.onclose = () => {
+      process.stderr.write("DEBUG: Transport closed\n");
+    };
 
     process.stderr.write("Connecting server...\n");
     await server.connect(transport);
 
     process.stderr.write("Server connected successfully\n");
 
+    // Log when ready
+    process.stderr.write("DEBUG: Server is ready to handle requests\n");
+
+    // Keep the process alive
+    process.stdin.resume();
+
     // Handle shutdown gracefully
     process.on("SIGINT", async () => {
       process.stderr.write("Received SIGINT, shutting down...\n");
-      await server.close();
+      try {
+        await server.close();
+      } catch (err) {
+        process.stderr.write(`Error closing server: ${err}\n`);
+      }
       process.exit(0);
     });
 
     process.on("SIGTERM", async () => {
       process.stderr.write("Received SIGTERM, shutting down...\n");
-      await server.close();
+      try {
+        await server.close();
+      } catch (err) {
+        process.stderr.write(`Error closing server: ${err}\n`);
+      }
       process.exit(0);
     });
 
     // Catch unhandled errors
     process.on("uncaughtException", (error) => {
       process.stderr.write(
-        `Uncaught Exception: ${error.message}\n${error.stack}\n`,
+        `DEBUG: Uncaught Exception: ${error.message}\n${error.stack}\n`,
       );
-      process.exit(1);
+      // Don't exit immediately to allow debugging
     });
 
     process.on("unhandledRejection", (reason, promise) => {
       process.stderr.write(
-        `Unhandled Rejection at: ${promise}, reason: ${reason}\n`,
+        `DEBUG: Unhandled Rejection at: ${promise}, reason: ${reason}\n`,
       );
-      process.exit(1);
+      // Don't exit immediately to allow debugging
     });
   } catch (error) {
     // Log to stderr for debugging
