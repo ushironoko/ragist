@@ -1,3 +1,4 @@
+import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import type { ZodType, ZodTypeDef } from "zod";
 import type { DatabaseService } from "../../core/database-service.js";
 
@@ -28,6 +29,7 @@ export type ToolHandler<
 
 /**
  * Creates a tool handler with common validation and error handling
+ * Throws McpError for validation failures to properly integrate with MCP protocol
  */
 export function createToolHandler<
   TInput,
@@ -41,24 +43,32 @@ export function createToolHandler<
     // Validate input
     const validationResult = schema.safeParse(input);
     if (!validationResult.success) {
-      return {
-        success: false,
-        message: "Invalid input",
-        errors: validationResult.error.errors.map((e) => e.message),
-      } as TResult;
+      // Throw McpError for invalid parameters
+      const errors = validationResult.error.errors.map((e) => e.message);
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Invalid input: ${errors.join(", ")}`,
+        { errors },
+      );
     }
 
     try {
       // Call the actual handler with validated input
       return await handler(validationResult.data, options);
     } catch (error) {
+      // Re-throw McpError as-is
+      if (error instanceof McpError) {
+        throw error;
+      }
+
+      // Wrap other errors in McpError
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      return {
-        success: false,
-        message: `Operation failed: ${errorMessage}`,
-        errors: [errorMessage],
-      } as TResult;
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Operation failed: ${errorMessage}`,
+        { originalError: errorMessage },
+      );
     }
   };
 }

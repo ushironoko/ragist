@@ -844,22 +844,34 @@ describe("list-tool", () => {
 
   describe("validation with Zod schemas", () => {
     it("handles invalid input gracefully", async () => {
+      const { McpError } = await import("@modelcontextprotocol/sdk/types.js");
       const invalidInput = {
         limit: "not_a_number",
         type: "invalid_type",
         stats: "not_boolean",
       };
 
-      const result = await handleListTool(invalidInput, options);
+      await expect(
+        handleListTool(invalidInput, options),
+      ).rejects.toThrow(McpError);
 
-      expect(result.success).toBe(false);
-      expect(result.message).toBe("Invalid input");
-      expect(result.errors).toHaveLength(3);
-      expect(result.errors).toContain("Expected number, received string");
-      expect(result.errors).toContain(
-        "Invalid enum value. Expected 'gist' | 'github' | 'file' | 'text', received 'invalid_type'",
-      );
-      expect(result.errors).toContain("Expected boolean, received string");
+      try {
+        await handleListTool(invalidInput, options);
+      } catch (error) {
+        expect(error).toBeInstanceOf(McpError);
+        if (error instanceof McpError) {
+          expect(error.code).toBe(-32602); // ErrorCode.InvalidParams
+          expect(error.message).toContain("Invalid input");
+          expect(error.data).toHaveProperty("errors");
+          const errors = (error.data as any).errors;
+          expect(errors).toHaveLength(3);
+          expect(errors).toContain("Expected number, received string");
+          expect(errors).toContain(
+            "Invalid enum value. Expected 'gist' | 'github' | 'file' | 'text', received 'invalid_type'",
+          );
+          expect(errors).toContain("Expected boolean, received string");
+        }
+      }
     });
 
     it("handles missing service in options", async () => {
@@ -872,6 +884,7 @@ describe("list-tool", () => {
     });
 
     it("validates complex invalid input combinations", async () => {
+      const { McpError } = await import("@modelcontextprotocol/sdk/types.js");
       const invalidInput = {
         limit: -10,
         type: "nonexistent",
@@ -879,11 +892,22 @@ describe("list-tool", () => {
         extra: "field",
       };
 
-      const result = await handleListTool(invalidInput, options);
+      await expect(
+        handleListTool(invalidInput, options),
+      ).rejects.toThrow(McpError);
 
-      expect(result.success).toBe(false);
-      expect(result.message).toBe("Invalid input");
-      expect(result.errors?.length).toBeGreaterThan(0);
+      try {
+        await handleListTool(invalidInput, options);
+      } catch (error) {
+        expect(error).toBeInstanceOf(McpError);
+        if (error instanceof McpError) {
+          expect(error.code).toBe(-32602); // ErrorCode.InvalidParams
+          expect(error.message).toContain("Invalid input");
+          expect(error.data).toHaveProperty("errors");
+          const errors = (error.data as any).errors;
+          expect(errors?.length).toBeGreaterThan(0);
+        }
+      }
     });
 
     it("accepts valid edge case inputs", async () => {
