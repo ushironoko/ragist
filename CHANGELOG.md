@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.0] - 2025-08-17
+
+- Merge pull request #51 from ushironoko:restore-better-sqlite3
+- Refactor CLI and MCP server handling
+
+
 ## [0.6.6] - 2025-08-17
 
 - DEBUG
