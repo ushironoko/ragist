@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.5] - 2025-08-17
+
+- fix
+- fix
+
+
 ## [0.7.4] - 2025-08-17
 
 - Merge pull request #53 from ushironoko:fix-mcp-server-retry
