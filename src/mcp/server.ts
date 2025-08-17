@@ -308,6 +308,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start MCP server - this should only be called from the CLI
 export async function startMCPServer() {
+  // Write immediately to stderr before any other code
+  process.stderr.write("DEBUG: startMCPServer called\n");
+  
   try {
     // Write debug info to stderr
     process.stderr.write("MCP Server starting...\n");

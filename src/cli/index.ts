@@ -185,7 +185,9 @@ export async function main(): Promise<void> {
 
   // Handle --mcp or -m flag to start MCP server
   if (args[0] === "--mcp" || args[0] === "-m") {
+    process.stderr.write("DEBUG: --mcp flag detected\n");
     const { startMCPServer } = await import("../mcp/server.js");
+    process.stderr.write("DEBUG: startMCPServer imported\n");
     await startMCPServer();
     return; // This won't return as the server will take over the process
   }
