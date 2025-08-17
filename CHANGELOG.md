@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.3] - 2025-08-17
+
+- fix format
+- fix
+
+
 ## [0.6.2] - 2025-08-17
 
 - fix error
