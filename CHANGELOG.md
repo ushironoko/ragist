@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4] - 2025-08-17
+
+- Merge pull request #53 from ushironoko:fix-mcp-server-retry
+- fix format
+- refactor: remove unused noop utility and improve error handling in MCP server
+
+
 ## [0.7.3] - 2025-08-17
 
 - fix: disable debug output in CLI to ensure clean MCP communication
