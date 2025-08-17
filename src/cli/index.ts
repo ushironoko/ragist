@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 // Load debug utilities before other imports for early debugging
-import { logMcpDebugInfo } from "./utils/debug.js";
+// import { logMcpDebugInfo } from "./utils/debug.js";
 
-// Log debug info if running in MCP mode
-logMcpDebugInfo();
+// Debug output disabled for MCP mode to avoid stdout pollution
+// logMcpDebugInfo();
 
 import { loadEnvironmentVariables } from "../core/utils/env-loader.js";
 
