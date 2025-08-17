@@ -851,9 +851,9 @@ describe("list-tool", () => {
         stats: "not_boolean",
       };
 
-      await expect(
-        handleListTool(invalidInput, options),
-      ).rejects.toThrow(McpError);
+      await expect(handleListTool(invalidInput, options)).rejects.toThrow(
+        McpError,
+      );
 
       try {
         await handleListTool(invalidInput, options);
@@ -892,9 +892,9 @@ describe("list-tool", () => {
         extra: "field",
       };
 
-      await expect(
-        handleListTool(invalidInput, options),
-      ).rejects.toThrow(McpError);
+      await expect(handleListTool(invalidInput, options)).rejects.toThrow(
+        McpError,
+      );
 
       try {
         await handleListTool(invalidInput, options);
