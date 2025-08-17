@@ -332,10 +332,6 @@ export async function startMCPServer() {
 
     // Create and connect transport
     const transport = new StdioServerTransport();
-    await server.connect(transport);
-
-    // Keep the process alive
-    process.stdin.resume();
 
     // Handle shutdown gracefully
     const shutdown = async () => {
@@ -349,6 +345,19 @@ export async function startMCPServer() {
 
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
+
+    // Connect to transport and keep the process alive
+    await server.connect(transport);
+
+    // Keep the process alive. The StdioServerTransport sets up event listeners
+    // but doesn't prevent the process from exiting when launched via CLI/npx.
+    // Using setInterval to keep the event loop active is a common pattern.
+    setInterval(
+      () => {
+        // Keep-alive timer - prevents Node.js from exiting
+      },
+      1000 * 60 * 60,
+    ); // 1 hour interval (never actually fires if process is killed)
   } catch (error) {
     console.error("MCP Server startup error:", error);
     process.exit(1);
