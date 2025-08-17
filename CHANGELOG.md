@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.1] - 2025-08-17
+
+- fix
+
+
 ## [0.6.0] - 2025-08-17
 
 - Merge pull request #50 from ushironoko:migrate-better-sqlite3
