@@ -5,13 +5,13 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
-  InitializeRequestSchema,
+  ErrorCode,
   ListToolsRequestSchema,
+  McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 import { createConfigOperations } from "../core/config-operations.js";
 import { createDatabaseOperations } from "../core/database-operations.js";
 import type { DatabaseService } from "../core/database-service.js";
-import { noopWithArgs } from "../core/utils/noop.js";
 import { handleIndexTool } from "./tools/index-tool.js";
 import { handleListTool } from "./tools/list-tool.js";
 import { handleQueryTool } from "./tools/query-tool.js";
@@ -22,6 +22,7 @@ let service: DatabaseService | null = null;
 // Create MCP server
 const server = new Server(
   {
+    protocolVersion: "2025-06-18",
     name: "gistdex-mcp",
     version: "1.0.0",
   },
@@ -31,20 +32,6 @@ const server = new Server(
     },
   },
 );
-
-// Handle initialize request
-server.setRequestHandler(InitializeRequestSchema, async () => {
-  return {
-    protocolVersion: "2025-06-18",
-    capabilities: {
-      tools: {},
-    },
-    serverInfo: {
-      name: "gistdex-mcp",
-      version: "1.0.0",
-    },
-  };
-});
 
 // Register tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -217,7 +204,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               content: [
                 {
                   type: "text",
-                  text: `❌ ${result.message}\n${result.errors?.join("\n") || ""}`,
+                  text: `❌ ${result.message}\n${
+                    result.errors?.join("\n") || ""
+                  }`,
                 },
               ],
             };
@@ -229,7 +218,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               const metadata = r.metadata
                 ? `\nMetadata: ${JSON.stringify(r.metadata, null, 2)}`
                 : "";
-              return `\n${i + 1}. Score: ${r.score.toFixed(3)}\n${r.content}${metadata}`;
+              return `\n${i + 1}. Score: ${r.score.toFixed(3)}\n${
+                r.content
+              }${metadata}`;
             })
             .join("\n---");
 
@@ -250,7 +241,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               content: [
                 {
                   type: "text",
-                  text: `❌ ${result.message}\n${result.errors?.join("\n") || ""}`,
+                  text: `❌ ${result.message}\n${
+                    result.errors?.join("\n") || ""
+                  }`,
                 },
               ],
             };
@@ -296,70 +289,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         default:
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Unknown tool: ${name}`,
-              },
-            ],
-            isError: true,
-          };
+          throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
       }
     });
   } catch (error) {
+    // Re-throw McpError as-is (SDK will handle it properly)
+    if (error instanceof McpError) {
+      throw error;
+    }
+
+    // Wrap unexpected errors in McpError
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error: ${errorMessage}`,
-        },
-      ],
-      isError: true,
-    };
+    throw new McpError(ErrorCode.InternalError, errorMessage, {
+      originalError: errorMessage,
+    });
   }
 });
 
 // Start MCP server - this should only be called from the CLI
 export async function startMCPServer() {
   try {
-    // Override console methods to suppress output in MCP mode
-    // Using noop utility function for better code clarity
-    console.log = noopWithArgs;
-    // Temporarily keep console.error for debugging
-    // console.error = noopWithArgs;
-
     // Create and connect transport
     const transport = new StdioServerTransport();
-
-    // Handle shutdown gracefully
-    const shutdown = async () => {
-      try {
-        await server.close();
-      } catch (err) {
-        console.error(`Error closing server: ${err}`);
-      }
-      process.exit(0);
-    };
-
-    process.on("SIGINT", shutdown);
-    process.on("SIGTERM", shutdown);
-
     // Connect to transport and keep the process alive
     await server.connect(transport);
-
-    // Keep the process alive. The StdioServerTransport sets up event listeners
-    // but doesn't prevent the process from exiting when launched via CLI/npx.
-    // Using setInterval to keep the event loop active is a common pattern.
-    setInterval(
-      () => {
-        // Keep-alive timer - prevents Node.js from exiting
-      },
-      1000 * 60 * 60,
-    ); // 1 hour interval (never actually fires if process is killed)
   } catch (error) {
     console.error("MCP Server startup error:", error);
-    process.exit(1);
   }
 }
