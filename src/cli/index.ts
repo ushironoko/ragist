@@ -1,15 +1,10 @@
 #!/usr/bin/env node
 
-// Debug: Log immediately when script starts (before imports)
-if (process.argv.includes("--mcp") || process.argv.includes("-m")) {
-  process.stderr.write("DEBUG: CLI process started with --mcp flag\n");
-  process.stderr.write(`DEBUG: Node version: ${process.version}\n`);
-  process.stderr.write(`DEBUG: Platform: ${process.platform}\n`);
-  process.stderr.write(`DEBUG: Full argv: ${JSON.stringify(process.argv)}\n`);
-  process.stderr.write(
-    `DEBUG: Args after slice(2): ${JSON.stringify(process.argv.slice(2))}\n`,
-  );
-}
+// Load debug utilities before other imports for early debugging
+import { logMcpDebugInfo } from "./utils/debug.js";
+
+// Log debug info if running in MCP mode
+logMcpDebugInfo();
 
 import { loadEnvironmentVariables } from "../core/utils/env-loader.js";
 
@@ -25,6 +20,7 @@ import { handleInit } from "./commands/init.js";
 import { handleList } from "./commands/list.js";
 import { handleQuery } from "./commands/query.js";
 import { showVersion } from "./commands/version.js";
+import { handleSpecialFlags } from "./utils/special-flags.js";
 
 // Define common database args used by multiple commands
 const dbArgs = {
@@ -182,49 +178,13 @@ subCommands.set("version", versionCommand);
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
-  // Handle npx-style invocation where args might include --yes and package name
-  // Look for --mcp flag anywhere in args, not just at the beginning
-  const mcpIndex = args.findIndex((arg) => arg === "--mcp" || arg === "-m");
-  if (mcpIndex !== -1) {
-    process.stderr.write(`DEBUG: --mcp flag detected at index ${mcpIndex}\n`);
-    process.stderr.write(`DEBUG: Full args: ${JSON.stringify(args)}\n`);
-    
-    try {
-      process.stderr.write("DEBUG: Attempting to import MCP server...\n");
-      const { startMCPServer } = await import("../mcp/server.js");
-      process.stderr.write("DEBUG: startMCPServer imported successfully\n");
-      
-      process.stderr.write("DEBUG: Calling startMCPServer...\n");
-      await startMCPServer();
-      process.stderr.write("DEBUG: startMCPServer returned (should not happen)\n");
-    } catch (error) {
-      process.stderr.write(`DEBUG: Error in MCP server: ${error}\n`);
-      if (error instanceof Error) {
-        process.stderr.write(`DEBUG: Error stack: ${error.stack}\n`);
-      }
-      process.exit(1);
+  // Handle special flags (--help, --version, --mcp, etc.)
+  const { handled, shouldExit } = await handleSpecialFlags(args);
+  if (handled) {
+    if (shouldExit) {
+      process.exit(0);
     }
-    return; // This won't return as the server will take over the process
-  }
-
-  // Handle special cases for backward compatibility
-  if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
-    showHelp();
-    process.exit(0);
-  }
-
-  // Handle --version flag
-  if (args[0] === "--version" || args[0] === "-v") {
-    showVersion();
-    process.exit(0);
-  }
-
-  // Handle --init as alias for init command
-  if (args.some((arg) => arg === "--init")) {
-    const filteredArgs = args.filter((arg) => arg !== "--init");
-    filteredArgs.unshift("init");
-    args.length = 0;
-    args.push(...filteredArgs);
+    return;
   }
 
   const cliOptions = {

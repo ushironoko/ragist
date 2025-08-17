@@ -32,13 +32,8 @@ const server = new Server(
   },
 );
 
-// Add explicit initialize handler for debugging
-server.setRequestHandler(InitializeRequestSchema, async (request) => {
-  process.stderr.write(
-    `DEBUG: Initialize request received: ${JSON.stringify(request.params)}\n`,
-  );
-
-  // Return proper initialize response
+// Handle initialize request
+server.setRequestHandler(InitializeRequestSchema, async () => {
   return {
     protocolVersion: "2025-06-18",
     capabilities: {
@@ -50,14 +45,6 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
     },
   };
 });
-
-// Add error handler for server
-server.onerror = (error) => {
-  process.stderr.write(`DEBUG: Server error: ${error}\n`);
-  if (error instanceof Error) {
-    process.stderr.write(`DEBUG: Error stack: ${error.stack}\n`);
-  }
-};
 
 // Register tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -336,90 +323,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start MCP server - this should only be called from the CLI
 export async function startMCPServer() {
-  // Write immediately to stderr before any other code
-  process.stderr.write("DEBUG: startMCPServer called\n");
-  process.stderr.write(`DEBUG: Process argv: ${process.argv.join(" ")}\n`);
-  process.stderr.write(`DEBUG: Current directory: ${process.cwd()}\n`);
-
   try {
-    // Write debug info to stderr
-    process.stderr.write("MCP Server starting...\n");
-
     // Override console methods to suppress output in MCP mode
     // Using noop utility function for better code clarity
     console.log = noopWithArgs;
     // Temporarily keep console.error for debugging
     // console.error = noopWithArgs;
 
-    // Don't load environment variables here - they're loaded in CLI already
-
-    process.stderr.write("Creating transport...\n");
+    // Create and connect transport
     const transport = new StdioServerTransport();
-
-    // Add transport error handling
-    transport.onerror = (error) => {
-      process.stderr.write(`DEBUG: Transport error: ${error}\n`);
-      if (error instanceof Error) {
-        process.stderr.write(`DEBUG: Transport error stack: ${error.stack}\n`);
-      }
-    };
-
-    transport.onclose = () => {
-      process.stderr.write("DEBUG: Transport closed\n");
-    };
-
-    process.stderr.write("Connecting server...\n");
     await server.connect(transport);
-
-    process.stderr.write("Server connected successfully\n");
-
-    // Log when ready
-    process.stderr.write("DEBUG: Server is ready to handle requests\n");
 
     // Keep the process alive
     process.stdin.resume();
 
     // Handle shutdown gracefully
-    process.on("SIGINT", async () => {
-      process.stderr.write("Received SIGINT, shutting down...\n");
+    const shutdown = async () => {
       try {
         await server.close();
       } catch (err) {
-        process.stderr.write(`Error closing server: ${err}\n`);
+        console.error(`Error closing server: ${err}`);
       }
       process.exit(0);
-    });
+    };
 
-    process.on("SIGTERM", async () => {
-      process.stderr.write("Received SIGTERM, shutting down...\n");
-      try {
-        await server.close();
-      } catch (err) {
-        process.stderr.write(`Error closing server: ${err}\n`);
-      }
-      process.exit(0);
-    });
-
-    // Catch unhandled errors
-    process.on("uncaughtException", (error) => {
-      process.stderr.write(
-        `DEBUG: Uncaught Exception: ${error.message}\n${error.stack}\n`,
-      );
-      // Don't exit immediately to allow debugging
-    });
-
-    process.on("unhandledRejection", (reason, promise) => {
-      process.stderr.write(
-        `DEBUG: Unhandled Rejection at: ${promise}, reason: ${reason}\n`,
-      );
-      // Don't exit immediately to allow debugging
-    });
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
   } catch (error) {
-    // Log to stderr for debugging
-    process.stderr.write(`MCP Server startup error: ${error}\n`);
-    if (error instanceof Error) {
-      process.stderr.write(`Stack: ${error.stack}\n`);
-    }
+    console.error("MCP Server startup error:", error);
     process.exit(1);
   }
 }

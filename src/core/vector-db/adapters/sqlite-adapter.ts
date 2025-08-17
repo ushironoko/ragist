@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import * as sqliteVec from "sqlite-vec";
 import { VECTOR_DB_CONSTANTS } from "../constants.js";
 import {
@@ -20,13 +20,13 @@ import type {
 
 /**
  * Create a SQLite vector database adapter using closure pattern
- * This adapter uses better-sqlite3 for stable SQLite support
+ * This adapter uses node:sqlite (requires Node.js 24.6.0+ to avoid ExperimentalWarning)
  */
 export const createSQLiteAdapter = (
   config: VectorDBConfig,
 ): VectorDBAdapter => {
   // Private state
-  let db: Database.Database | null = null;
+  let db: DatabaseSync | null = null;
   const dbPath = config.options?.path ?? ":memory:";
   const dimension =
     config.options?.dimension ?? VECTOR_DB_CONSTANTS.DEFAULT_DIMENSION;
@@ -57,12 +57,15 @@ export const createSQLiteAdapter = (
     if (initialized) return;
 
     try {
-      // Create database connection with better-sqlite3
-      db = new Database(dbPath as string);
+      // Create database connection with node:sqlite
+      // Enable extension loading for sqlite-vec
+      db = new DatabaseSync(String(dbPath), {
+        allowExtension: true,
+      });
 
       // Load sqlite-vec extension for vector operations
       try {
-        sqliteVec.load(db);
+        db.loadExtension(sqliteVec.getLoadablePath());
       } catch (extError) {
         // Close the database connection before throwing error
         if (db) {
@@ -150,7 +153,7 @@ Original error: ${
     ensureInitialized();
 
     const id = generateDocumentId(document.id);
-    validateDimension(document.embedding, dimension as number);
+    validateDimension(document.embedding, Number(dimension));
 
     // Check for sourceId and originalContent in metadata
     const sourceId = document.metadata?.sourceId;
@@ -179,7 +182,7 @@ Original error: ${
           }
         }
       }
-      sourceIdToUse = sourceId as string;
+      sourceIdToUse = String(sourceId);
     }
 
     // Convert embedding array to Float32Array for sqlite-vec
@@ -189,9 +192,9 @@ Original error: ${
     const vecInsertStmt = db?.prepare(
       "INSERT INTO vec_documents(embedding) VALUES (?)",
     );
-    const vecResult = vecInsertStmt?.run(
-      embeddingFloat32,
-    ) as Database.RunResult;
+    const vecResult = vecInsertStmt?.run(embeddingFloat32) as {
+      lastInsertRowid: number | bigint;
+    };
     const vecRowId = vecResult?.lastInsertRowid;
 
     // Prepare metadata without originalContent (as it's stored in sources table)
@@ -288,7 +291,7 @@ Original error: ${
     }
 
     if (updates.embedding) {
-      validateDimension(updates.embedding, dimension as number);
+      validateDimension(updates.embedding, Number(dimension));
     }
 
     // Get the vec_rowid for the document
@@ -317,7 +320,7 @@ Original error: ${
 
     // Build update query dynamically based on what's being updated
     const updateFields: string[] = [];
-    const updateValues: any[] = [];
+    const updateValues: SQLInputValue[] = [];
 
     if (updates.content !== undefined) {
       updateFields.push("content = ?");
@@ -384,7 +387,7 @@ Original error: ${
   ): Promise<VectorSearchResult[]> => {
     ensureInitialized();
 
-    validateDimension(embedding, dimension as number);
+    validateDimension(embedding, Number(dimension));
 
     const k = options.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
     const { whereClause, params } = buildSQLWhereClause(options.filter);

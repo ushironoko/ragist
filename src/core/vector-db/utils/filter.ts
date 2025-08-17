@@ -18,19 +18,38 @@ export function applyMetadataFilter(
   return true;
 }
 
+import type { SQLInputValue } from "node:sqlite";
+
 /**
  * Build SQL conditions for filtering
  */
 export function buildSQLFilterConditions(filter: Record<string, unknown>): {
   conditions: string[];
-  params: unknown[];
+  params: SQLInputValue[];
 } {
   const conditions: string[] = [];
-  const params: unknown[] = [];
+  const params: SQLInputValue[] = [];
 
   for (const [key, value] of Object.entries(filter)) {
     conditions.push(`json_extract(metadata, '$.${key}') = ?`);
-    params.push(value);
+    // Convert value to SQLInputValue-compatible type
+    let sqlValue: SQLInputValue;
+    if (value === null || value === undefined) {
+      sqlValue = null;
+    } else if (typeof value === "boolean") {
+      // Convert boolean to number for SQLite (0/1)
+      sqlValue = value ? 1 : 0;
+    } else if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "bigint"
+    ) {
+      sqlValue = value;
+    } else {
+      // For other types, convert to string
+      sqlValue = String(value);
+    }
+    params.push(sqlValue);
   }
 
   return { conditions, params };
@@ -41,7 +60,7 @@ export function buildSQLFilterConditions(filter: Record<string, unknown>): {
  */
 export function buildSQLWhereClause(filter?: Record<string, unknown>): {
   whereClause: string;
-  params: unknown[];
+  params: SQLInputValue[];
 } {
   if (!filter || Object.keys(filter).length === 0) {
     return { whereClause: "", params: [] };

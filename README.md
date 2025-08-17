@@ -26,7 +26,7 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
 
 ## Requirements
 
-- Node.js >= 24.2.0
+- Node.js >= 24.6.0 (Required to avoid ExperimentalWarning from node:sqlite)
 - Google AI API key for embeddings
 
 ## Installation
