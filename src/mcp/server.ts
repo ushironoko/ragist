@@ -309,6 +309,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Start MCP server - this should only be called from the CLI
 export async function startMCPServer() {
   try {
+    // Write debug info to stderr
+    process.stderr.write("MCP Server starting...\n");
+    
     // Override console methods to suppress output in MCP mode
     // Using noop utility function for better code clarity
     console.log = noopWithArgs;
@@ -321,22 +324,44 @@ export async function startMCPServer() {
     );
     loadEnvironmentVariables({ silent: true });
 
+    process.stderr.write("Creating transport...\n");
     const transport = new StdioServerTransport();
+    
+    process.stderr.write("Connecting server...\n");
     await server.connect(transport);
+    
+    process.stderr.write("Server connected successfully\n");
 
     // Handle shutdown gracefully
     process.on("SIGINT", async () => {
+      process.stderr.write("Received SIGINT, shutting down...\n");
       await server.close();
       process.exit(0);
     });
 
     process.on("SIGTERM", async () => {
+      process.stderr.write("Received SIGTERM, shutting down...\n");
       await server.close();
       process.exit(0);
     });
+    
+    // Catch unhandled errors
+    process.on("uncaughtException", (error) => {
+      process.stderr.write(`Uncaught Exception: ${error.message}\n${error.stack}\n`);
+      process.exit(1);
+    });
+    
+    process.on("unhandledRejection", (reason, promise) => {
+      process.stderr.write(`Unhandled Rejection at: ${promise}, reason: ${reason}\n`);
+      process.exit(1);
+    });
+    
   } catch (error) {
     // Log to stderr for debugging
-    console.error("MCP Server startup error:", error);
+    process.stderr.write(`MCP Server startup error: ${error}\n`);
+    if (error instanceof Error) {
+      process.stderr.write(`Stack: ${error.stack}\n`);
+    }
     process.exit(1);
   }
 }
