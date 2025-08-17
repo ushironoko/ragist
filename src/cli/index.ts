@@ -5,7 +5,10 @@ if (process.argv.includes("--mcp") || process.argv.includes("-m")) {
   process.stderr.write("DEBUG: CLI process started with --mcp flag\n");
   process.stderr.write(`DEBUG: Node version: ${process.version}\n`);
   process.stderr.write(`DEBUG: Platform: ${process.platform}\n`);
-  process.stderr.write(`DEBUG: Args: ${process.argv.join(" ")}\n`);
+  process.stderr.write(`DEBUG: Full argv: ${JSON.stringify(process.argv)}\n`);
+  process.stderr.write(
+    `DEBUG: Args after slice(2): ${JSON.stringify(process.argv.slice(2))}\n`,
+  );
 }
 
 import { loadEnvironmentVariables } from "../core/utils/env-loader.js";
@@ -179,6 +182,18 @@ subCommands.set("version", versionCommand);
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
+  // Handle npx-style invocation where args might include --yes and package name
+  // Look for --mcp flag anywhere in args, not just at the beginning
+  const mcpIndex = args.findIndex((arg) => arg === "--mcp" || arg === "-m");
+  if (mcpIndex !== -1) {
+    process.stderr.write(`DEBUG: --mcp flag detected at index ${mcpIndex}\n`);
+    process.stderr.write(`DEBUG: Full args: ${JSON.stringify(args)}\n`);
+    const { startMCPServer } = await import("../mcp/server.js");
+    process.stderr.write("DEBUG: startMCPServer imported\n");
+    await startMCPServer();
+    return; // This won't return as the server will take over the process
+  }
+
   // Handle special cases for backward compatibility
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
     showHelp();
@@ -189,15 +204,6 @@ export async function main(): Promise<void> {
   if (args[0] === "--version" || args[0] === "-v") {
     showVersion();
     process.exit(0);
-  }
-
-  // Handle --mcp or -m flag to start MCP server
-  if (args[0] === "--mcp" || args[0] === "-m") {
-    process.stderr.write("DEBUG: --mcp flag detected\n");
-    const { startMCPServer } = await import("../mcp/server.js");
-    process.stderr.write("DEBUG: startMCPServer imported\n");
-    await startMCPServer();
-    return; // This won't return as the server will take over the process
   }
 
   // Handle --init as alias for init command

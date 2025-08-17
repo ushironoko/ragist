@@ -373,3 +373,7 @@ gistdex/
 ├── data/             # Default data directory
 └── dist/             # Compiled JavaScript output
 ```
+
+## Important Development Notes
+
+- **Version Management**: NEVER modify the version in package.json manually. Version is automatically updated by CI/CD workflow during release
