@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.1] - 2025-08-17
+
+- Merge pull request #52 from ushironoko:fix-mcp-server
+- fix mcp server keep alive
+
+
 ## [0.7.0] - 2025-08-17
 
 - Merge pull request #51 from ushironoko:restore-better-sqlite3
