@@ -49,7 +49,7 @@ export function buildSQLWhereClause(filter?: Record<string, unknown>): {
 
   const { conditions, params } = buildSQLFilterConditions(filter);
   return {
-    whereClause: ` WHERE ${conditions.join(" AND ")}`,
+    whereClause: conditions.join(" AND "),
     params,
   };
 }

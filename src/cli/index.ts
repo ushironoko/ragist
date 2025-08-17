@@ -167,43 +167,6 @@ subCommands.set("info", infoCommand);
 subCommands.set("version", versionCommand);
 
 // Main entry point
-/**
- * Start the MCP server
- */
-async function startMCPServer(): Promise<void> {
-  // Import and start the MCP server using dedicated binary
-  const { spawn } = await import("node:child_process");
-  const path = await import("node:path");
-  const { fileURLToPath } = await import("node:url");
-
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-
-  // Use the dedicated gistdex-mcp binary to avoid Node.js warnings
-  const mcpBinaryPath = path.join(__dirname, "gistdex-mcp.js");
-
-  // Spawn the MCP server with suppressed warnings
-  const mcpServer = spawn(
-    process.execPath,
-    ["--no-warnings", "--no-deprecation", mcpBinaryPath],
-    {
-      stdio: "inherit",
-      env: {
-        ...process.env,
-        NODE_NO_WARNINGS: "1",
-      },
-    },
-  );
-
-  mcpServer.on("error", () => {
-    // Cannot use console.error as it would interfere with MCP
-    process.exit(1);
-  });
-
-  mcpServer.on("exit", (code) => {
-    process.exit(code ?? 0);
-  });
-}
 
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -222,6 +185,7 @@ export async function main(): Promise<void> {
 
   // Handle --mcp or -m flag to start MCP server
   if (args[0] === "--mcp" || args[0] === "-m") {
+    const { startMCPServer } = await import("../mcp/server.js");
     await startMCPServer();
     return; // This won't return as the server will take over the process
   }
