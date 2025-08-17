@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.3] - 2025-08-17
+
+- fix: disable debug output in CLI to ensure clean MCP communication
+- fix: remove debug output from MCP mode to prevent stdout pollution
+
+
 ## [0.7.1] - 2025-08-17
 
 - Merge pull request #52 from ushironoko:fix-mcp-server
