@@ -188,9 +188,22 @@ export async function main(): Promise<void> {
   if (mcpIndex !== -1) {
     process.stderr.write(`DEBUG: --mcp flag detected at index ${mcpIndex}\n`);
     process.stderr.write(`DEBUG: Full args: ${JSON.stringify(args)}\n`);
-    const { startMCPServer } = await import("../mcp/server.js");
-    process.stderr.write("DEBUG: startMCPServer imported\n");
-    await startMCPServer();
+    
+    try {
+      process.stderr.write("DEBUG: Attempting to import MCP server...\n");
+      const { startMCPServer } = await import("../mcp/server.js");
+      process.stderr.write("DEBUG: startMCPServer imported successfully\n");
+      
+      process.stderr.write("DEBUG: Calling startMCPServer...\n");
+      await startMCPServer();
+      process.stderr.write("DEBUG: startMCPServer returned (should not happen)\n");
+    } catch (error) {
+      process.stderr.write(`DEBUG: Error in MCP server: ${error}\n`);
+      if (error instanceof Error) {
+        process.stderr.write(`DEBUG: Error stack: ${error.stack}\n`);
+      }
+      process.exit(1);
+    }
     return; // This won't return as the server will take over the process
   }
 
