@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0] - 2025-08-18
+
+- Merge pull request #55 from ushironoko:new-bin-mcp-server
+- feat: introduce dedicated MCP server binary and update CLI commands
+- Merge pull request #54 from ushironoko:refactor-code-diet
+- refactor: remove unused functions and clean up code in CLI utilities
+
+
 ## [0.7.5] - 2025-08-17
 
 - fix
