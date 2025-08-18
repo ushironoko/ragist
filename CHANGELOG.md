@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.1] - 2025-08-18
+
+- fix: prevent process exit on MCP server start failure
+
+
 ## [0.9.0] - 2025-08-18
 
 - Merge pull request #56 from ushironoko:revert-pr-55-new-bin-mcp-server
