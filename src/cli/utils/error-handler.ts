@@ -15,37 +15,6 @@ export function formatError(error: unknown, prefix?: string): string {
 }
 
 /**
- * Safely execute an async operation and capture errors
- */
-export async function safeExecute<T>(
-  operation: () => Promise<T>,
-  errorPrefix?: string,
-): Promise<{ success: true; data: T } | { success: false; error: string }> {
-  try {
-    const data = await operation();
-    return { success: true, data };
-  } catch (error) {
-    return { success: false, error: formatError(error, errorPrefix) };
-  }
-}
-
-/**
- * Execute an operation with error collection
- */
-export async function executeWithErrors<T extends ErrorResult>(
-  result: T,
-  operation: () => Promise<void>,
-  errorPrefix?: string,
-): Promise<T> {
-  try {
-    await operation();
-  } catch (error) {
-    result.errors.push(formatError(error, errorPrefix));
-  }
-  return result;
-}
-
-/**
  * Handle CLI command errors consistently
  */
 export function handleCliError(error: unknown, message?: string): never {

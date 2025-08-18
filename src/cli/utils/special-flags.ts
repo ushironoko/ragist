@@ -78,10 +78,3 @@ export async function handleSpecialFlags(
 
   return { handled: false };
 }
-
-/**
- * Check if debug mode is enabled for MCP
- */
-export function isMcpDebugMode(): boolean {
-  return process.argv.includes("--mcp") || process.argv.includes("-m");
-}

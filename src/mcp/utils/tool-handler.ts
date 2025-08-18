@@ -74,21 +74,6 @@ export function createToolHandler<
 }
 
 /**
- * Common error handler for consistent error responses
- */
-export function handleToolError(
-  error: unknown,
-  operation: string,
-): BaseToolResult {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  return {
-    success: false,
-    message: `${operation} failed: ${errorMessage}`,
-    errors: [errorMessage],
-  };
-}
-
-/**
  * Creates a success response with optional data
  */
 export function createSuccessResponse<T extends BaseToolResult>(
