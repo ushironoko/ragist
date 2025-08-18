@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.0] - 2025-08-18
+
+- Merge pull request #56 from ushironoko:revert-pr-55-new-bin-mcp-server
+- Revert "Merge pull request #55 from ushironoko:new-bin-mcp-server"
+
+
 ## [0.8.0] - 2025-08-18
 
 - Merge pull request #55 from ushironoko:new-bin-mcp-server
