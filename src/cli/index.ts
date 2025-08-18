@@ -184,27 +184,27 @@ export async function main(): Promise<void> {
     if (shouldExit) {
       process.exit(0);
     }
-    return;
-  }
+    // If MCP server mode is started, shouldExit is not set, so don't execute CLI
+  } else {
+    const cliOptions = {
+      name: "gistdex",
+      version: packageJson.version,
+      description:
+        "A CLI tool for indexing and searching content using vector databases",
+      subCommands,
+    };
 
-  const cliOptions = {
-    name: "gistdex",
-    version: packageJson.version,
-    description:
-      "A CLI tool for indexing and searching content using vector databases",
-    subCommands,
-  };
-
-  try {
-    // Use help command as the default/main command
-    // gunshi will handle command routing based on the first argument
-    await cli(args, helpCommand, cliOptions);
-  } catch (error) {
-    console.error(
-      "Error:",
-      error instanceof Error ? error.message : String(error),
-    );
-    process.exit(1);
+    try {
+      // Use help command as the default/main command
+      // gunshi will handle command routing based on the first argument
+      await cli(args, helpCommand, cliOptions);
+    } catch (error) {
+      console.error(
+        "Error:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
   }
 }
 
