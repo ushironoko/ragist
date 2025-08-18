@@ -1,20 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { DatabaseSync } from "node:sqlite";
-import {
-  DatabaseNotInitializedError,
-  InvalidDimensionError,
-} from "../errors.js";
-
-/**
- * Check if database is initialized (for SQLite)
- */
-export function checkDatabaseInitialized(
-  db: DatabaseSync | null,
-): asserts db is DatabaseSync {
-  if (!db) {
-    throw new DatabaseNotInitializedError();
-  }
-}
+import { InvalidDimensionError } from "../errors.js";
 
 /**
  * Generate document ID
