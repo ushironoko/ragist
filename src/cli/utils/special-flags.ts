@@ -12,21 +12,6 @@ export interface SpecialFlagResult {
 }
 
 /**
- * Check if argument is the MCP flag
- */
-function isMcpFlag(arg: string): boolean {
-  return arg === "--mcp" || arg === "-m";
-}
-
-/**
- * Handle MCP server mode
- */
-async function handleMcpMode(): Promise<void> {
-  const { startMCPServer } = await import("../../mcp/server.js");
-  await startMCPServer();
-}
-
-/**
  * Process special flags that bypass normal command flow
  * Returns true if a special flag was handled and execution should stop
  */
@@ -49,19 +34,6 @@ export async function handleSpecialFlags(
   if (args[0] === "--version" || args[0] === "-v") {
     showVersion();
     return { handled: true, shouldExit: true };
-  }
-
-  // MCP server mode - can be anywhere in args for npx compatibility
-  const mcpIndex = args.findIndex(isMcpFlag);
-  if (mcpIndex !== -1) {
-    try {
-      await handleMcpMode();
-      // MCP server takes over the process, this shouldn't return
-      return { handled: true };
-    } catch (error) {
-      console.error("Failed to start MCP server:", error);
-      process.exit(1);
-    }
   }
 
   // Handle --init as alias for init command

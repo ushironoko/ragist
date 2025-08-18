@@ -179,10 +179,12 @@ Gistdex can be used as an MCP server, allowing LLMs to directly index and search
 #### Starting the MCP Server
 
 ```bash
-# Start MCP server
-npx @ushironoko/gistdex --mcp
-# or
-npx @ushironoko/gistdex -m
+# Start MCP server using the dedicated binary
+npx gistdex-mcp
+
+# Or if installed globally
+npm install -g @ushironoko/gistdex
+gistdex-mcp
 ```
 
 #### Configuring for Claude Desktop
@@ -194,7 +196,20 @@ Add the following configuration to your Claude Desktop's `claude_desktop_config.
   "mcpServers": {
     "gistdex": {
       "command": "npx",
-      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
+      "args": ["--yes", "gistdex-mcp"],
+      "cwd": "~/Documents/gistdex-data"
+    }
+  }
+}
+```
+
+Or if you have `@ushironoko/gistdex` installed globally:
+
+```json
+{
+  "mcpServers": {
+    "gistdex": {
+      "command": "gistdex-mcp",
       "cwd": "~/Documents/gistdex-data"
     }
   }
@@ -454,7 +469,7 @@ graph TB
 
 #### CLI Layer
 
-- **cli/index.ts**: Main entry point that uses gunshi framework for command routing, includes `--mcp` flag support
+- **cli/index.ts**: Main entry point that uses gunshi framework for command routing
 - **Commands**: Individual command handlers (init, index, query, list, info, version, help)
 - **command-handler.ts**: Abstracts common database operations for all commands
 - **config-helper.ts**: Handles configuration loading and merging from multiple sources
