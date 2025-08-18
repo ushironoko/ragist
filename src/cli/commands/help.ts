@@ -49,9 +49,6 @@ Commands:
 Special Commands:
   init, --init   Initialize a new Gistdex project with .env and config files
                  Creates an interactive setup wizard for configuration
-  
-  --mcp, -m      Start the Gistdex MCP (Model Context Protocol) server
-                 Allows LLMs to use Gistdex through the MCP protocol
 
 Environment Variables:
   VECTOR_DB_PROVIDER     Default vector DB provider
@@ -82,9 +79,6 @@ Examples:
   
   # Search indexed content
   gistdex query "vector search implementation"
-  
-  # Start MCP server
-  gistdex --mcp
   
   # Use environment configuration
   export VECTOR_DB_PROVIDER=sqlite
