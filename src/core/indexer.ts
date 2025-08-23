@@ -494,6 +494,9 @@ function isTextFile(filename: string): boolean {
     // Frontend frameworks
     ".vue",
     ".svelte",
+
+    // examples
+    ".example",
   ];
 
   const lowerFilename = filename.toLowerCase();
