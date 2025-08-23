@@ -103,7 +103,9 @@ export async function indexText(
       result.chunksCreated = chunks.length;
     } catch (error) {
       result.errors.push(
-        `Failed to save chunks: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to save chunks: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
 
@@ -112,7 +114,9 @@ export async function indexText(
     }
   } catch (error) {
     result.errors.push(
-      `Indexing failed: ${error instanceof Error ? error.message : String(error)}`,
+      `Indexing failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   }
 
@@ -140,7 +144,9 @@ export async function indexFile(
       itemsIndexed: 0,
       chunksCreated: 0,
       errors: [
-        `Failed to read file ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to read file ${filePath}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       ],
     };
   }
@@ -184,7 +190,9 @@ export async function indexFiles(
         }
       } catch (error) {
         result.errors.push(
-          `Failed to process pattern ${pattern}: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed to process pattern ${pattern}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         );
       }
     }
@@ -232,7 +240,9 @@ export async function indexFiles(
     }
   } catch (error) {
     result.errors.push(
-      `Failed to index files: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to index files: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   }
 
@@ -302,7 +312,9 @@ export async function indexGist(
       result.errors.push(`Security error: ${error.message}`);
     } else {
       result.errors.push(
-        `Failed to index Gist: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to index Gist: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
   }
@@ -352,7 +364,9 @@ export async function indexGitHubRepo(
       result.errors.push(`Security error: ${error.message}`);
     } else {
       result.errors.push(
-        `Failed to index GitHub repo: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to index GitHub repo: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
   }
@@ -419,7 +433,9 @@ async function indexGitHubPath(
             result.errors.push(...fileResult.errors);
           } catch (error) {
             result.errors.push(
-              `Failed to index file ${item.path}: ${error instanceof Error ? error.message : String(error)}`,
+              `Failed to index file ${item.path}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
             );
           }
         }
@@ -427,7 +443,9 @@ async function indexGitHubPath(
     }
   } catch (error) {
     result.errors.push(
-      `Failed to process GitHub path: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to process GitHub path: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   }
 
@@ -468,14 +486,10 @@ function isTextFile(filename: string): boolean {
     ".yaml",
     ".yml",
     ".toml",
-    ".env",
 
     // Shell scripts
     ".sh",
     ".bash",
-
-    // Database
-    ".sql",
 
     // Frontend frameworks
     ".vue",
