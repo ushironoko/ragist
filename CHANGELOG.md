@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.2] - 2025-08-23
+
+- fix
+- fix mcp.json
+
+
 ## [0.9.1] - 2025-08-18
 
 - fix: prevent process exit on MCP server start failure
