@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin, localIconLoader } from 'vitepress-plugin-group-icons'
+import llmstxt from 'vitepress-plugin-llms'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -118,6 +119,9 @@ export default defineConfig({
 
   vite: {
     plugins: [
+      llmstxt({
+        // LLMs plugin options (optional, defaults work well)
+      }),
       groupIconVitePlugin({
         customIcon: {
           // Package managers
