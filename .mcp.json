@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "gistdex": {
-      "command": "npx",
-      "args": ["--yes", "@ushironoko/gistdex", "--mcp"],
+      "command": "pnpm",
+      "args": ["dlx", "@ushironoko/gistdex", "--mcp"],
       "env": {
         "NODE_NO_WARNINGS": "1"
       },
