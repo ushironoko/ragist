@@ -22,7 +22,7 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": false,
     "emitDecoratorMetadata": false,
-    "types": ["node"]
+    "types": ["node", "bun"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]

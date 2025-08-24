@@ -1,5 +1,4 @@
 import { createMemoryAdapter } from "./memory-adapter.js";
-import { createSQLiteAdapter } from "./sqlite-adapter.js";
 import type {
   AdapterFactory,
   VectorDBAdapter,
@@ -11,11 +10,11 @@ import type {
  */
 export interface RegistryInterface {
   register: (provider: string, factory: AdapterFactory) => void;
-  get: (provider: string) => AdapterFactory | undefined;
+  get: (provider: string) => Promise<AdapterFactory | undefined>;
   create: (config: VectorDBConfig) => Promise<VectorDBAdapter>;
-  listProviders: () => string[];
-  hasProvider: (provider: string) => boolean;
-  unregister: (provider: string) => boolean;
+  listProviders: () => Promise<string[]>;
+  hasProvider: (provider: string) => Promise<boolean>;
+  unregister: (provider: string) => Promise<boolean>;
   clear: () => void;
 }
 /**
@@ -27,12 +26,42 @@ export const createRegistry = (): RegistryInterface => {
   let initialized = false;
 
   // Initialize with built-in adapters
-  const initialize = () => {
+  const initialize = async () => {
     if (initialized) return;
 
     // Register built-in adapters
     register("memory", createMemoryAdapter);
-    register("sqlite", createSQLiteAdapter);
+
+    // Conditionally register SQLite adapters based on runtime
+    if (typeof Bun !== "undefined") {
+      // Running in Bun - register Bun SQLite adapter
+      try {
+        const { createBunSQLiteAdapter } = await import(
+          "./bun-sqlite-adapter.js"
+        );
+        register("sqlite", createBunSQLiteAdapter); // Default SQLite in Bun
+        register("bun-sqlite", createBunSQLiteAdapter);
+        register("sqlite-bun", createBunSQLiteAdapter); // Alias
+      } catch {
+        // Fallback to Node.js SQLite if Bun adapter fails
+        try {
+          const { createSQLiteAdapter } = await import("./sqlite-adapter.js");
+          register("sqlite", createSQLiteAdapter);
+          register("sqlite-node", createSQLiteAdapter);
+        } catch {
+          // SQLite not available
+        }
+      }
+    } else {
+      // Running in Node.js - register Node.js SQLite adapter
+      try {
+        const { createSQLiteAdapter } = await import("./sqlite-adapter.js");
+        register("sqlite", createSQLiteAdapter); // Default SQLite in Node.js
+        register("sqlite-node", createSQLiteAdapter); // Alias
+      } catch {
+        // SQLite not available
+      }
+    }
 
     initialized = true;
   };
@@ -46,16 +75,16 @@ export const createRegistry = (): RegistryInterface => {
   };
 
   // Get a registered adapter factory
-  const get = (provider: string): AdapterFactory | undefined => {
-    initialize();
+  const get = async (provider: string): Promise<AdapterFactory | undefined> => {
+    await initialize();
     return adapters.get(provider);
   };
 
   // Create an adapter instance
   const create = async (config: VectorDBConfig): Promise<VectorDBAdapter> => {
-    initialize();
+    await initialize();
 
-    const factory = get(config.provider);
+    const factory = await get(config.provider);
     if (!factory) {
       throw new Error(`No adapter registered for provider: ${config.provider}`);
     }
@@ -64,20 +93,20 @@ export const createRegistry = (): RegistryInterface => {
   };
 
   // List all registered providers
-  const listProviders = (): string[] => {
-    initialize();
+  const listProviders = async (): Promise<string[]> => {
+    await initialize();
     return Array.from(adapters.keys());
   };
 
   // Check if a provider is registered
-  const hasProvider = (provider: string): boolean => {
-    initialize();
+  const hasProvider = async (provider: string): Promise<boolean> => {
+    await initialize();
     return adapters.has(provider);
   };
 
   // Unregister a provider (mainly for testing)
-  const unregister = (provider: string): boolean => {
-    initialize();
+  const unregister = async (provider: string): Promise<boolean> => {
+    await initialize();
     return adapters.delete(provider);
   };
 

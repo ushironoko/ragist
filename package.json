@@ -76,6 +76,7 @@
     "@biomejs/biome": "1.9.4",
     "@iconify-json/vscode-icons": "^1.2.29",
     "@iconify/json": "^2.2.377",
+    "@types/bun": "^1.2.20",
     "@types/node": "24.2.0",
     "@typescript/native-preview": "7.0.0-dev.20250804.1",
     "@vitest/coverage-v8": "^2.1.8",

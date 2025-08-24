@@ -15,8 +15,8 @@ describe("registry-operations", () => {
   describe("withRegistry", () => {
     it("provides a registry with built-in adapters", async () => {
       const result = await withRegistry(async (registry) => {
-        expect(registry.hasProvider("memory")).toBe(true);
-        expect(registry.hasProvider("sqlite")).toBe(true);
+        expect(await registry.hasProvider("memory")).toBe(true);
+        expect(await registry.hasProvider("sqlite")).toBe(true);
         return "test-result";
       });
 
@@ -55,12 +55,12 @@ describe("registry-operations", () => {
         });
 
         registry.register("custom", mockAdapter);
-        expect(registry.hasProvider("custom")).toBe(true);
+        expect(await registry.hasProvider("custom")).toBe(true);
       });
 
       // Second operation should not see the custom adapter
       await withRegistry(async (registry) => {
-        expect(registry.hasProvider("custom")).toBe(false);
+        expect(await registry.hasProvider("custom")).toBe(false);
       });
     });
   });
@@ -91,8 +91,8 @@ describe("registry-operations", () => {
       const result = await withCustomRegistry(
         customAdapters,
         async (registry) => {
-          expect(registry.hasProvider("custom")).toBe(true);
-          expect(registry.hasProvider("memory")).toBe(true); // Built-ins still available
+          expect(await registry.hasProvider("custom")).toBe(true);
+          expect(await registry.hasProvider("memory")).toBe(true); // Built-ins still available
 
           const adapter = await registry.create({ provider: "custom" });
           const info = adapter.getInfo();
@@ -142,10 +142,10 @@ describe("registry-operations", () => {
       ]);
 
       await withCustomRegistry(customAdapters, async (registry) => {
-        expect(registry.hasProvider("custom1")).toBe(true);
-        expect(registry.hasProvider("custom2")).toBe(true);
+        expect(await registry.hasProvider("custom1")).toBe(true);
+        expect(await registry.hasProvider("custom2")).toBe(true);
 
-        const providers = registry.listProviders();
+        const providers = await registry.listProviders();
         expect(providers).toContain("custom1");
         expect(providers).toContain("custom2");
       });
@@ -153,14 +153,14 @@ describe("registry-operations", () => {
   });
 
   describe("getDefaultRegistry", () => {
-    it("creates a registry with built-in adapters", () => {
+    it("creates a registry with built-in adapters", async () => {
       const registry = getDefaultRegistry();
 
-      expect(registry.hasProvider("memory")).toBe(true);
-      expect(registry.hasProvider("sqlite")).toBe(true);
+      expect(await registry.hasProvider("memory")).toBe(true);
+      expect(await registry.hasProvider("sqlite")).toBe(true);
     });
 
-    it("creates independent instances", () => {
+    it("creates independent instances", async () => {
       const registry1 = getDefaultRegistry();
       const registry2 = getDefaultRegistry();
 
@@ -183,8 +183,8 @@ describe("registry-operations", () => {
       registry1.register("custom", mockAdapter);
 
       // Second registry should not have the custom adapter
-      expect(registry1.hasProvider("custom")).toBe(true);
-      expect(registry2.hasProvider("custom")).toBe(false);
+      expect(await registry1.hasProvider("custom")).toBe(true);
+      expect(await registry2.hasProvider("custom")).toBe(false);
     });
   });
 });

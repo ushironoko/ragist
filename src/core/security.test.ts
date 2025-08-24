@@ -33,7 +33,10 @@ describe("Security Module", () => {
   describe("validateFilePath", () => {
     it("should allow files within the base directory", async () => {
       const result = await validateFilePath("test.txt", testDir, ["."]);
-      expect(result).toBe(testFile);
+      // Use realpath to handle symlinks on macOS (/var -> /private/var)
+      const { realpath: realpathFs } = await import("node:fs/promises");
+      const expectedPath = await realpathFs(testFile);
+      expect(result).toBe(expectedPath);
     });
 
     it("should reject path traversal attempts", async () => {
@@ -92,7 +95,10 @@ describe("Security Module", () => {
         ".",
         "./docs",
       ]);
-      expect(result).toBe(subFile);
+      // Use realpath to handle symlinks on macOS (/var -> /private/var)
+      const { realpath: realpathFs } = await import("node:fs/promises");
+      const expectedPath = await realpathFs(subFile);
+      expect(result).toBe(expectedPath);
     });
 
     it("should reject empty or invalid paths", async () => {
@@ -236,7 +242,10 @@ describe("Security Module", () => {
       const validator = createSafePathValidator(testDir, ["."]);
 
       const result = await validator("test.txt");
-      expect(result).toBe(testFile);
+      // Use realpath to handle symlinks on macOS (/var -> /private/var)
+      const { realpath: realpathFs } = await import("node:fs/promises");
+      const expectedPath = await realpathFs(testFile);
+      expect(result).toBe(expectedPath);
 
       await expect(validator("../../../etc/passwd")).rejects.toThrow(
         SecurityError,
@@ -252,7 +261,10 @@ describe("Security Module", () => {
       const validator = createSafePathValidator(testDir, ["./allowed"]);
 
       const result = await validator("allowed/file.txt");
-      expect(result).toBe(subFile);
+      // Use realpath to handle symlinks on macOS (/var -> /private/var)
+      const { realpath: realpathFs } = await import("node:fs/promises");
+      const expectedPath = await realpathFs(subFile);
+      expect(result).toBe(expectedPath);
 
       // Should reject files in the base directory since it's not in allowed paths
       await expect(validator("test.txt")).rejects.toThrow(SecurityError);

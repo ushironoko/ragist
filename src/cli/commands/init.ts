@@ -12,7 +12,7 @@ interface InitOptions {
 
 interface InitConfig {
   apiKey: string;
-  provider: "sqlite" | "memory";
+  provider: "sqlite" | "memory" | "bun-sqlite";
   dbPath?: string;
   useDefaults: boolean;
 }
@@ -105,23 +105,35 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
     });
 
     // Vector DB configuration
+    const isBunRuntime = typeof Bun !== "undefined";
+    const choices = [
+      {
+        name: "SQLite (Recommended - Local file-based storage)",
+        value: "sqlite",
+      },
+    ];
+
+    // Add Bun SQLite option if running in Bun
+    if (isBunRuntime) {
+      choices.push({
+        name: "Bun SQLite (Optimized for Bun runtime)",
+        value: "bun-sqlite",
+      });
+    }
+
+    choices.push({
+      name: "Memory (Testing only - Data lost on restart)",
+      value: "memory",
+    });
+
     const provider = (await select({
       message: "Select vector database provider:",
-      choices: [
-        {
-          name: "SQLite (Recommended - Local file-based storage)",
-          value: "sqlite",
-        },
-        {
-          name: "Memory (Testing only - Data lost on restart)",
-          value: "memory",
-        },
-      ],
+      choices,
       default: "sqlite",
-    })) as "sqlite" | "memory";
+    })) as "sqlite" | "memory" | "bun-sqlite";
 
     let dbPath: string | undefined;
-    if (provider === "sqlite") {
+    if (provider === "sqlite" || provider === "bun-sqlite") {
       dbPath = await input({
         message: "Database file path:",
         default: "./gistdex.db",
