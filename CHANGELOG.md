@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.4] - 2025-08-24
+
+- remove engines
+- remove engine-strict
+- Merge pull request #57 from ushironoko/add-vitepress-docs
+- fix
+- Add comprehensive documentation for Gistdex
+
+
 ## [0.9.3] - 2025-08-23
 
 - add .exmaple
