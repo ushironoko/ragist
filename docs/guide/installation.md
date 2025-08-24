@@ -12,13 +12,21 @@ See [Getting Started](./getting-started.md#prerequisites) for requirements.
 
 No installation required - run Gistdex directly:
 
-```bash
-# Using npx (npm)
-npx @ushironoko/gistdex --help
+::: code-group
 
-# Using pnpm dlx
+```bash [npm]
+npx @ushironoko/gistdex --help
+```
+
+```bash [pnpm]
 pnpm dlx @ushironoko/gistdex --help
 ```
+
+```bash [yarn]
+yarn dlx @ushironoko/gistdex --help
+```
+
+:::
 
 This method:
 - Always uses the latest version
@@ -30,36 +38,59 @@ This method:
 
 For frequent use in a specific project:
 
-```bash
-# Using npm
+::: code-group
+
+```bash [npm]
 npm install --save-dev @ushironoko/gistdex
-
-# Using pnpm
-pnpm add -D @ushironoko/gistdex
-
-# Using yarn
-yarn add -D @ushironoko/gistdex
-
-# Using bun
-bun add -d @ushironoko/gistdex
 ```
 
-Then use with npx:
-```bash
+```bash [pnpm]
+pnpm add -D @ushironoko/gistdex
+```
+
+```bash [yarn]
+yarn add -D @ushironoko/gistdex
+```
+
+:::
+
+Then use with your package manager:
+
+::: code-group
+
+```bash [npm]
 npx @ushironoko/gistdex --help
 ```
+
+```bash [pnpm]
+pnpm exec gistdex --help
+```
+
+```bash [yarn]
+yarn gistdex --help
+```
+
+:::
 
 ### Global Installation (Optional)
 
 For system-wide availability without npx:
 
-```bash
-# Using npm
-npm install -g @ushironoko/gistdex
+::: code-group
 
-# Using pnpm
+```bash [npm]
+npm install -g @ushironoko/gistdex
+```
+
+```bash [pnpm]
 pnpm add -g @ushironoko/gistdex
 ```
+
+```bash [yarn]
+yarn global add @ushironoko/gistdex
+```
+
+:::
 
 After global installation, you can use:
 ```bash
@@ -72,7 +103,9 @@ npx @ushironoko/gistdex --help  # Also works
 
 To contribute or modify Gistdex:
 
-```bash
+::: code-group
+
+```bash [pnpm (recommended)]
 # Clone the repository
 git clone https://github.com/ushironoko/gistdex.git
 cd gistdex
@@ -84,18 +117,70 @@ pnpm install
 pnpm build
 
 # Link globally for testing
+pnpm link --global
+```
+
+```bash [npm]
+# Clone the repository
+git clone https://github.com/ushironoko/gistdex.git
+cd gistdex
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Link globally for testing
 npm link
 ```
 
+```bash [yarn]
+# Clone the repository
+git clone https://github.com/ushironoko/gistdex.git
+cd gistdex
+
+# Install dependencies
+yarn install
+
+# Build the project
+yarn build
+
+# Link globally for testing
+yarn link
+```
+
+:::
+
 ## Verify Installation
 
-```bash
+::: code-group
+
+```bash [npm]
 # Check version
 npx @ushironoko/gistdex --version
 
 # Show help
 npx @ushironoko/gistdex --help
 ```
+
+```bash [pnpm]
+# Check version
+pnpm dlx @ushironoko/gistdex --version
+
+# Show help
+pnpm dlx @ushironoko/gistdex --help
+```
+
+```bash [yarn]
+# Check version
+yarn dlx @ushironoko/gistdex --version
+
+# Show help
+yarn dlx @ushironoko/gistdex --help
+```
+
+:::
 
 ## Troubleshooting
 

@@ -5,8 +5,12 @@ This guide covers Gistdex installation and basic usage.
 ## Prerequisites
 
 - Node.js 24.2.0+
-- npm or pnpm
+- npm, pnpm, or yarn
 - Google AI API Key ([Google AI Studio](https://makersuite.google.com/app/apikey))
+
+::: warning Bun Compatibility
+Gistdex is not compatible with Bun runtime. The project depends on Node.js built-in SQLite module with sqlite-vec extension, which is not available in Bun. Please use npm, pnpm, or yarn instead.
+:::
 
 ## Installation
 
@@ -14,37 +18,79 @@ This guide covers Gistdex installation and basic usage.
 
 No installation required - use Gistdex directly:
 
-```bash
-# Using npx
-npx @ushironoko/gistdex --help
+::: code-group
 
-# Using pnpm dlx
+```bash [npm]
+npx @ushironoko/gistdex --help
+```
+
+```bash [pnpm]
 pnpm dlx @ushironoko/gistdex --help
 ```
+
+```bash [yarn]
+yarn dlx @ushironoko/gistdex --help
+```
+
+:::
 
 ### Local Installation (Optional)
 
 For frequent use in a project:
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install --save-dev @ushironoko/gistdex
-# or
+```
+
+```bash [pnpm]
 pnpm add -D @ushironoko/gistdex
 ```
 
-Then use with `npx`:
+```bash [yarn]
+yarn add -D @ushironoko/gistdex
+```
 
-```bash
+:::
+
+Then use with your package manager:
+
+::: code-group
+
+```bash [npm]
 npx @ushironoko/gistdex --help
 ```
+
+```bash [pnpm]
+pnpm exec gistdex --help
+```
+
+```bash [yarn]
+yarn gistdex --help
+```
+
+:::
 
 ## Initial Setup
 
 Run the interactive setup to configure Gistdex:
 
-```bash
+::: code-group
+
+```bash [npm]
 npx @ushironoko/gistdex init
 ```
+
+```bash [pnpm]
+pnpm dlx @ushironoko/gistdex init
+```
+
+```bash [yarn]
+yarn dlx @ushironoko/gistdex init
+```
+
+:::
 
 This command will:
 1. Prompt for your Google AI API key (get one at [Google AI Studio](https://makersuite.google.com/app/apikey))

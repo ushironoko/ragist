@@ -154,6 +154,25 @@ Error: Cannot access file outside of allowed directories
 - Copy or move files into your project directory
 - Change to the directory containing the files before indexing
 
+## Runtime Compatibility
+
+### Bun Runtime Not Supported
+
+```
+Error: Cannot find module 'node:sqlite' or similar SQLite-related errors
+```
+
+**Cause**: Gistdex depends on Node.js built-in SQLite module with sqlite-vec extension, which is not available in Bun runtime.
+
+**Solution**:
+- Use Node.js 24.2.0+ instead of Bun
+- Install and run with npm, pnpm, or yarn
+- If you need Bun for other projects, use a Node.js version manager like nvm or volta
+
+::: info Why Bun is not supported
+Gistdex uses the native Node.js SQLite module (introduced in Node.js 22) along with the sqlite-vec extension for vector operations. These are tightly integrated with Node.js internals and are not available in alternative JavaScript runtimes like Bun or Deno.
+:::
+
 ## Common Error Messages
 
 | Error | Solution |
@@ -164,6 +183,7 @@ Error: Cannot access file outside of allowed directories
 | `File not found` | Verify file path exists |
 | `API rate limit exceeded` | Wait and retry, reduce batch size |
 | `Security validation failed` | Check file paths and URLs comply with restrictions |
+| `Cannot find module 'node:sqlite'` | Use Node.js instead of Bun runtime |
 
 ## Getting Help
 

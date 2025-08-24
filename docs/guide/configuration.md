@@ -48,12 +48,38 @@ HYBRID_KEYWORD_WEIGHT="0.3"              # Weight for keyword search in hybrid m
 
 Create a `.env` file in your project root:
 
-```bash
+::: code-group
+
+```bash [Basic]
+# .env
+GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
+VECTOR_DB_PATH=./my-project.db
+```
+
+```bash [Custom]
 # .env
 GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
 VECTOR_DB_PATH=./my-project.db
 CHUNK_SIZE=2000
+CHUNK_OVERLAP=400
 ```
+
+```bash [Full]
+# .env
+GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
+VECTOR_DB_PROVIDER=sqlite
+VECTOR_DB_PATH=./knowledge-base.db
+EMBEDDING_MODEL=text-embedding-004
+EMBEDDING_DIMENSION=768
+CHUNK_SIZE=1500
+CHUNK_OVERLAP=300
+BATCH_SIZE=50
+DEFAULT_K=10
+ENABLE_RERANK=true
+HYBRID_KEYWORD_WEIGHT=0.4
+```
+
+:::
 
 ## Configuration Files
 
@@ -65,7 +91,9 @@ Gistdex looks for configuration files in these locations (in order):
 
 ### Configuration Schema
 
-```json
+::: code-group
+
+```json [Full]
 {
   "vectorDB": {
     "provider": "sqlite",
@@ -94,6 +122,45 @@ Gistdex looks for configuration files in these locations (in order):
   }
 }
 ```
+
+```json [Minimal]
+{
+  "vectorDB": {
+    "options": {
+      "path": "./my-database.db"
+    }
+  }
+}
+```
+
+```json [Code]
+{
+  "indexing": {
+    "chunkSize": 500,
+    "chunkOverlap": 100
+  },
+  "search": {
+    "defaultK": 10,
+    "enableRerank": true
+  }
+}
+```
+
+```json [Docs]
+{
+  "indexing": {
+    "chunkSize": 1500,
+    "chunkOverlap": 300,
+    "batchSize": 50
+  },
+  "search": {
+    "defaultK": 5,
+    "hybridKeywordWeight": 0.4
+  }
+}
+```
+
+:::
 
 ### Field Descriptions
 
@@ -181,22 +248,66 @@ Custom adapters must export an async factory function that returns a `VectorDBAd
 
 Use different configs for different projects:
 
-```bash
-# Project A
+::: code-group
+
+```bash [Per-Project]
+# Project A - Code repository
 cd project-a
 cat > gistdex.config.json << EOF
 {
-  "vectorDB": { "options": { "path": "./project-a.db" } }
+  "vectorDB": { "options": { "path": "./project-a.db" } },
+  "indexing": { "chunkSize": 600, "chunkOverlap": 100 }
 }
 EOF
 
-# Project B
+# Project B - Documentation
 cd ../project-b
 cat > gistdex.config.json << EOF
 {
-  "vectorDB": { "options": { "path": "./project-b.db" } }
+  "vectorDB": { "options": { "path": "./project-b.db" } },
+  "indexing": { "chunkSize": 1500, "chunkOverlap": 300 }
 }
 EOF
+```
+
+```bash [Environment]
+# Development
+export GISTDEX_ENV=dev
+cat > gistdex.dev.json << EOF
+{
+  "vectorDB": { "options": { "path": "./dev.db" } },
+  "search": { "defaultK": 10 }
+}
+EOF
+
+# Production
+export GISTDEX_ENV=prod
+cat > gistdex.prod.json << EOF
+{
+  "vectorDB": { "options": { "path": "/var/data/gistdex.db" } },
+  "search": { "defaultK": 5, "enableRerank": true }
+}
+EOF
+```
+
+```bash [Team]
+# Shared team config
+cat > ~/.gistdex/config.json << EOF
+{
+  "embedding": { "model": "text-embedding-004" },
+  "search": { "enableRerank": true }
+}
+EOF
+
+# Individual project overrides
+cat > ./gistdex.config.json << EOF
+{
+  "vectorDB": { "options": { "path": "./local.db" } }
+}
+EOF
+```
+
+:::
 ```
 
 ## See Also

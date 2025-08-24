@@ -92,6 +92,242 @@ Line 3"
 echo "Content to index" | npx @ushironoko/gistdex index --text -
 ```
 
+## Integration with Other CLI Tools
+
+### Combining with External Tools
+
+Gistdex can be integrated with other CLI tools through pipes and standard input, enabling powerful content indexing workflows.
+
+#### PDF and Document Processing with markitdown
+
+Use [markitdown](https://github.com/microsoft/markitdown) to convert various document formats into text for indexing:
+
+::: code-group
+
+```bash [PDF]
+# Index a single PDF
+markitdown document.pdf | npx @ushironoko/gistdex index --text -
+
+# Batch process multiple PDFs
+for pdf in *.pdf; do
+  markitdown "$pdf" | npx @ushironoko/gistdex index --text -
+done
+```
+
+```bash [Office]
+# Index Word documents
+markitdown report.docx | npx @ushironoko/gistdex index --text -
+
+# Index PowerPoint presentations
+markitdown slides.pptx | npx @ushironoko/gistdex index --text -
+
+# Index Excel files (extracts text content)
+markitdown data.xlsx | npx @ushironoko/gistdex index --text -
+```
+
+```bash [Custom]
+# PDF with custom chunk size
+markitdown paper.pdf | \
+  npx @ushironoko/gistdex index --text - --chunk-size 2000
+
+# Process all documents with specific settings
+find . -name "*.pdf" -o -name "*.docx" | while read file; do
+  markitdown "$file" | \
+    npx @ushironoko/gistdex index --text - \
+      --chunk-size 1500 \
+      --chunk-overlap 300
+done
+```
+
+:::
+
+#### Web Content with monoread
+
+Use [monoread](https://github.com/yukukotani/monoread) to fetch and index web content:
+
+::: code-group
+
+```bash [Web Page]
+# Index a single web page
+monoread https://example.com/article | \
+  npx @ushironoko/gistdex index --text -
+
+# With custom chunking for long articles
+monoread https://blog.example.com/long-post | \
+  npx @ushironoko/gistdex index --text - \
+    --chunk-size 1500 \
+    --chunk-overlap 300
+```
+
+```bash [Batch]
+# From a URL list file
+cat urls.txt | xargs -I {} sh -c 'monoread {} | npx @ushironoko/gistdex index --text -'
+
+# With parallel processing
+cat urls.txt | \
+  xargs -P 4 -I {} sh -c 'monoread {} | npx @ushironoko/gistdex index --text -'
+```
+
+```bash [Docs]
+# Index documentation pages
+for url in \
+  "https://docs.example.com/intro" \
+  "https://docs.example.com/guide" \
+  "https://docs.example.com/api"; do
+  echo "Indexing: $url"
+  monoread "$url" | \
+    npx @ushironoko/gistdex index --text - --chunk-size 1200
+done
+```
+
+:::
+
+#### Advanced Pipeline Examples
+
+::: code-group
+
+```bash [Code]
+# Extract and index code from markdown files
+grep -h '^```' -A 100 docs/*.md | \
+  sed '/^```$/d' | \
+  npx @ushironoko/gistdex index --text - --chunk-size 500
+
+# Extract Python code blocks specifically
+awk '/^```python/,/^```$/' docs/*.md | \
+  sed '/^```/d' | \
+  npx @ushironoko/gistdex index --text - --chunk-size 600
+```
+
+```bash [API]
+# Index JSON API responses
+curl -s https://api.example.com/data | \
+  jq -r '.items[].description' | \
+  npx @ushironoko/gistdex index --text -
+
+# Index GraphQL response data
+curl -X POST https://api.example.com/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ posts { title content } }"}' | \
+  jq -r '.data.posts[] | "\(.title)\n\(.content)"' | \
+  npx @ushironoko/gistdex index --text -
+```
+
+```bash [RSS]
+# Index RSS feed content
+curl -s https://example.com/feed.xml | \
+  xmllint --xpath '//description/text()' - | \
+  npx @ushironoko/gistdex index --text -
+
+# Index Atom feed entries
+curl -s https://example.com/atom.xml | \
+  xmllint --xpath '//*[local-name()="content"]/text()' - | \
+  npx @ushironoko/gistdex index --text -
+```
+
+```bash [Git]
+# Index git commit messages
+git log --pretty=format:"%s %b" --since="1 month ago" | \
+  npx @ushironoko/gistdex index --text -
+
+# Index PR descriptions from GitHub
+gh pr list --limit 100 --json title,body | \
+  jq -r '.[] | "\(.title)\n\(.body)"' | \
+  npx @ushironoko/gistdex index --text -
+```
+
+:::
+
+#### Creating Custom Indexing Scripts
+
+::: code-group
+
+```bash [Knowledge Base]
+#!/bin/bash
+# index-knowledge-base.sh
+
+# Index PDFs
+find ./documents -name "*.pdf" -type f | while read pdf; do
+  echo "Indexing PDF: $pdf"
+  markitdown "$pdf" | npx @ushironoko/gistdex index --text - --chunk-size 1000
+done
+
+# Index web bookmarks
+cat bookmarks.txt | while read url; do
+  echo "Indexing URL: $url"
+  monoread "$url" | npx @ushironoko/gistdex index --text - --chunk-size 1200
+done
+
+# Index local markdown files
+npx @ushironoko/gistdex index --files "**/*.md" --chunk-size 1500
+
+echo "Knowledge base indexing complete"
+```
+
+```bash [Daily Update]
+#!/bin/bash
+# daily-docs-update.sh
+
+DOCS_DIR="./docs"
+LOG_FILE="./indexing.log"
+
+echo "[$(date)] Starting daily documentation update" >> "$LOG_FILE"
+
+# Index only modified files from last 24 hours
+find "$DOCS_DIR" -name "*.md" -mtime -1 | while read file; do
+  echo "Updating: $file"
+  npx @ushironoko/gistdex index --file "$file" --chunk-size 1200
+done
+
+# Update from specific documentation sites
+for site in "react" "vue" "nodejs"; do
+  monoread "https://docs.${site}.org/latest" | \
+    npx @ushironoko/gistdex index --text - --chunk-size 1500
+done
+
+echo "[$(date)] Update complete" >> "$LOG_FILE"
+```
+
+```bash [Research]
+#!/bin/bash
+# index-research.sh
+
+# Convert and index arXiv papers
+ARXIV_DIR="./arxiv-papers"
+
+# Download PDF if given arXiv ID
+if [ "$1" ]; then
+  wget "https://arxiv.org/pdf/$1.pdf" -O "$ARXIV_DIR/$1.pdf"
+fi
+
+# Process all PDFs with academic-optimized settings
+for pdf in "$ARXIV_DIR"/*.pdf; do
+  echo "Processing: $(basename "$pdf")"
+  
+  # Extract and index with larger chunks for academic content
+  markitdown "$pdf" | \
+    npx @ushironoko/gistdex index --text - \
+      --chunk-size 2500 \
+      --chunk-overlap 500
+done
+
+# Also index abstracts from arXiv API
+curl -s "http://export.arxiv.org/api/query?search_query=all:AI&max_results=10" | \
+  xmllint --xpath '//summary/text()' - | \
+  npx @ushironoko/gistdex index --text - --chunk-size 1000
+```
+
+:::
+
+::: tip Pro Tip
+When using pipes, always use `--text -` to read from stdin. This enables seamless integration with any tool that outputs to stdout.
+:::
+
+::: info Note
+Make sure external tools are installed before using them:
+- `pip install markitdown` for document conversion
+- `npm install -g monoread` for web content fetching
+:::
+
 ## Chunking Configuration
 
 ### Understanding Chunks

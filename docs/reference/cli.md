@@ -27,11 +27,27 @@ These options can be used with any command:
 
 Interactive setup wizard for Gistdex configuration.
 
-```bash
+::: code-group
+
+```bash [npm]
 npx @ushironoko/gistdex init
 # or
 npx @ushironoko/gistdex --init
 ```
+
+```bash [pnpm]
+pnpm dlx @ushironoko/gistdex init
+# or
+pnpm dlx @ushironoko/gistdex --init
+```
+
+```bash [yarn]
+yarn dlx @ushironoko/gistdex init
+# or
+yarn dlx @ushironoko/gistdex --init
+```
+
+:::
 
 This command runs an interactive setup that:
 - Prompts for your Google AI API key
@@ -67,7 +83,9 @@ npx @ushironoko/gistdex index [options]
 
 #### Examples
 
-```bash
+::: code-group
+
+```bash [files]
 # Index all TypeScript files
 npx @ushironoko/gistdex index --files "**/*.ts"
 
@@ -76,10 +94,41 @@ npx @ushironoko/gistdex index --files "src/**/*.js,docs/**/*.md"
 
 # Index with custom chunking
 npx @ushironoko/gistdex index --file large-doc.md --chunk-size 2000 --chunk-overlap 500
-
-# Index a GitHub repository
-npx @ushironoko/gistdex index --github https://github.com/user/repo
 ```
+
+```bash [github]
+# Index entire repository
+npx @ushironoko/gistdex index --github https://github.com/user/repo
+
+# Index specific branch
+npx @ushironoko/gistdex index --github https://github.com/user/repo --branch develop
+
+# Index specific paths
+npx @ushironoko/gistdex index --github https://github.com/user/repo --paths "src,docs"
+```
+
+```bash [gists]
+# Index public gist
+npx @ushironoko/gistdex index --gist https://gist.github.com/user/id
+
+# Index multiple gists
+for gist in gist1 gist2 gist3; do
+  npx @ushironoko/gistdex index --gist "https://gist.github.com/user/$gist"
+done
+```
+
+```bash [text]
+# Index plain text
+npx @ushironoko/gistdex index --text "Important information to remember"
+
+# From stdin
+echo "Content to index" | npx @ushironoko/gistdex index --text -
+
+# From command output
+curl -s https://api.example.com/data | npx @ushironoko/gistdex index --text -
+```
+
+:::
 
 ### `gistdex query`
 
@@ -109,25 +158,53 @@ npx @ushironoko/gistdex query [options] <search-query>
 
 #### Examples
 
-```bash
-# Basic search
+::: code-group
+
+```bash [basic]
+# Simple query
 npx @ushironoko/gistdex query "error handling patterns"
 
 # Get more results
 npx @ushironoko/gistdex query -k 10 "async await"
 
-# Filter by type
+# Show full original content
+npx @ushironoko/gistdex query --full "configuration"
+```
+
+```bash [filter]
+# Filter by source type
 npx @ushironoko/gistdex query --type gist "authentication"
 
+# Only local files
+npx @ushironoko/gistdex query --type file "database models"
+
+# Only GitHub content
+npx @ushironoko/gistdex query --type github "README"
+```
+
+```bash [advanced]
 # Hybrid search (semantic + keyword)
 npx @ushironoko/gistdex query --hybrid "useState React hooks"
 
-# Show full original content
-npx @ushironoko/gistdex query --full "configuration"
+# Disable re-ranking for speed
+npx @ushironoko/gistdex query --no-rerank "quick search"
 
-# Combine options
-npx @ushironoko/gistdex query -k 3 --type file --full "database connection"
+# Combine multiple options
+npx @ushironoko/gistdex query -k 3 --type file --full --hybrid "database connection"
 ```
+
+```bash [output]
+# Get single result as raw text
+npx @ushironoko/gistdex query -k 1 --full "main function" | head -20
+
+# Save results to file
+npx @ushironoko/gistdex query --full "API documentation" > api-docs.txt
+
+# Pipe to other tools
+npx @ushironoko/gistdex query "error messages" | grep -i "warning"
+```
+
+:::
 
 ### `gistdex list`
 

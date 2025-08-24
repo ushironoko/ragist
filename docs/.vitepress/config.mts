@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { groupIconMdPlugin, groupIconVitePlugin, localIconLoader } from 'vitepress-plugin-group-icons'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -109,6 +110,51 @@ export default defineConfig({
     theme: {
       light: 'github-light',
       dark: 'github-dark'
+    },
+    config(md) {
+      md.use(groupIconMdPlugin)
     }
+  },
+
+  vite: {
+    plugins: [
+      groupIconVitePlugin({
+        customIcon: {
+          // Package managers
+          'npm': 'vscode-icons:file-type-npm',
+          'pnpm': 'vscode-icons:file-type-light-pnpm',
+          'yarn': 'vscode-icons:file-type-yarn',
+          
+          // File types and tools
+          'pdf': 'vscode-icons:file-type-pdf2',
+          'office': 'vscode-icons:file-type-word',
+          'web': 'vscode-icons:file-type-html',
+          'api': 'vscode-icons:file-type-rest',
+          'git': 'vscode-icons:file-type-git',
+          'rss': 'vscode-icons:file-type-xml',
+          'json': 'vscode-icons:file-type-json',
+          'bash': 'vscode-icons:file-type-shell',
+          'javascript': 'vscode-icons:file-type-js-official',
+          'typescript': 'vscode-icons:file-type-typescript-official',
+          
+          // Configuration types
+          'config.js': 'vscode-icons:file-type-js-official',
+          'config.ts': 'vscode-icons:file-type-typescript-official',
+          '.env': 'vscode-icons:file-type-dotenv',
+          'minimal': 'vscode-icons:file-type-light-config',
+          'full': 'vscode-icons:file-type-config',
+          
+          // Custom categories
+          'files': 'vscode-icons:default-folder-opened',
+          'github': 'vscode-icons:file-type-github',
+          'gists': 'vscode-icons:file-type-light-gist',
+          'text': 'vscode-icons:file-type-text',
+          'search': 'vscode-icons:file-type-search-result',
+          'code': 'vscode-icons:file-type-code',
+          'docs': 'vscode-icons:file-type-markdown',
+          'script': 'vscode-icons:file-type-shell'
+        }
+      })
+    ]
   }
 })
