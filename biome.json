@@ -4,7 +4,7 @@
     "enabled": false
   },
   "files": {
-    "ignore": ["node_modules", "dist", ".git", "*.md", "coverage/**"]
+    "ignore": ["node_modules", "dist", ".git", "*.md", "coverage/**", "docs/**"]
   },
   "organizeImports": {
     "enabled": true

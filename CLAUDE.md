@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build and Development Commands
 
 ### Core Development Commands
+
 - `pnpm test` - Run all tests using Vitest
 - `pnpm run test:watch` - Run tests in watch mode for TDD
 - `pnpm run test:coverage` - Run tests with coverage report
@@ -16,7 +17,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `pnpm start` - Run compiled CLI from dist/
 
 ### CLI Commands
+
 The project provides a CLI tool with the following commands:
+
 - `npx gistdex init` or `npx gistdex --init` - Initialize database
 - `npx gistdex index` - Index content from various sources (Gist, GitHub, files, text)
   - `--text "content"` - Index plain text
@@ -40,6 +43,7 @@ The project provides a CLI tool with the following commands:
 - `npx gistdex --mcp` or `-m` - Start MCP (Model Context Protocol) server for LLM integration
 
 #### Examples of Multiple File Indexing
+
 ```bash
 # Index all TypeScript files in src directory
 npx gistdex index --files "src/**/*.ts"
@@ -55,6 +59,7 @@ npx gistdex index --files "**/*.{js,ts,jsx,tsx}"
 ```
 
 #### Examples of Full Content Retrieval
+
 ```bash
 # Search and show full original content for each result
 npx gistdex query --full "search term"
@@ -68,6 +73,7 @@ npx gistdex query --hybrid -k 1 -f "exact match"
 ```
 
 ### MCP Server Mode
+
 The project includes an MCP (Model Context Protocol) server that allows LLMs to directly use Gistdex:
 
 ```bash
@@ -78,18 +84,20 @@ npx gistdex -m
 ```
 
 MCP tools available:
+
 - `gistdex_index` - Index content from various sources
 - `gistdex_query` - Search indexed content
 - `gistdex_list` - List indexed items with statistics
 
 Configuration for Claude Desktop (add to `claude_desktop_config.json`):
+
 ```json
 {
   "mcpServers": {
     "gistdex": {
       "command": "npx",
       "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
-      "cwd": "~/Documents/gistdex-data"  // Important: Set where DB will be created
+      "cwd": "~/Documents/gistdex-data" // Important: Set where DB will be created
     }
   }
 }
@@ -98,7 +106,9 @@ Configuration for Claude Desktop (add to `claude_desktop_config.json`):
 ## Architecture Overview
 
 ### Smart Content Chunking & Retrieval
+
 The system uses an intelligent chunking strategy that:
+
 1. **Indexes with small chunks** (default 1000 chars) for precise semantic search
 2. **Preserves original content** by storing it with the first chunk (chunkIndex: 0)
 3. **Groups chunks** using unique sourceId for each indexed content
@@ -106,25 +116,28 @@ The system uses an intelligent chunking strategy that:
 5. **Handles overlaps** intelligently when reconstructing from multiple chunks
 
 This approach provides:
+
 - Efficient storage (original content stored once)
 - Precise search (small chunks for better matching)
 - Complete retrieval (full content available with --full flag)
 
 ### Pluggable Vector Database Architecture
+
 The system uses a **functional composition pattern** for vector databases, eliminating global state and ensuring proper resource management:
 
 1. **Core Abstraction**: `VectorDBAdapter` interface in `src/core/vector-db/adapters/types.ts` defines the contract all adapters must implement
-2. **Registry System**: 
+2. **Registry System**:
    - `RegistryInterface` and `createRegistry` in `src/core/vector-db/adapters/registry.ts` provide adapter registration
    - `withRegistry` and `withCustomRegistry` in `src/core/vector-db/adapters/registry-operations.ts` enable scoped registry usage
 3. **Factory Pattern**: `createFactory` in `src/core/vector-db/adapters/factory.ts` creates adapter instances with registry support
-4. **Service Layer**: 
+4. **Service Layer**:
    - `createDatabaseService` in `src/core/database-service.ts` provides high-level API
    - `createDatabaseOperations` in `src/core/database-operations.ts` provides functional composition patterns
 
 ### Key Components
 
 #### Vector Database Layer (`src/core/vector-db/`)
+
 - **Built-in Adapters** (`src/core/vector-db/adapters/`):
   - `sqlite-adapter.ts` - SQLite with sqlite-vec extension for local vector storage (uses better-sqlite3 internally)
   - `memory-adapter.ts` - In-memory storage for testing (async factory function)
@@ -146,6 +159,7 @@ The system uses a **functional composition pattern** for vector databases, elimi
   - Template available at `templates/adapter-template.ts`
 
 #### Core Services (`src/core/`)
+
 - **database-service.ts** - Main service orchestrating vector operations through adapters (functional factory pattern)
 - **database-operations.ts** - Functional composition patterns for database operations (`withDatabase`, `withReadOnly`, `withTransaction`)
 - **embedding.ts** - Google AI text-embedding-004 model integration (768 dimensions)
@@ -158,6 +172,7 @@ The system uses a **functional composition pattern** for vector databases, elimi
 - **utils/ranking.ts** - Result re-ranking algorithms for search optimization
 
 #### MCP Layer (`src/mcp/`)
+
 - **server.ts** - MCP server implementation using StdioServerTransport
 - **tools/index-tool.ts** - Tool handler for indexing content via MCP
 - **tools/query-tool.ts** - Tool handler for searching content via MCP
@@ -166,6 +181,7 @@ The system uses a **functional composition pattern** for vector databases, elimi
 - **schemas/validation.ts** - Zod schemas for MCP tool input validation
 
 #### CLI Layer (`src/cli/`)
+
 - **index.ts** - Main CLI entry point with Map-based command routing using gunshi framework
 - **commands/init.ts** - Database initialization command
 - **commands/index.ts** - Content indexing command (exports `getDBConfig` for backward compatibility)
@@ -178,6 +194,7 @@ The system uses a **functional composition pattern** for vector databases, elimi
 - **utils/config-helper.ts** - Configuration helper for loading DB config
 
 ### Configuration Flow
+
 1. Check for explicit `--provider` CLI argument
 2. Load configuration from multiple sources (priority order):
    - CLI arguments
@@ -199,6 +216,7 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 ## Recent Architecture Improvements
 
 ### MCP Server Integration (v0.5.0+)
+
 - Added Model Context Protocol (MCP) server for LLM integration
 - Three MCP tools: `gistdex_index`, `gistdex_query`, `gistdex_list`
 - Common tool handler factory to eliminate code duplication
@@ -206,27 +224,32 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 - Configurable via `.mcp.json` with `cwd` field for database location
 
 ### Environment Variable Loading (v0.4.5+)
+
 - Unified environment loading with `env-loader.ts`
 - Fallback from `.env` file to system environment variables
 - Shared between CLI and MCP server
 
 ### Command Handler Abstraction (v0.3.0+)
+
 - Introduced `createCommandHandler` utility to eliminate code duplication in CLI commands
 - All command handlers now use consistent database connection management
 - Reduced code duplication by ~12% through abstraction
 - Commands use either `createReadOnlyCommandHandler` or `createWriteCommandHandler`
 
 ### Version Management
+
 - CLI version is dynamically loaded from package.json
 - Version command available via `gistdex version`, `--version`, or `-v`
 - Package.json is included in published npm package for runtime access
 
 ### Map-based Command Routing
+
 - CLI uses Map for command registration instead of switch statements
 - Commands are registered using `subCommands.set()` method
 - gunshi framework handles command routing and argument parsing
 
 ### SQLite Adapter Modernization (v0.5.5+)
+
 - Replaced node:sqlite with better-sqlite3 for stable SQLite support
 - Eliminates experimental SQLite warnings in Node.js 24+
 - Prevents Claude Desktop disconnections in MCP server mode
@@ -248,11 +271,13 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 ## Adding New Vector Database Adapters
 
 ### Using Base Adapter (Recommended)
+
 1. Create a `StorageOperations` implementation for your database
 2. Use `createBaseAdapter` to get common functionality
 3. Register using `withCustomRegistry` for scoped usage
 
 ### Direct Implementation
+
 1. Copy `templates/adapter-template.ts` to `src/core/vector-db/adapters/`
 2. Create an async factory function that returns `Promise<VectorDBAdapter>`
 3. Use one of these registration methods:
@@ -263,7 +288,9 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 6. Update README.md with adapter documentation
 
 ### Factory Function Pattern
+
 Adapters use async factory functions instead of classes:
+
 - Accept `VectorDBConfig` as parameter
 - Return `Promise<VectorDBAdapter>`
 - Handle async initialization internally
@@ -273,6 +300,7 @@ Adapters use async factory functions instead of classes:
 ### Configuration Examples
 
 #### Environment Variables
+
 ```bash
 VECTOR_DB_PROVIDER=sqlite
 VECTOR_DB_PATH=./my-database.db
@@ -284,6 +312,7 @@ BATCH_SIZE=100
 ```
 
 #### Configuration File (gistdex.config.json)
+
 ```json
 {
   "vectorDB": {
@@ -377,3 +406,13 @@ gistdex/
 ## Important Development Notes
 
 - **Version Management**: NEVER modify the version in package.json manually. Version is automatically updated by CI/CD workflow during release
+
+## Documentation
+
+あなたはこのリポジトリのドキュメントサイトの作成に、vitepress を利用します。`./gistdex.db` には vitepress に関するすべての情報がインデックスされています。以下の手順を厳守し、vitepress に関する正確な情報をクエリする必要があります。
+
+1. ユーザーの指示を適切にクエリキーワードにし、gistdex.db へクエリする。この時 `--full` オプションは使わず、`llms-full.txt` のチャンク情報のみを得る
+2. 1.で得られた情報を元に、`llms.txt` にリストされた URL を取得する
+3. 2.で得られた URL へ `gemini-google-search` mcp を用いてウェブアクセスし、情報を取得する
+
+これらの手順は必ず守る必要があります。ユーザーへ都度、手順を守っていることを報告する義務があります。
