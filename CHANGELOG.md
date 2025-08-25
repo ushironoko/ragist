@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1] - 2025-08-25
+
+- fix test
+- feat: Run main function immediately for compatibility with bunx, npx, and direct execution
+- fix
+
+
 ## [0.10.0] - 2025-08-25
 
 - Merge pull request #59 from ushironoko/support-bun-sqlite
