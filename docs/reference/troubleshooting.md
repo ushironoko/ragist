@@ -261,7 +261,7 @@ Error: Cannot access file outside of allowed directories
 
 ## Runtime Compatibility
 
-### Bun Runtime Not Supported
+### Bun Runtime Error
 
 ```
 Error: Cannot find module 'node:sqlite'
