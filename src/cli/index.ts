@@ -208,13 +208,12 @@ export async function main(): Promise<void> {
   }
 }
 
-// Only run main if this is the main module
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
-    console.error("Fatal error:", error);
-    if (error instanceof Error && error.stack) {
-      console.error("Stack trace:", error.stack);
-    }
-    process.exit(1);
-  });
-}
+// Run main function immediately
+// This ensures compatibility with bunx, npx, and direct execution
+main().catch((error) => {
+  console.error("Fatal error:", error);
+  if (error instanceof Error && error.stack) {
+    console.error("Stack trace:", error.stack);
+  }
+  process.exit(1);
+});
