@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.0] - 2025-08-25
+
+- Merge pull request #59 from ushironoko/support-bun-sqlite
+- fix
+- feat(security): Enhance file path validation to handle symbolic links consistently
+- fix
+- fix
+- Refactor code structure for improved readability and maintainability
+- fix theme for docs
+
+
 ## [0.9.4] - 2025-08-24
 
 - remove engines
