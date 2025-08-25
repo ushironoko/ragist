@@ -381,6 +381,7 @@ Register in configuration:
 ### Currently Available Adapters
 
 - **SQLite** (default) - Local file-based storage with sqlite-vec
+- **Bun-SQLite** - SQLite adapter optimized for Bun runtime (use with `VECTOR_DB_PROVIDER=bun-sqlite`)
 - **Memory** - In-memory storage for testing
 - **Custom** - Create your own using the adapter template
 

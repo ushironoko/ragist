@@ -4,17 +4,13 @@ This guide covers Gistdex installation and basic usage.
 
 ## Prerequisites
 
-- Node.js 24.2.0+
-- npm, pnpm, or yarn
+- Node.js 24.2.0+ or Bun 1.1.14+
+- npm, pnpm, yarn, or bun
 - Google AI API Key ([Google AI Studio](https://makersuite.google.com/app/apikey))
-
-::: warning Bun Compatibility
-Gistdex is not compatible with Bun runtime. The project depends on Node.js built-in SQLite module with sqlite-vec extension, which is not available in Bun. Please use npm, pnpm, or yarn instead.
-:::
 
 ## Installation
 
-### Using npx (Recommended)
+### Using npx/bunx (Recommended)
 
 No installation required - use Gistdex directly:
 
@@ -30,6 +26,10 @@ pnpm dlx @ushironoko/gistdex --help
 
 ```bash [yarn]
 yarn dlx @ushironoko/gistdex --help
+```
+
+```bash [bun]
+bunx --bun @ushironoko/gistdex --help
 ```
 
 :::
@@ -52,6 +52,10 @@ pnpm add -D @ushironoko/gistdex
 yarn add -D @ushironoko/gistdex
 ```
 
+```bash [bun]
+bun add -d @ushironoko/gistdex
+```
+
 :::
 
 Then use with your package manager:
@@ -68,6 +72,10 @@ pnpm exec gistdex --help
 
 ```bash [yarn]
 yarn gistdex --help
+```
+
+```bash [bun]
+bun run gistdex --help
 ```
 
 :::
@@ -90,9 +98,14 @@ pnpm dlx @ushironoko/gistdex init
 yarn dlx @ushironoko/gistdex init
 ```
 
+```bash [bun]
+bunx --bun @ushironoko/gistdex init
+```
+
 :::
 
 This command will:
+
 1. Prompt for your Google AI API key (get one at [Google AI Studio](https://makersuite.google.com/app/apikey))
 2. Let you choose the vector database provider (SQLite recommended)
 3. Configure the database path
@@ -148,6 +161,10 @@ claude mcp add gistdex -- npx @ushironoko/gistdex --mcp
 ```
 
 This allows Claude Code to use Gistdex tools during conversations. See the [MCP Integration Guide](./mcp.md) for details.
+
+## Bun-specific Setup
+
+See [Bun-specific Setup](./installation#bun-specific-setup)
 
 ## Next Steps
 

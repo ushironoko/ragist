@@ -26,8 +26,9 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
 
 ## Requirements
 
-- Node.js >= 24.6.0 (Required to avoid ExperimentalWarning from node:sqlite)
+- Node.js >= 24.6.0 (Required to avoid ExperimentalWarning from node:sqlite) or Bun >= 1.1.14
 - Google AI API key for embeddings
+- When using Bun runtime on macOS: Standalone SQLite installation required (see Bun-specific Setup below)
 
 ## Installation
 
@@ -40,16 +41,64 @@ npm add -g @ushironoko/gistdex
 ### Local Installation
 
 ```bash
+# npm
 npm add @ushironoko/gistdex
+
+# pnpm
+pnpm add @ushironoko/gistdex
+
+# yarn
+yarn add @ushironoko/gistdex
+
+# bun
+bun add @ushironoko/gistdex
 ```
 
 ### Direct Usage (without installation)
 
 ```bash
+# Using npx
 npx @ushironoko/gistdex init
+
+# Using pnpm dlx
+pnpm dlx @ushironoko/gistdex init
+
+# Using bunx (Bun runtime)
+bunx --bun @ushironoko/gistdex init
 ```
 
 ## Setup
+
+### Bun-specific Setup
+
+When using Bun runtime, you need to explicitly specify `VECTOR_DB_PROVIDER=bun-sqlite`.
+
+#### macOS (Standalone SQLite Required)
+
+1. **Install standalone SQLite**:
+   ```bash
+   brew install sqlite
+   ```
+
+2. **Find and set SQLite path**:
+   ```bash
+   # Find the path to sqlite
+   which sqlite
+   # Usually returns: /opt/homebrew/bin/sqlite or /usr/local/bin/sqlite
+   
+   # Add to your .env file or export
+   export CUSTOM_SQLITE_PATH=/opt/homebrew/bin/sqlite
+   ```
+
+#### Linux/Windows
+
+No additional setup required - Bun can use the system SQLite directly.
+
+3. **Initialize with Bun**:
+   ```bash
+   bunx --bun @ushironoko/gistdex init --provider bun-sqlite
+   ```
+
 
 ## Initialize Gistdex
 
@@ -391,6 +440,7 @@ graph TB
         Registry[registry.ts]
         Adapters[Adapters]
         SQLiteAdapter[sqlite-adapter.ts]
+        BunSQLiteAdapter[bun-sqlite-adapter.ts]
         MemoryAdapter[memory-adapter.ts]
         BaseAdapter[base-adapter.ts]
     end
@@ -428,8 +478,10 @@ graph TB
     Factory --> Registry
     Registry --> Adapters
     Adapters --> SQLiteAdapter
+    Adapters --> BunSQLiteAdapter
     Adapters --> MemoryAdapter
     SQLiteAdapter -.-> BaseAdapter
+    BunSQLiteAdapter -.-> BaseAdapter
     MemoryAdapter -.-> BaseAdapter
 
     %% External connections
@@ -446,7 +498,7 @@ graph TB
     class CLI,Commands,CommandHandler,ConfigHelper cli
     class MCPServer,MCPTools,ToolHandler mcp
     class DatabaseOps,DatabaseService,ConfigOps,Indexer,Search,Embedding,Chunking,Security core
-    class Factory,Registry,Adapters,SQLiteAdapter,MemoryAdapter,BaseAdapter db
+    class Factory,Registry,Adapters,SQLiteAdapter,BunSQLiteAdapter,MemoryAdapter,BaseAdapter db
     class GoogleAI,SQLiteVec external
 ```
 
@@ -490,7 +542,8 @@ graph TB
 - **factory.ts**: Creates adapter instances based on configuration
 - **registry.ts**: Manages registration of available adapters
 - **Adapters**: Interface implemented by all database adapters
-- **sqlite-adapter.ts**: SQLite with sqlite-vec extension for local storage
+- **sqlite-adapter.ts**: SQLite with sqlite-vec extension for local storage (Node.js)
+- **bun-sqlite-adapter.ts**: SQLite adapter optimized for Bun runtime
 - **memory-adapter.ts**: In-memory storage for testing
 - **base-adapter.ts**: Shared functionality for adapters
 
@@ -673,10 +726,11 @@ Adapters are created using factory functions that:
 
 ### Supported Adapters
 
-| Adapter | Status      | Description              | Use Case                            |
-| ------- | ----------- | ------------------------ | ----------------------------------- |
-| SQLite  | ✅ Built-in | Local file-based storage | Development, small-scale production |
-| Memory  | ✅ Built-in | In-memory storage        | Testing, temporary data             |
+| Adapter     | Status      | Description                     | Use Case                            |
+| ----------- | ----------- | ------------------------------- | ----------------------------------- |
+| SQLite      | ✅ Built-in | Local file-based storage        | Development, small-scale production |
+| Bun-SQLite  | ✅ Built-in | SQLite for Bun runtime          | Bun runtime environments            |
+| Memory      | ✅ Built-in | In-memory storage               | Testing, temporary data             |
 
 ## Development
 

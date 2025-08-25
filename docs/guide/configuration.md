@@ -26,8 +26,9 @@ GOOGLE_GENERATIVE_AI_API_KEY="your-api-key-here"
 
 ```bash
 # Vector database configuration
-VECTOR_DB_PROVIDER="sqlite"              # Database provider (default: sqlite)
+VECTOR_DB_PROVIDER="sqlite"              # Database provider (default: sqlite, bun-sqlite for Bun runtime)
 VECTOR_DB_PATH="./my-database.db"        # Database file path (default: ./gistdex.db)
+CUSTOM_SQLITE_PATH="/opt/homebrew/bin/sqlite" # Path to SQLite binary (required for Bun on macOS only)
 
 # Embedding configuration
 EMBEDDING_MODEL="text-embedding-004"     # Google AI model (default: text-embedding-004)
@@ -160,15 +161,30 @@ Gistdex looks for configuration files in these locations (in order):
 }
 ```
 
+```json [Bun]
+{
+  "vectorDB": {
+    "provider": "bun-sqlite",
+    "options": {
+      "path": "./gistdex.db",
+      "customSqlitePath": "/opt/homebrew/bin/sqlite"
+    }
+  }
+```
+
 :::
 
 ### Field Descriptions
 
 #### vectorDB
-- `provider`: Database adapter to use (`sqlite`, `memory`, or custom)
+- `provider`: Database adapter to use (`sqlite`, `bun-sqlite`, `memory`, or custom)
+  - `sqlite`: Standard SQLite adapter (Node.js)
+  - `bun-sqlite`: SQLite adapter optimized for Bun runtime (set via `VECTOR_DB_PROVIDER=bun-sqlite`)
+  - `memory`: In-memory storage for testing
 - `options`: Provider-specific options
-  - `path`: Database file location (SQLite)
+  - `path`: Database file location (SQLite/Bun-SQLite)
   - `dimension`: Vector dimensions (must match embedding model)
+  - `customSqlitePath`: Path to standalone SQLite binary (required for Bun on macOS, e.g., `/opt/homebrew/bin/sqlite`)
 
 #### customAdapters
 - Map of custom adapter names to their file paths

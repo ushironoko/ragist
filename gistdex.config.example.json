@@ -4,8 +4,7 @@
     "options": {
       "path": "./gistdex.db",
       "dimension": 768,
-      "customSqlitePath": "/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib",
-      "sqliteVecPath": "node_modules/sqlite-vec/vec0.dylib"
+      "customSqlitePath": "/opt/homebrew/bin/sqlite"
     }
   },
   "customAdapters": {

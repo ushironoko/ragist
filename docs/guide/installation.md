@@ -8,7 +8,7 @@ See [Getting Started](./getting-started.md#prerequisites) for requirements.
 
 ## Installation Methods
 
-### Using npx/pnpm dlx (Recommended)
+### Using npx/pnpm dlx/bunx (Recommended)
 
 No installation required - run Gistdex directly:
 
@@ -26,9 +26,14 @@ pnpm dlx @ushironoko/gistdex --help
 yarn dlx @ushironoko/gistdex --help
 ```
 
+```bash [bun]
+bunx --bun @ushironoko/gistdex --help
+```
+
 :::
 
 This method:
+
 - Always uses the latest version
 - Requires no global installation
 - Works immediately without setup
@@ -52,6 +57,10 @@ pnpm add -D @ushironoko/gistdex
 yarn add -D @ushironoko/gistdex
 ```
 
+```bash [bun]
+bun add -d @ushironoko/gistdex
+```
+
 :::
 
 Then use with your package manager:
@@ -68,6 +77,10 @@ pnpm exec gistdex --help
 
 ```bash [yarn]
 yarn gistdex --help
+```
+
+```bash [bun]
+bun run gistdex --help
 ```
 
 :::
@@ -90,9 +103,14 @@ pnpm add -g @ushironoko/gistdex
 yarn global add @ushironoko/gistdex
 ```
 
+```bash [bun]
+bun add -g @ushironoko/gistdex
+```
+
 :::
 
 After global installation, you can use:
+
 ```bash
 gistdex --help  # Direct command
 # or
@@ -152,6 +170,37 @@ yarn link
 
 :::
 
+## Bun-specific Setup
+
+In the Bun runtime, you need to explicitly specify `bun-sqlite`.You can export `VECTOR_DB_PROVIDER=bun-sqlite` in .env or specify it in the provider field of `gistdex.config.json`.
+
+### macOS Setup (Required)
+
+On macOS, Bun requires a standalone SQLite installation:
+
+```bash
+# 1. Install SQLite
+brew install sqlite
+
+# 2. Find SQLite path
+which sqlite
+# Returns: /opt/homebrew/bin/sqlite or /usr/local/bin/sqlite
+
+# 3. Set the path in .env or export
+# or customSqlitePath field in gistdex.config.json
+export CUSTOM_SQLITE_PATH=/opt/homebrew/bin/sqlite
+```
+
+### Linux/Windows Setup
+
+No additional setup required - Bun can use the system SQLite directly.
+
+### 3. Initialize with Bun
+
+```bash
+bunx --bun @ushironoko/gistdex init --provider bun-sqlite
+```
+
 ## Verify Installation
 
 ::: code-group
@@ -180,6 +229,14 @@ yarn dlx @ushironoko/gistdex --version
 yarn dlx @ushironoko/gistdex --help
 ```
 
+```bash [bun]
+# Check version
+bunx --bun @ushironoko/gistdex --version
+
+# Show help
+bunx --bun @ushironoko/gistdex --help
+```
+
 :::
 
 ## Troubleshooting
@@ -194,4 +251,3 @@ Now that Gistdex is installed:
 2. [Index your first content](./getting-started.md#your-first-index)
 3. [Configure Gistdex](./configuration.md)
 4. [Start searching](./searching.md)
-

@@ -102,6 +102,49 @@ claude mcp add gistdex -- npx @ushironoko/gistdex --mcp
 - Verify API key is configured
 - Ensure database is initialized
 
+## Bun Runtime Issues
+
+### SQLite not found when using bunx on macOS
+
+```
+Error: SQLite binary not found
+```
+
+**Cause**: Bun on macOS requires standalone SQLite installation for sqlite-vec extension.
+
+**Solution** (macOS only):
+
+```bash
+# 1. Install SQLite
+brew install sqlite
+
+# 2. Find SQLite path
+which sqlite
+# Returns: /opt/homebrew/bin/sqlite or /usr/local/bin/sqlite
+
+# 3. Add to .env file or export
+export CUSTOM_SQLITE_PATH=/opt/homebrew/bin/sqlite
+```
+
+**Note**: Linux and Windows don't require this - Bun works with system SQLite.
+
+### Bun-SQLite adapter not loading
+
+```
+Error: Unknown provider: bun-sqlite
+```
+
+**Cause**: Using wrong command format.
+
+**Solution**: Use `bunx --bun` (not just `bunx`):
+```bash
+# Correct
+bunx --bun @ushironoko/gistdex init
+
+# Incorrect
+bunx @ushironoko/gistdex init
+```
+
 ## Performance Issues
 
 ### Slow indexing
