@@ -90,9 +90,26 @@ export async function validateFilePath(
 
   // Resolve the path relative to the base directory
   const resolvedBase = resolve(baseDir);
+
+  // Get the real base directory path to handle symbolic links consistently
+  let realBase: string;
+  try {
+    realBase = await realpath(resolvedBase);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      // Base directory doesn't exist yet, use resolved path
+      realBase = resolvedBase;
+    } else {
+      throw new SecurityError(
+        `Failed to resolve base directory: ${error instanceof Error ? error.message : String(error)}`,
+        "PATH_RESOLUTION_ERROR",
+      );
+    }
+  }
+
   const candidatePath = isAbsolute(normalizedPath)
     ? normalizedPath
-    : resolve(resolvedBase, normalizedPath);
+    : resolve(realBase, normalizedPath);
 
   // Get the real path to handle symbolic links
   let realPath: string;
@@ -113,8 +130,22 @@ export async function validateFilePath(
   // Check if the resolved path is within any of the allowed base paths
   let pathAllowed = false;
   for (const allowedBase of allowedBasePaths) {
-    const resolvedAllowedBase = resolve(resolvedBase, allowedBase);
-    const relativePath = relative(resolvedAllowedBase, realPath);
+    const resolvedAllowedBase = resolve(realBase, allowedBase);
+
+    // Get the real path of the allowed base
+    let realAllowedBase: string;
+    try {
+      realAllowedBase = await realpath(resolvedAllowedBase);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        // Allowed base doesn't exist yet, use resolved path
+        realAllowedBase = resolvedAllowedBase;
+      } else {
+        continue; // Skip this allowed base if we can't resolve it
+      }
+    }
+
+    const relativePath = relative(realAllowedBase, realPath);
 
     // Path is allowed if it doesn't start with '..' (meaning it's within the base)
     // and doesn't contain '..' segments (no traversal)

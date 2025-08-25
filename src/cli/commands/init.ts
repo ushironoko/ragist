@@ -12,8 +12,10 @@ interface InitOptions {
 
 interface InitConfig {
   apiKey: string;
-  provider: "sqlite" | "memory";
+  provider: "sqlite" | "memory" | "bun-sqlite";
   dbPath?: string;
+  customSqlitePath?: string;
+  sqliteVecPath?: string;
   useDefaults: boolean;
 }
 
@@ -23,7 +25,7 @@ const DEFAULT_CONFIG = {
     options: {
       path: "./gistdex.db",
       dimension: 768,
-    },
+    } as Record<string, unknown>,
   },
   embedding: {
     model: "gemini-embedding-001",
@@ -105,27 +107,68 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
     });
 
     // Vector DB configuration
+    const isBunRuntime = typeof Bun !== "undefined";
+    const choices = [
+      {
+        name: "SQLite (Recommended - Local file-based storage)",
+        value: "sqlite",
+      },
+    ];
+
+    // Add Bun SQLite option if running in Bun
+    if (isBunRuntime) {
+      choices.push({
+        name: "Bun SQLite (Optimized for Bun runtime)",
+        value: "bun-sqlite",
+      });
+    }
+
+    choices.push({
+      name: "Memory (Testing only - Data lost on restart)",
+      value: "memory",
+    });
+
     const provider = (await select({
       message: "Select vector database provider:",
-      choices: [
-        {
-          name: "SQLite (Recommended - Local file-based storage)",
-          value: "sqlite",
-        },
-        {
-          name: "Memory (Testing only - Data lost on restart)",
-          value: "memory",
-        },
-      ],
+      choices,
       default: "sqlite",
-    })) as "sqlite" | "memory";
+    })) as "sqlite" | "memory" | "bun-sqlite";
 
     let dbPath: string | undefined;
-    if (provider === "sqlite") {
+    let customSqlitePath: string | undefined;
+    let sqliteVecPath: string | undefined;
+
+    if (provider === "sqlite" || provider === "bun-sqlite") {
       dbPath = await input({
         message: "Database file path:",
         default: "./gistdex.db",
       });
+
+      // For Bun SQLite on macOS, ask about custom SQLite path
+      if (provider === "bun-sqlite" && process.platform === "darwin") {
+        console.log(
+          chalk.yellow(
+            "\n⚠️  macOS requires vanilla SQLite for extension support with Bun.\n" +
+              "   Install with: brew install sqlite\n",
+          ),
+        );
+
+        const hasCustomSqlite = await confirm({
+          message: "Do you have vanilla SQLite installed via Homebrew?",
+          default: false,
+        });
+
+        if (hasCustomSqlite) {
+          customSqlitePath = await input({
+            message: "Path to SQLite library (leave empty for auto-detection):",
+            default: "/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib",
+          });
+
+          if (customSqlitePath === "") {
+            customSqlitePath = undefined;
+          }
+        }
+      }
     }
 
     // Ask about using default configuration
@@ -138,6 +181,8 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
       apiKey,
       provider,
       dbPath,
+      customSqlitePath,
+      sqliteVecPath,
       useDefaults,
     };
 
@@ -208,12 +253,12 @@ async function createEnvFile(path: string, config: InitConfig): Promise<void> {
   lines.push(
     "",
     "# SQLite Database Path (Optional, default: gistdex.db)",
-    "# Only used when VECTOR_DB_PROVIDER=sqlite",
+    "# Only used when VECTOR_DB_PROVIDER=sqlite or bun-sqlite",
   );
 
   // Only uncomment SQLITE_DB_PATH if not using default
   if (
-    config.provider === "sqlite" &&
+    (config.provider === "sqlite" || config.provider === "bun-sqlite") &&
     config.dbPath &&
     config.dbPath !== "./gistdex.db" &&
     config.dbPath !== "gistdex.db"
@@ -221,6 +266,24 @@ async function createEnvFile(path: string, config: InitConfig): Promise<void> {
     lines.push(`SQLITE_DB_PATH=${config.dbPath}`);
   } else {
     lines.push("# SQLITE_DB_PATH=gistdex.db");
+  }
+
+  // Add custom SQLite path for Bun on macOS
+  if (config.customSqlitePath) {
+    lines.push(
+      "",
+      "# Custom SQLite Library Path (for Bun on macOS)",
+      `CUSTOM_SQLITE_PATH=${config.customSqlitePath}`,
+    );
+  }
+
+  // Add SQLite vector extension path if specified
+  if (config.sqliteVecPath) {
+    lines.push(
+      "",
+      "# SQLite Vector Extension Path",
+      `SQLITE_VEC_PATH=${config.sqliteVecPath}`,
+    );
   }
 
   lines.push(
@@ -241,8 +304,20 @@ async function createConfigFile(
 
   // Update provider and path if specified
   configData.vectorDB.provider = config.provider;
-  if (config.provider === "sqlite" && config.dbPath) {
+  if (
+    (config.provider === "sqlite" || config.provider === "bun-sqlite") &&
+    config.dbPath
+  ) {
     configData.vectorDB.options.path = config.dbPath;
+  }
+
+  // Add custom SQLite configuration for Bun
+  if (config.customSqlitePath) {
+    configData.vectorDB.options.customSqlitePath = config.customSqlitePath;
+  }
+
+  if (config.sqliteVecPath) {
+    configData.vectorDB.options.sqliteVecPath = config.sqliteVecPath;
   }
 
   // If not using defaults, we could add more customization here

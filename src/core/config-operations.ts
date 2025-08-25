@@ -82,12 +82,35 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
       }
 
       // Provider-specific env vars
-      if (process.env.VECTOR_DB_PROVIDER === "sqlite") {
-        if (process.env.VECTOR_DB_PATH) {
+      if (
+        process.env.VECTOR_DB_PROVIDER === "sqlite" ||
+        process.env.VECTOR_DB_PROVIDER === "bun-sqlite" ||
+        process.env.VECTOR_DB_PROVIDER === "sqlite-bun"
+      ) {
+        // Support both VECTOR_DB_PATH and SQLITE_DB_PATH for backward compatibility
+        const dbPath = process.env.VECTOR_DB_PATH || process.env.SQLITE_DB_PATH;
+        if (dbPath) {
           if (!config.vectorDB.options) {
             config.vectorDB.options = {};
           }
-          config.vectorDB.options.path = process.env.VECTOR_DB_PATH;
+          config.vectorDB.options.path = dbPath;
+        }
+
+        // Custom SQLite library path (for Bun on macOS)
+        if (process.env.CUSTOM_SQLITE_PATH) {
+          if (!config.vectorDB.options) {
+            config.vectorDB.options = {};
+          }
+          config.vectorDB.options.customSqlitePath =
+            process.env.CUSTOM_SQLITE_PATH;
+        }
+
+        // SQLite vector extension path
+        if (process.env.SQLITE_VEC_PATH) {
+          if (!config.vectorDB.options) {
+            config.vectorDB.options = {};
+          }
+          config.vectorDB.options.sqliteVecPath = process.env.SQLITE_VEC_PATH;
         }
       }
     }
@@ -203,9 +226,11 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
       if (!result.vectorDB.options.dimension) {
         result.vectorDB.options.dimension = 768;
       }
-      // Ensure path is set for sqlite
+      // Ensure path is set for sqlite providers
       if (
-        result.vectorDB.provider === "sqlite" &&
+        (result.vectorDB.provider === "sqlite" ||
+          result.vectorDB.provider === "bun-sqlite" ||
+          result.vectorDB.provider === "sqlite-bun") &&
         !result.vectorDB.options.path
       ) {
         result.vectorDB.options.path = "./gistdex.db";
