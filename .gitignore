@@ -5,6 +5,7 @@ coverage/
 *.log
 .env
 .env.local
+.envrc
 .DS_Store
 Thumbs.db
 *.swp
