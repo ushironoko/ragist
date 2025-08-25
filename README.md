@@ -234,7 +234,7 @@ npx @ushironoko/gistdex --mcp
 npx @ushironoko/gistdex -m
 ```
 
-#### Configuring for Claude Desktop
+#### Configuring for Claude Desktop (Windows)
 
 Add the following configuration to your Claude Desktop's `claude_desktop_config.json`:
 
@@ -244,32 +244,28 @@ Add the following configuration to your Claude Desktop's `claude_desktop_config.
     "gistdex": {
       "command": "npx",
       "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
-      "cwd": "~/Documents/gistdex-data"
+      "env": {
+        "GOOGLE_GENERATIVE_AI_API_KEY": "your-api-key",
+        "NODE_NO_WARNINGS": "1"
+      }
     }
   }
 }
 ```
 
-**Important**: 
-- Set the `cwd` field to specify where the database will be created
-- The `--yes` flag ensures npx installs the package without prompting
+**Windows Database Location**: 
+The database file (`gistdex.db`) will be created at: `C:\Users\<username>\AppData\Local\AnthropicClaude\app-*\`
 
-**Important**: Set the `cwd` field to specify where the database will be created. Without it, the database may be created in Claude Desktop's installation directory.
+**macOS Note**: 
+Claude Desktop on macOS is currently not supported due to [this known issue](https://github.com/modelcontextprotocol/servers/issues/1748).
 
-Recommended paths:
+#### Configuring for Claude Code
 
-**macOS/Linux:**
-- `~/Documents/gistdex-data` - User's Documents folder
-- `~/.gistdex` - Hidden folder in home directory
-- `/absolute/path/to/project` - Specific project directory
+For Claude Code users, use the following command:
 
-**Windows:**
-- `C:\\Users\\%USERNAME%\\Documents\\gistdex-data` - User's Documents folder
-- `%USERPROFILE%\\gistdex-data` - User profile directory
-- `C:\\gistdex-data` - Root of C drive
-- `.\\gistdex-data` - Relative to current directory
-
-Note: On Windows, use double backslashes (`\\`) or forward slashes (`/`) in JSON files.
+```bash
+claude mcp add gistdex -- npx @ushironoko/gistdex@latest --mcp
+```
 
 #### MCP Tools Available
 

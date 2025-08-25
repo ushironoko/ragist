@@ -89,7 +89,7 @@ MCP tools available:
 - `gistdex_query` - Search indexed content
 - `gistdex_list` - List indexed items with statistics
 
-Configuration for Claude Desktop (add to `claude_desktop_config.json`):
+Configuration for Claude Desktop (Windows) - add to `claude_desktop_config.json`:
 
 ```json
 {
@@ -97,11 +97,17 @@ Configuration for Claude Desktop (add to `claude_desktop_config.json`):
     "gistdex": {
       "command": "npx",
       "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
-      "cwd": "~/Documents/gistdex-data" // Important: Set where DB will be created
+      "env": {
+        "GOOGLE_GENERATIVE_AI_API_KEY": "your-api-key",
+        "NODE_NO_WARNINGS": "1"
+      }
     }
   }
 }
 ```
+
+Note: On Windows, the database will be created at `C:\Users\<username>\AppData\Local\AnthropicClaude\app-*\gistdex.db`
+Note: macOS Claude Desktop is not supported due to https://github.com/modelcontextprotocol/servers/issues/1748
 
 ## Architecture Overview
 
@@ -252,7 +258,6 @@ Tests are colocated with source files using `.test.ts` suffix. Run tests with co
 
 - Replaced node:sqlite with better-sqlite3 for stable SQLite support
 - Eliminates experimental SQLite warnings in Node.js 24+
-- Prevents Claude Desktop disconnections in MCP server mode
 - Maintains full compatibility with sqlite-vec extension for vector operations
 - Transparent to users - still accessed as "sqlite" provider
 

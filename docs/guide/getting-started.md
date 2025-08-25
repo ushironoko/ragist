@@ -152,15 +152,38 @@ npx @ushironoko/gistdex query -k 10 "async await patterns"
 npx @ushironoko/gistdex query --full "configuration options"
 ```
 
-## Claude Code Integration
+## Claude Integration
+
+### Claude Code
 
 Add Gistdex to Claude Code with a single command:
 
 ```bash
-claude mcp add gistdex -- npx @ushironoko/gistdex --mcp
+claude mcp add gistdex -- npx @ushironoko/gistdex@latest --mcp
 ```
 
-This allows Claude Code to use Gistdex tools during conversations. See the [MCP Integration Guide](./mcp.md) for details.
+### Claude Desktop (Windows)
+
+Windows users can configure Claude Desktop by adding to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "gistdex": {
+      "command": "npx",
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
+      "env": {
+        "GOOGLE_GENERATIVE_AI_API_KEY": "your-api-key",
+        "NODE_NO_WARNINGS": "1"
+      }
+    }
+  }
+}
+```
+
+Note: macOS support is not available due to a [known issue](https://github.com/modelcontextprotocol/servers/issues/1748).
+
+See the [MCP Integration Guide](./mcp.md) for full details.
 
 ## Bun-specific Setup
 

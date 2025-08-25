@@ -1,38 +1,56 @@
-# MCP Integration with Claude Code
+# MCP Integration
 
-Gistdex implements a Model Context Protocol (MCP) server for integration with Claude Code, allowing Claude to index and search content during conversations.
-
-::: warning Important
-Gistdex MCP integration currently **only supports Claude Code**. Claude Desktop integration is not yet implemented. This guide focuses on Claude Code integration.
-:::
+Gistdex implements a Model Context Protocol (MCP) server for integration with Claude Code and Claude Desktop (Windows), allowing Claude to index and search content during conversations.
 
 ## What is MCP?
 
 Model Context Protocol (MCP) is a protocol for AI assistants to interact with external tools. Gistdex exposes its indexing and search functions as MCP tools.
 
+## Claude Desktop Integration (Windows)
+
+### Configuration
+
+Add the following to your Claude Desktop's `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "gistdex": {
+      "command": "npx",
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
+      "env": {
+        "GOOGLE_GENERATIVE_AI_API_KEY": "your-api-key",
+        "NODE_NO_WARNINGS": "1"
+      }
+    }
+  }
+}
+```
+
+### Database Location
+
+On Windows, the database file (`gistdex.db`) will be created at:
+```
+C:\Users\<username>\AppData\Local\AnthropicClaude\app-*\
+```
+
+### Platform Support
+
+- **Windows**: ✅ Fully supported
+- **macOS**: ❌ Not supported (see [issue #1748](https://github.com/modelcontextprotocol/servers/issues/1748))
+- **Linux**: ✅ Claude Code supported
+
 ## Claude Code Integration
 
-### Quick Setup (Recommended)
+### Quick Setup
 
 Add Gistdex to Claude Code:
 
 ```bash
-claude mcp add gistdex -- npx @ushironoko/gistdex --mcp
+claude mcp add gistdex -- npx @ushironoko/gistdex@latest --mcp
 ```
 
 This configures Gistdex as an MCP server without global installation.
-
-### Alternative: With Global Installation
-
-If you have Gistdex installed globally:
-
-```bash
-# Install globally first
-npm install -g @ushironoko/gistdex
-
-# Then add to Claude Code
-claude mcp add gistdex -- gistdex --mcp
-```
 
 ## Available MCP Tools
 

@@ -86,21 +86,74 @@ npx @ushironoko/gistdex init
 
 ## MCP Issues
 
-### Claude Code doesn't recognize Gistdex
+### Claude Desktop (Windows)
+
+#### Database Location
+
+On Windows, the database is created at:
+```
+C:\Users\<username>\AppData\Local\AnthropicClaude\app-*\gistdex.db
+```
+
+To find your database:
+1. Press `Win + R` and type `%LOCALAPPDATA%\AnthropicClaude`
+2. Look for `app-*` folder
+3. Check for `gistdex.db` file
+
+#### Configuration Issues
+
+If Claude Desktop doesn't recognize Gistdex:
+
+1. Verify your `claude_desktop_config.json` has the correct format:
+```json
+{
+  "mcpServers": {
+    "gistdex": {
+      "command": "npx",
+      "args": ["--yes", "@ushironoko/gistdex@latest", "--mcp"],
+      "env": {
+        "GOOGLE_GENERATIVE_AI_API_KEY": "your-actual-key",
+        "NODE_NO_WARNINGS": "1"
+      }
+    }
+  }
+}
+```
+
+2. Restart Claude Desktop after configuration changes
+
+3. Test npx directly:
+```bash
+npx @ushironoko/gistdex@latest --version
+```
+
+### Claude Desktop (macOS)
+
+Claude Desktop on macOS is currently not supported due to a [known issue with MCP servers](https://github.com/modelcontextprotocol/servers/issues/1748).
+
+**Workaround**: Use Claude Code instead:
+```bash
+claude mcp add gistdex -- npx @ushironoko/gistdex@latest --mcp
+```
+
+### Claude Code Issues
+
+#### Claude Code doesn't recognize Gistdex
 
 ```bash
 # Verify npx works
-npx @ushironoko/gistdex --version
+npx @ushironoko/gistdex@latest --version
 
 # Re-add to Claude Code
-claude mcp add gistdex -- npx @ushironoko/gistdex --mcp
+claude mcp add gistdex -- npx @ushironoko/gistdex@latest --mcp
 ```
 
-### MCP server crashes
+### MCP Server Crashes
 
 - Check logs for error messages
 - Verify API key is configured
 - Ensure database is initialized
+- For Windows, check if antivirus is blocking npx
 
 ## Bun Runtime Issues
 
