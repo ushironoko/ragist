@@ -7,6 +7,16 @@ vi.mock("node:sqlite", () => ({
   DatabaseSync: vi.fn(),
 }));
 
+vi.mock("../utils/config-helper.js", () => ({
+  getDBConfig: vi.fn().mockResolvedValue({
+    config: {
+      provider: "sqlite",
+      options: { path: "./test.db" },
+    },
+    customAdapters: new Map(),
+  }),
+}));
+
 vi.mock("../../core/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),

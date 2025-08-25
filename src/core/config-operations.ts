@@ -237,6 +237,21 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
       }
     }
 
+    // Apply embedding defaults
+    if (!result.embedding) {
+      result.embedding = {
+        model: "gemini-embedding-001",
+        dimension: 768,
+      };
+    } else {
+      if (!result.embedding.model) {
+        result.embedding.model = "gemini-embedding-001";
+      }
+      if (!result.embedding.dimension) {
+        result.embedding.dimension = 768;
+      }
+    }
+
     return result;
   };
 

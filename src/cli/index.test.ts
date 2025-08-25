@@ -44,7 +44,10 @@ describe("CLI main entry point", () => {
   beforeEach(() => {
     originalArgv = process.argv;
     mockExit = vi.spyOn(process, "exit").mockImplementation((code?: any) => {
-      throw new Error(`Process exited with code ${code}`);
+      // Don't throw error for code 0 (normal exit)
+      if (code !== 0) {
+        throw new Error(`Process exited with code ${code}`);
+      }
     });
     mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.clearAllMocks();
@@ -60,32 +63,36 @@ describe("CLI main entry point", () => {
     const { showHelp } = await import("./commands/help.js");
     process.argv = ["node", "cli.js"];
 
-    await expect(main()).rejects.toThrow("Process exited with code 0");
+    await main();
     expect(showHelp).toHaveBeenCalled();
+    expect(mockExit).toHaveBeenCalledWith(0);
   });
 
   it("should show help with --help flag", async () => {
     const { showHelp } = await import("./commands/help.js");
     process.argv = ["node", "cli.js", "--help"];
 
-    await expect(main()).rejects.toThrow("Process exited with code 0");
+    await main();
     expect(showHelp).toHaveBeenCalled();
+    expect(mockExit).toHaveBeenCalledWith(0);
   });
 
   it("should show version with --version flag", async () => {
     const { showVersion } = await import("./commands/version.js");
     process.argv = ["node", "cli.js", "--version"];
 
-    await expect(main()).rejects.toThrow("Process exited with code 0");
+    await main();
     expect(showVersion).toHaveBeenCalled();
+    expect(mockExit).toHaveBeenCalledWith(0);
   });
 
   it("should show version with -v flag", async () => {
     const { showVersion } = await import("./commands/version.js");
     process.argv = ["node", "cli.js", "-v"];
 
-    await expect(main()).rejects.toThrow("Process exited with code 0");
+    await main();
     expect(showVersion).toHaveBeenCalled();
+    expect(mockExit).toHaveBeenCalledWith(0);
   });
 
   it("should handle version command", async () => {

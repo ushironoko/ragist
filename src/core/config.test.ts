@@ -42,6 +42,10 @@ describe("createConfigOperations", () => {
             dimension: 768,
           },
         },
+        embedding: {
+          model: "gemini-embedding-001",
+          dimension: 768,
+        },
       };
 
       vi.mocked(existsSync).mockReturnValue(true);

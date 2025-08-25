@@ -91,6 +91,7 @@ describe("createFactory", () => {
     });
 
     it("should parse VECTOR_DB_CONFIG JSON", async () => {
+      vi.stubEnv("VECTOR_DB_PROVIDER", "sqlite");
       vi.stubEnv("VECTOR_DB_CONFIG", JSON.stringify({ dimension: 256 }));
 
       const adapter = await factory.createFromEnv();
@@ -98,6 +99,7 @@ describe("createFactory", () => {
     });
 
     it("should handle invalid JSON gracefully", async () => {
+      vi.stubEnv("VECTOR_DB_PROVIDER", "sqlite");
       vi.stubEnv("VECTOR_DB_CONFIG", "invalid json");
 
       const consoleWarnSpy = vi
