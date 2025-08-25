@@ -91,11 +91,13 @@ npx @ushironoko/gistdex init
 #### Database Location
 
 On Windows, the database is created at:
+
 ```
 C:\Users\<username>\AppData\Local\AnthropicClaude\app-*\gistdex.db
 ```
 
 To find your database:
+
 1. Press `Win + R` and type `%LOCALAPPDATA%\AnthropicClaude`
 2. Look for `app-*` folder
 3. Check for `gistdex.db` file
@@ -105,6 +107,7 @@ To find your database:
 If Claude Desktop doesn't recognize Gistdex:
 
 1. Verify your `claude_desktop_config.json` has the correct format:
+
 ```json
 {
   "mcpServers": {
@@ -123,6 +126,7 @@ If Claude Desktop doesn't recognize Gistdex:
 2. Restart Claude Desktop after configuration changes
 
 3. Test npx directly:
+
 ```bash
 npx @ushironoko/gistdex@latest --version
 ```
@@ -132,6 +136,7 @@ npx @ushironoko/gistdex@latest --version
 Claude Desktop on macOS is currently not supported due to a [known issue with MCP servers](https://github.com/modelcontextprotocol/servers/issues/1748).
 
 **Workaround**: Use Claude Code instead:
+
 ```bash
 claude mcp add gistdex -- npx @ushironoko/gistdex@latest --mcp
 ```
@@ -190,6 +195,7 @@ Error: Unknown provider: bun-sqlite
 **Cause**: Using wrong command format.
 
 **Solution**: Use `bunx --bun` (not just `bunx`):
+
 ```bash
 # Correct
 bunx --bun @ushironoko/gistdex init
@@ -222,7 +228,8 @@ Error: Path traversal detected
 
 **Cause**: Attempting to access files outside the current directory using `../` or absolute paths.
 
-**Solution**: 
+**Solution**:
+
 - Use relative paths within the current directory
 - Move files to the project directory before indexing
 
@@ -235,6 +242,7 @@ Error: URL not allowed. Only GitHub and Gist URLs are permitted
 **Cause**: Trying to index content from non-GitHub/Gist domains for security reasons.
 
 **Solution**:
+
 - Only use URLs from `github.com` or `gist.github.com`
 - Download external content locally first, then index with `--file`
 
@@ -247,6 +255,7 @@ Error: Cannot access file outside of allowed directories
 **Cause**: Security restrictions prevent accessing files outside the working directory.
 
 **Solution**:
+
 - Copy or move files into your project directory
 - Change to the directory containing the files before indexing
 
@@ -255,31 +264,27 @@ Error: Cannot access file outside of allowed directories
 ### Bun Runtime Not Supported
 
 ```
-Error: Cannot find module 'node:sqlite' or similar SQLite-related errors
+Error: Cannot find module 'node:sqlite'
 ```
 
-**Cause**: Gistdex depends on Node.js built-in SQLite module with sqlite-vec extension, which is not available in Bun runtime.
+**Cause**: `VECTOR_DB_PROVIDER` does not point to `bun-sqlite` despite bun runtime.
 
 **Solution**:
-- Use Node.js 24.2.0+ instead of Bun
-- Install and run with npm, pnpm, or yarn
-- If you need Bun for other projects, use a Node.js version manager like nvm or volta
 
-::: info Why Bun is not supported
-Gistdex uses the native Node.js SQLite module (introduced in Node.js 22) along with the sqlite-vec extension for vector operations. These are tightly integrated with Node.js internals and are not available in alternative JavaScript runtimes like Bun or Deno.
-:::
+- set `VECTOR_DB_PROVIDER=bun-sqlite` enviroment variables (see [configuratioin guide](../guide/configuration.md))
+- Use Node.js 24.2.0+ instead of Bun
 
 ## Common Error Messages
 
-| Error | Solution |
-|-------|----------|
-| `GOOGLE_GENERATIVE_AI_API_KEY not found` | Run `npx @ushironoko/gistdex init` |
-| `Database not initialized` | Run `npx @ushironoko/gistdex init` |
-| `Invalid glob pattern` | Check pattern syntax, use quotes |
-| `File not found` | Verify file path exists |
-| `API rate limit exceeded` | Wait and retry, reduce batch size |
-| `Security validation failed` | Check file paths and URLs comply with restrictions |
-| `Cannot find module 'node:sqlite'` | Use Node.js instead of Bun runtime |
+| Error                                    | Solution                                           |
+| ---------------------------------------- | -------------------------------------------------- |
+| `GOOGLE_GENERATIVE_AI_API_KEY not found` | Run `npx @ushironoko/gistdex init`                 |
+| `Database not initialized`               | Run `npx @ushironoko/gistdex init`                 |
+| `Invalid glob pattern`                   | Check pattern syntax, use quotes                   |
+| `File not found`                         | Verify file path exists                            |
+| `API rate limit exceeded`                | Wait and retry, reduce batch size                  |
+| `Security validation failed`             | Check file paths and URLs comply with restrictions |
+| `Cannot find module 'node:sqlite'`       | Check `VECTOR_DB_PROVIDER`                         |
 
 ## Getting Help
 

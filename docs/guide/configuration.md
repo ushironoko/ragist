@@ -31,7 +31,7 @@ VECTOR_DB_PATH="./my-database.db"        # Database file path (default: ./gistde
 CUSTOM_SQLITE_PATH="/opt/homebrew/bin/sqlite" # Path to SQLite binary (required for Bun on macOS only)
 
 # Embedding configuration
-EMBEDDING_MODEL="text-embedding-004"     # Google AI model (default: text-embedding-004)
+EMBEDDING_MODEL="gemini-embedding-001"     # Google AI model (default: gemini-embedding-001)
 EMBEDDING_DIMENSION="768"                # Vector dimensions (default: 768)
 
 # Chunking configuration
@@ -70,7 +70,7 @@ CHUNK_OVERLAP=400
 GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
 VECTOR_DB_PROVIDER=sqlite
 VECTOR_DB_PATH=./knowledge-base.db
-EMBEDDING_MODEL=text-embedding-004
+EMBEDDING_MODEL=gemini-embedding-001
 EMBEDDING_DIMENSION=768
 CHUNK_SIZE=1500
 CHUNK_OVERLAP=300
@@ -107,7 +107,7 @@ Gistdex looks for configuration files in these locations (in order):
     "myAdapter": "./adapters/my-adapter.js"
   },
   "embedding": {
-    "model": "text-embedding-004",
+    "model": "gemini-embedding-001",
     "dimension": 768
   },
   "indexing": {
@@ -177,6 +177,7 @@ Gistdex looks for configuration files in these locations (in order):
 ### Field Descriptions
 
 #### vectorDB
+
 - `provider`: Database adapter to use (`sqlite`, `bun-sqlite`, `memory`, or custom)
   - `sqlite`: Standard SQLite adapter (Node.js)
   - `bun-sqlite`: SQLite adapter optimized for Bun runtime (set via `VECTOR_DB_PROVIDER=bun-sqlite`)
@@ -187,19 +188,23 @@ Gistdex looks for configuration files in these locations (in order):
   - `customSqlitePath`: Path to standalone SQLite binary (required for Bun on macOS, e.g., `/opt/homebrew/bin/sqlite`)
 
 #### customAdapters
+
 - Map of custom adapter names to their file paths
 - Allows using custom vector database implementations
 
 #### embedding
-- `model`: Google AI embedding model name
-- `dimension`: Vector dimensions (768 for text-embedding-004)
+
+- `model`: Google AI embedding model name (gemini-embedding-001 or text-embedding-004)
+- `dimension`: Vector dimensions (768 default)
 
 #### indexing
+
 - `chunkSize`: Maximum characters per chunk
 - `chunkOverlap`: Characters shared between adjacent chunks
 - `batchSize`: Number of chunks to process at once
 
 #### search
+
 - `defaultK`: Default number of results to return
 - `enableRerank`: Whether to re-rank results for better accuracy
 - `rerankBoostFactor`: Multiplier for re-ranking scores
@@ -220,16 +225,19 @@ npx @ushironoko/gistdex query -k 10 --no-rerank "search query"
 ## Best Practices
 
 ### Security
+
 - **Never commit API keys** - Use environment variables or `.env` files
 - Add `.env` to `.gitignore`
 - Use different API keys for development and production
 
 ### Performance
+
 - **Chunk Size**: Larger chunks (1000-2000) for documents, smaller (200-500) for code
 - **Overlap**: 10-20% of chunk size is usually optimal
 - **Batch Size**: Increase for better performance with large datasets
 
 ### Storage
+
 - **Database Location**: Use absolute paths in production
 - **Backup**: Regular backups of your `.db` file
 - **Permissions**: Ensure write permissions for database directory
@@ -259,72 +267,6 @@ Register custom vector database adapters by specifying the path to your adapter 
 ```
 
 Custom adapters must export an async factory function that returns a `VectorDBAdapter` interface. See `/templates/adapter-template.ts` for implementation details.
-
-### Multiple Configurations
-
-Use different configs for different projects:
-
-::: code-group
-
-```bash [Per-Project]
-# Project A - Code repository
-cd project-a
-cat > gistdex.config.json << EOF
-{
-  "vectorDB": { "options": { "path": "./project-a.db" } },
-  "indexing": { "chunkSize": 600, "chunkOverlap": 100 }
-}
-EOF
-
-# Project B - Documentation
-cd ../project-b
-cat > gistdex.config.json << EOF
-{
-  "vectorDB": { "options": { "path": "./project-b.db" } },
-  "indexing": { "chunkSize": 1500, "chunkOverlap": 300 }
-}
-EOF
-```
-
-```bash [Environment]
-# Development
-export GISTDEX_ENV=dev
-cat > gistdex.dev.json << EOF
-{
-  "vectorDB": { "options": { "path": "./dev.db" } },
-  "search": { "defaultK": 10 }
-}
-EOF
-
-# Production
-export GISTDEX_ENV=prod
-cat > gistdex.prod.json << EOF
-{
-  "vectorDB": { "options": { "path": "/var/data/gistdex.db" } },
-  "search": { "defaultK": 5, "enableRerank": true }
-}
-EOF
-```
-
-```bash [Team]
-# Shared team config
-cat > ~/.gistdex/config.json << EOF
-{
-  "embedding": { "model": "text-embedding-004" },
-  "search": { "enableRerank": true }
-}
-EOF
-
-# Individual project overrides
-cat > ./gistdex.config.json << EOF
-{
-  "vectorDB": { "options": { "path": "./local.db" } }
-}
-EOF
-```
-
-:::
-```
 
 ## See Also
 

@@ -168,7 +168,7 @@ The system uses a **functional composition pattern** for vector databases, elimi
 
 - **database-service.ts** - Main service orchestrating vector operations through adapters (functional factory pattern)
 - **database-operations.ts** - Functional composition patterns for database operations (`withDatabase`, `withReadOnly`, `withTransaction`)
-- **embedding.ts** - Google AI text-embedding-004 model integration (768 dimensions)
+- **embedding.ts** - Google AI gemini-embedding-001 model integration (768 dimensions)
 - **chunking.ts** - Text chunking with configurable size and overlap
 - **search.ts** - Semantic and hybrid search implementation with `getOriginalContent` for full content retrieval
 - **indexer.ts** - Content indexing from multiple sources with sourceId generation for chunk grouping
@@ -309,7 +309,7 @@ Adapters use async factory functions instead of classes:
 ```bash
 VECTOR_DB_PROVIDER=sqlite
 VECTOR_DB_PATH=./my-database.db
-EMBEDDING_MODEL=text-embedding-004
+EMBEDDING_MODEL=gemini-embedding-001
 EMBEDDING_DIMENSION=768
 CHUNK_SIZE=1000
 CHUNK_OVERLAP=200
@@ -331,7 +331,7 @@ BATCH_SIZE=100
     "myAdapter": "./adapters/my-adapter.js"
   },
   "embedding": {
-    "model": "text-embedding-004",
+    "model": "gemini-embedding-001",
     "dimension": 768
   },
   "indexing": {

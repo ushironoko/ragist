@@ -17,7 +17,7 @@ hero:
 features:
   - icon: 🔍
     title: Semantic Search
-    details: Search indexed content using natural language queries with Google's text-embedding-004 model
+    details: Search indexed content using natural language queries with Google's gemini-embedding-001 model
   - icon: 📚
     title: Multi-Source Indexing
     details: Index content from GitHub Gists, repositories, local files, or plain text

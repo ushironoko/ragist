@@ -12,7 +12,7 @@
     "weaviate": "./adapters/weaviate-adapter.js"
   },
   "embedding": {
-    "model": "text-embedding-004",
+    "model": "gemini-embedding-001",
     "dimension": 768
   },
   "indexing": {

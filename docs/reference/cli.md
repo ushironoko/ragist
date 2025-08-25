@@ -12,14 +12,14 @@ These options can be used with any command:
 
 ## Commands Overview
 
-| Command | Description |
-|---------|-------------|
-| `init` | Initialize a new vector database |
+| Command | Description                        |
+| ------- | ---------------------------------- |
+| `init`  | Initialize a new vector database   |
 | `index` | Index content from various sources |
-| `query` | Search indexed content |
-| `list` | List all indexed items |
-| `info` | Show database adapter information |
-| `help` | Display help message |
+| `query` | Search indexed content             |
+| `list`  | List all indexed items             |
+| `info`  | Show database adapter information  |
+| `help`  | Display help message               |
 
 ## Command Details
 
@@ -50,6 +50,7 @@ yarn dlx @ushironoko/gistdex --init
 :::
 
 This command runs an interactive setup that:
+
 - Prompts for your Google AI API key
 - Lets you choose a vector database provider (SQLite or Memory)
 - Configures the database path
@@ -67,19 +68,19 @@ npx @ushironoko/gistdex index [options]
 
 #### Options
 
-| Option | Description | Example |
-|--------|-------------|---------|
-| `--provider <name>` | Vector DB provider (default: sqlite) | `--provider sqlite` |
-| `--db <path>` | Database file path (for SQLite) | `--db ./mydata.db` |
-| `--text <content>` | Index plain text | `--text "Hello world"` |
-| `--file <path>` | Index a single file | `--file ./README.md` |
-| `--files <pattern>` | Index multiple files (glob) | `--files "src/**/*.ts"` |
-| `--gist <url>` | Index a GitHub Gist | `--gist https://gist.github.com/...` |
-| `--github <url>` | Index a GitHub repository | `--github https://github.com/...` |
-| `--branch <branch>` | GitHub branch (default: main) | `--branch develop` |
-| `--paths <paths>` | GitHub paths to index (comma-separated) | `--paths "src,docs"` |
-| `--chunk-size <n>` | Set chunk size (default: 1000) | `--chunk-size 2000` |
-| `--chunk-overlap <n>` | Set chunk overlap (default: 200) | `--chunk-overlap 100` |
+| Option                | Description                             | Example                              |
+| --------------------- | --------------------------------------- | ------------------------------------ |
+| `--provider <name>`   | Vector DB provider (default: sqlite)    | `--provider sqlite`                  |
+| `--db <path>`         | Database file path (for SQLite)         | `--db ./mydata.db`                   |
+| `--text <content>`    | Index plain text                        | `--text "Hello world"`               |
+| `--file <path>`       | Index a single file                     | `--file ./README.md`                 |
+| `--files <pattern>`   | Index multiple files (glob)             | `--files "src/**/*.ts"`              |
+| `--gist <url>`        | Index a GitHub Gist                     | `--gist https://gist.github.com/...` |
+| `--github <url>`      | Index a GitHub repository               | `--github https://github.com/...`    |
+| `--branch <branch>`   | GitHub branch (default: main)           | `--branch develop`                   |
+| `--paths <paths>`     | GitHub paths to index (comma-separated) | `--paths "src,docs"`                 |
+| `--chunk-size <n>`    | Set chunk size (default: 1000)          | `--chunk-size 2000`                  |
+| `--chunk-overlap <n>` | Set chunk overlap (default: 200)        | `--chunk-overlap 100`                |
 
 #### Examples
 
@@ -140,17 +141,18 @@ npx @ushironoko/gistdex query [options] <search-query>
 
 #### Options
 
-| Option | Short | Description | Default |
-|--------|-------|-------------|---------|
-| `--provider` | | Vector DB provider | sqlite |
-| `--db` | | Database file path (for SQLite) | ./gistdex.db |
-| `--top-k` | `-k` | Number of results | 5 |
-| `--type` | `-t` | Filter by source type | all |
-| `--hybrid` | `-y` | Enable hybrid search | false |
-| `--no-rerank` | `-n` | Disable re-ranking | false |
-| `--full` | `-f` | Show full content | false |
+| Option        | Short | Description                     | Default      |
+| ------------- | ----- | ------------------------------- | ------------ |
+| `--provider`  |       | Vector DB provider              | sqlite       |
+| `--db`        |       | Database file path (for SQLite) | ./gistdex.db |
+| `--top-k`     | `-k`  | Number of results               | 5            |
+| `--type`      | `-t`  | Filter by source type           | all          |
+| `--hybrid`    | `-y`  | Enable hybrid search            | false        |
+| `--no-rerank` | `-n`  | Disable re-ranking              | false        |
+| `--full`      | `-f`  | Show full content               | false        |
 
 #### Source Types
+
 - `gist` - GitHub Gists
 - `github` - GitHub repositories
 - `file` - Local files
@@ -216,12 +218,12 @@ npx @ushironoko/gistdex list [options]
 
 #### Options
 
-| Option | Description |
-|--------|-------------|
+| Option              | Description                          |
+| ------------------- | ------------------------------------ |
 | `--provider <name>` | Vector DB provider (default: sqlite) |
-| `--db <path>` | Database file path (for SQLite) |
-| `--stats` | Show statistics only |
-| `--type <type>` | Filter by source type |
+| `--db <path>`       | Database file path (for SQLite)      |
+| `--stats`           | Show statistics only                 |
+| `--type <type>`     | Filter by source type                |
 
 #### Examples
 
@@ -246,11 +248,12 @@ npx @ushironoko/gistdex info [options]
 
 #### Options
 
-| Option | Description |
-|--------|-------------|
+| Option              | Description                          |
+| ------------------- | ------------------------------------ |
 | `--provider <name>` | Vector DB provider (default: sqlite) |
 
 Shows:
+
 - Current adapter type
 - Database location
 - Version information
@@ -282,7 +285,7 @@ export GOOGLE_GENERATIVE_AI_API_KEY="your-api-key"
 # Optional configuration
 export VECTOR_DB_PROVIDER="sqlite"
 export VECTOR_DB_PATH="./my-database.db"
-export EMBEDDING_MODEL="text-embedding-004"
+export EMBEDDING_MODEL="gemini-embedding-001"
 export CHUNK_SIZE="1000"
 export CHUNK_OVERLAP="200"
 ```
@@ -290,6 +293,7 @@ export CHUNK_OVERLAP="200"
 ### Configuration Files
 
 Gistdex looks for configuration in these locations:
+
 - `./gistdex.config.json`
 - `./.gistdexrc.json`
 - `~/.gistdex/config.json`
@@ -305,7 +309,7 @@ Example configuration:
     }
   },
   "embedding": {
-    "model": "text-embedding-004",
+    "model": "gemini-embedding-001",
     "dimension": 768
   },
   "indexing": {
@@ -323,13 +327,13 @@ Example configuration:
 
 ## Exit Codes
 
-| Code | Description |
-|------|-------------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Invalid arguments |
-| 3 | Database error |
-| 127 | Command not found |
+| Code | Description       |
+| ---- | ----------------- |
+| 0    | Success           |
+| 1    | General error     |
+| 2    | Invalid arguments |
+| 3    | Database error    |
+| 127  | Command not found |
 
 ## Tips and Tricks
 
