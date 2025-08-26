@@ -1,7 +1,15 @@
+import path from "node:path";
+import {
+  chunkCodeByBoundary,
+  chunkMarkdownByBoundary,
+} from "./boundary-aware-chunking.js";
+
 export interface ChunkOptions {
   size?: number;
   overlap?: number;
   preserveWords?: boolean;
+  preserveBoundaries?: boolean;
+  filePath?: string;
 }
 
 /**
@@ -77,7 +85,63 @@ function createChunks(
 }
 
 export function chunkText(text: string, options: ChunkOptions = {}): string[] {
+  // Use boundary-aware chunking for markdown and code files if requested
+  if (options.preserveBoundaries && options.filePath) {
+    const ext = path.extname(options.filePath).toLowerCase();
+
+    if (ext === ".md" || ext === ".mdx" || ext === ".markdown") {
+      const boundaryChunks = chunkMarkdownByBoundary(text, {
+        maxChunkSize: options.size || 1000,
+        overlap: options.overlap || 100,
+      });
+      return boundaryChunks.map((chunk) => chunk.content);
+    }
+
+    const codeExtensions = [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx",
+      ".py",
+      ".java",
+      ".cs",
+      ".rb",
+      ".go",
+      ".rs",
+      ".cpp",
+      ".c",
+      ".h",
+    ];
+    if (codeExtensions.includes(ext)) {
+      const language = getLanguageFromExtension(ext);
+      const boundaryChunks = chunkCodeByBoundary(text, language, {
+        maxChunkSize: options.size || 1000,
+        overlap: options.overlap || 100,
+      });
+      return boundaryChunks.map((chunk) => chunk.content);
+    }
+  }
+
   return createChunks(text, options).map((chunk) => chunk.content);
+}
+
+function getLanguageFromExtension(ext: string): string {
+  const extensionMap: Record<string, string> = {
+    ".js": "javascript",
+    ".jsx": "javascript",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".py": "python",
+    ".java": "java",
+    ".cs": "csharp",
+    ".rb": "ruby",
+    ".go": "go",
+    ".rs": "rust",
+    ".cpp": "cpp",
+    ".c": "c",
+    ".h": "c",
+  };
+  return extensionMap[ext] || "javascript";
 }
 
 export interface ChunkWithMetadata {
@@ -91,6 +155,53 @@ export function chunkTextWithMetadata(
   text: string,
   options: ChunkOptions = {},
 ): ChunkWithMetadata[] {
+  // Use boundary-aware chunking for markdown and code files if requested
+  if (options.preserveBoundaries && options.filePath) {
+    const ext = path.extname(options.filePath).toLowerCase();
+
+    if (ext === ".md" || ext === ".mdx" || ext === ".markdown") {
+      const boundaryChunks = chunkMarkdownByBoundary(text, {
+        maxChunkSize: options.size || 1000,
+        overlap: options.overlap || 100,
+      });
+      return boundaryChunks.map((chunk, index) => ({
+        content: chunk.content,
+        index,
+        start: chunk.startOffset,
+        end: chunk.endOffset,
+      }));
+    }
+
+    const codeExtensions = [
+      ".js",
+      ".jsx",
+      ".ts",
+      ".tsx",
+      ".py",
+      ".java",
+      ".cs",
+      ".rb",
+      ".go",
+      ".rs",
+      ".cpp",
+      ".c",
+      ".h",
+    ];
+    if (codeExtensions.includes(ext)) {
+      const language = getLanguageFromExtension(ext);
+      const boundaryChunks = chunkCodeByBoundary(text, language, {
+        maxChunkSize: options.size || 1000,
+        overlap: options.overlap || 100,
+      });
+      return boundaryChunks.map((chunk, index) => ({
+        content: chunk.content,
+        index,
+        start: chunk.startOffset,
+        end: chunk.endOffset,
+      }));
+    }
+  }
+
   return createChunks(text, options);
 }
 

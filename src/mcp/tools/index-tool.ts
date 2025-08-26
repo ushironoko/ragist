@@ -26,7 +26,7 @@ export interface IndexToolResult extends BaseToolResult {
 /**
  * Internal handler for index tool operations
  */
-async function handleIndexOperation(
+export async function handleIndexOperation(
   data: IndexToolInput,
   options: IndexToolOptions,
 ): Promise<IndexToolResult> {
@@ -36,6 +36,8 @@ async function handleIndexOperation(
     const indexOptions = {
       chunkSize: data.chunkSize ?? 1000,
       chunkOverlap: data.chunkOverlap ?? 200,
+      autoChunkOptimize: data.autoChunkOptimize ?? false,
+      preserveBoundaries: data.preserveBoundaries ?? false,
     };
 
     switch (data.type) {

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { glob, readFile } from "node:fs/promises";
+import { getOptimalChunkSettings } from "./chunk-optimizer.js";
 import { chunkText } from "./chunking.js";
 import type { DatabaseService, ItemMetadata } from "./database-service.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
@@ -14,6 +15,8 @@ export interface IndexOptions {
   chunkSize?: number;
   chunkOverlap?: number;
   batchSize?: number;
+  autoChunkOptimize?: boolean;
+  preserveBoundaries?: boolean;
   onProgress?: (message: string, progress?: number) => void;
 }
 
@@ -50,6 +53,8 @@ export async function indexText(
     const chunks = chunkText(text, {
       size: chunkSize,
       overlap: chunkOverlap,
+      preserveBoundaries: options.preserveBoundaries,
+      filePath: metadata.filePath as string | undefined,
     });
 
     if (chunks.length === 0) {
@@ -138,7 +143,44 @@ export async function indexFile(
       filePath,
     };
 
-    return indexText(content, fileMetadata, options, service);
+    // Apply optimal chunk settings if auto-optimize is enabled
+    let finalOptions = options;
+    if (
+      options.autoChunkOptimize &&
+      !options.chunkSize &&
+      !options.chunkOverlap
+    ) {
+      const optimalSettings = getOptimalChunkSettings(filePath);
+      finalOptions = {
+        ...options,
+        chunkSize: optimalSettings.chunkSize,
+        chunkOverlap: optimalSettings.chunkOverlap,
+      };
+    }
+
+    // Enable boundary preservation for code and markdown files by default if autoChunkOptimize is enabled
+    if (options.autoChunkOptimize && options.preserveBoundaries === undefined) {
+      const ext = filePath.toLowerCase();
+      if (
+        ext.endsWith(".md") ||
+        ext.endsWith(".mdx") ||
+        ext.endsWith(".js") ||
+        ext.endsWith(".ts") ||
+        ext.endsWith(".jsx") ||
+        ext.endsWith(".tsx") ||
+        ext.endsWith(".py") ||
+        ext.endsWith(".java") ||
+        ext.endsWith(".rs") ||
+        ext.endsWith(".go")
+      ) {
+        finalOptions = {
+          ...finalOptions,
+          preserveBoundaries: true,
+        };
+      }
+    }
+
+    return indexText(content, fileMetadata, finalOptions, service);
   } catch (error) {
     return {
       itemsIndexed: 0,

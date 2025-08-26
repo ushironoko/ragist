@@ -19,6 +19,8 @@ export interface GistdexConfig {
     chunkSize?: number;
     chunkOverlap?: number;
     batchSize?: number;
+    autoChunkOptimize?: boolean;
+    preserveBoundaries?: boolean;
   };
   search?: {
     defaultK?: number;
@@ -131,7 +133,8 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
     if (
       process.env.CHUNK_SIZE ||
       process.env.CHUNK_OVERLAP ||
-      process.env.BATCH_SIZE
+      process.env.BATCH_SIZE ||
+      process.env.AUTO_CHUNK_OPTIMIZE
     ) {
       config.indexing = {};
       const chunkSize = parseInteger(process.env.CHUNK_SIZE);
@@ -145,6 +148,12 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
       const batchSize = parseInteger(process.env.BATCH_SIZE);
       if (batchSize) {
         config.indexing.batchSize = batchSize;
+      }
+      if (process.env.AUTO_CHUNK_OPTIMIZE === "true") {
+        config.indexing.autoChunkOptimize = true;
+      }
+      if (process.env.PRESERVE_BOUNDARIES === "true") {
+        config.indexing.preserveBoundaries = true;
       }
     }
 

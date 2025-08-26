@@ -1,0 +1,82 @@
+import { describe, expect, it, vi } from "vitest";
+import type { DatabaseService } from "../../core/database-service.js";
+import type { IndexToolInput } from "../schemas/validation.js";
+import { handleIndexOperation } from "./index-tool.js";
+
+vi.mock("../../core/indexer.js", async () => {
+  const actual = await vi.importActual("../../core/indexer.js");
+  return {
+    ...actual,
+    indexFile: vi.fn().mockResolvedValue({
+      itemsIndexed: 1,
+      chunksCreated: 3,
+      errors: [],
+    }),
+  };
+});
+
+describe("index-tool auto-chunk-optimize", () => {
+  const mockService = {
+    saveItems: vi.fn().mockResolvedValue(["id1", "id2", "id3"]),
+    searchItems: vi.fn(),
+    getItems: vi.fn(),
+    deleteItem: vi.fn(),
+    deleteAll: vi.fn(),
+    getStats: vi.fn(),
+  } as unknown as DatabaseService;
+
+  it("should pass autoChunkOptimize option when indexing a file", async () => {
+    const { indexFile } = await import("../../core/indexer.js");
+    const mockedIndexFile = vi.mocked(indexFile);
+
+    const input: IndexToolInput = {
+      type: "file",
+      file: {
+        path: "test.js",
+      },
+      autoChunkOptimize: true,
+    };
+
+    const result = await handleIndexOperation(input, { service: mockService });
+
+    expect(result.success).toBe(true);
+    expect(mockedIndexFile).toHaveBeenCalledWith(
+      "test.js",
+      {},
+      {
+        chunkSize: 1000,
+        chunkOverlap: 200,
+        autoChunkOptimize: true,
+        preserveBoundaries: false,
+      },
+      mockService,
+    );
+  });
+
+  it("should default to false when autoChunkOptimize is not specified", async () => {
+    const { indexFile } = await import("../../core/indexer.js");
+    const mockedIndexFile = vi.mocked(indexFile);
+
+    const input: IndexToolInput = {
+      type: "file",
+      file: {
+        path: "test.md",
+      },
+    };
+
+    const result = await handleIndexOperation(input, { service: mockService });
+
+    expect(result.success).toBe(true);
+    expect(mockedIndexFile).toHaveBeenCalledWith(
+      "test.md",
+      {},
+      {
+        chunkSize: 1000,
+        chunkOverlap: 200,
+        autoChunkOptimize: false,
+        preserveBoundaries: false,
+      },
+      mockService,
+    );
+  });
+});
