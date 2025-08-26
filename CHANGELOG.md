@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0] - 2025-08-26
+
+- Merge pull request #67 from ushironoko/auto-chunk-optimization
+- fix: update imports and mock fetch in tests, improve type exports
+- add tree-sitter based chunkings
+- remove unused type import
+- fix ext
+- feat: add auto-chunk optimization and boundary preservation options
+- fix
+- fix documents
+- fix .mcp.json
+- fix docs
+- fix Documents
+
+
 ## [0.10.1] - 2025-08-25
 
 - fix test
