@@ -499,6 +499,7 @@ function isTextFile(filename: string): boolean {
     // Documentation
     ".txt",
     ".md",
+    ".mdx",
 
     // JavaScript/TypeScript ecosystem
     ".js",
@@ -506,6 +507,7 @@ function isTextFile(filename: string): boolean {
     ".ts",
     ".tsx",
     ".mjs",
+    ".mts",
     ".cjs",
 
     // Major programming languages
@@ -521,8 +523,11 @@ function isTextFile(filename: string): boolean {
     // Web technologies
     ".html",
     ".css",
+    ".sass",
+    ".scss",
     ".json",
     ".xml",
+    ".xmlx",
 
     // Configuration files
     ".yaml",
@@ -539,7 +544,7 @@ function isTextFile(filename: string): boolean {
 
     // examples
     ".example",
-  ];
+  ] as const;
 
   const lowerFilename = filename.toLowerCase();
   return textExtensions.some((ext) => lowerFilename.endsWith(ext));

@@ -27,70 +27,58 @@ const DEFAULT_SETTINGS: ChunkSettings = {
 } as const;
 
 // Extension to content type mapping
+// Matches the supported extensions in indexer.ts isTextFile function
 const EXTENSION_SETTINGS_MAP: Record<string, ChunkSettings> = {
-  // Code files
+  // JavaScript/TypeScript ecosystem
   ".js": CODE_SETTINGS,
   ".jsx": CODE_SETTINGS,
   ".ts": CODE_SETTINGS,
   ".tsx": CODE_SETTINGS,
   ".mjs": CODE_SETTINGS,
+  ".mts": CODE_SETTINGS,
   ".cjs": CODE_SETTINGS,
-  ".py": CODE_SETTINGS,
-  ".java": CODE_SETTINGS,
-  ".c": CODE_SETTINGS,
-  ".cpp": CODE_SETTINGS,
-  ".h": CODE_SETTINGS,
-  ".hpp": CODE_SETTINGS,
-  ".cs": CODE_SETTINGS,
-  ".rb": CODE_SETTINGS,
-  ".go": CODE_SETTINGS,
-  ".rs": CODE_SETTINGS,
-  ".swift": CODE_SETTINGS,
-  ".kt": CODE_SETTINGS,
-  ".scala": CODE_SETTINGS,
-  ".r": CODE_SETTINGS,
-  ".php": CODE_SETTINGS,
-  ".sh": CODE_SETTINGS,
-  ".bash": CODE_SETTINGS,
-  ".zsh": CODE_SETTINGS,
-  ".fish": CODE_SETTINGS,
-  ".ps1": CODE_SETTINGS,
-  ".lua": CODE_SETTINGS,
-  ".dart": CODE_SETTINGS,
-  ".elm": CODE_SETTINGS,
-  ".clj": CODE_SETTINGS,
+
+  // Major programming languages
+  ".py": CODE_SETTINGS, // Python
+  ".go": CODE_SETTINGS, // Go
+  ".rs": CODE_SETTINGS, // Rust
+  ".java": CODE_SETTINGS, // Java
+  ".rb": CODE_SETTINGS, // Ruby
+  ".c": CODE_SETTINGS, // C
+  ".cpp": CODE_SETTINGS, // C++
+  ".h": CODE_SETTINGS, // C/C++ headers
+
+  // Web technologies
+  ".html": DOCUMENTATION_SETTINGS,
   ".css": CODE_SETTINGS,
-  ".scss": CODE_SETTINGS,
   ".sass": CODE_SETTINGS,
-  ".less": CODE_SETTINGS,
-  ".sql": CODE_SETTINGS,
-  ".graphql": CODE_SETTINGS,
-  ".gql": CODE_SETTINGS,
+  ".scss": CODE_SETTINGS,
   ".json": CODE_SETTINGS,
-  ".jsonc": CODE_SETTINGS,
-  ".json5": CODE_SETTINGS,
+  ".xml": CODE_SETTINGS,
+  ".xmlx": CODE_SETTINGS,
+
+  // Configuration files
   ".yaml": CODE_SETTINGS,
   ".yml": CODE_SETTINGS,
   ".toml": CODE_SETTINGS,
-  ".xml": CODE_SETTINGS,
+
+  // Shell scripts
+  ".sh": CODE_SETTINGS,
+  ".bash": CODE_SETTINGS,
+
+  // Frontend frameworks
+  ".vue": CODE_SETTINGS,
+  ".svelte": CODE_SETTINGS,
 
   // Documentation files
   ".md": DOCUMENTATION_SETTINGS,
   ".mdx": DOCUMENTATION_SETTINGS,
-  ".rst": DOCUMENTATION_SETTINGS,
-  ".adoc": DOCUMENTATION_SETTINGS,
-  ".html": DOCUMENTATION_SETTINGS,
-  ".htm": DOCUMENTATION_SETTINGS,
 
-  // Article/Text files
+  // Plain text files
   ".txt": ARTICLE_SETTINGS,
-  ".text": ARTICLE_SETTINGS,
-  ".doc": ARTICLE_SETTINGS,
-  ".docx": ARTICLE_SETTINGS,
-  ".odt": ARTICLE_SETTINGS,
-  ".pdf": ARTICLE_SETTINGS,
-  ".tex": ARTICLE_SETTINGS,
-  ".rtf": ARTICLE_SETTINGS,
+
+  // Examples
+  ".example": DEFAULT_SETTINGS,
 } as const;
 
 /**
