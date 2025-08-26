@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { glob, readFile } from "node:fs/promises";
 import { getOptimalChunkSettings } from "./chunk-optimizer.js";
-import { chunkText } from "./chunking.js";
+import { chunkTextWithCST } from "./chunking.js";
 import type { DatabaseService, ItemMetadata } from "./database-service.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
 import {
@@ -50,7 +50,7 @@ export async function indexText(
       onProgress("Chunking text...");
     }
 
-    const chunks = chunkText(text, {
+    const chunks = await chunkTextWithCST(text, {
       size: chunkSize,
       overlap: chunkOverlap,
       preserveBoundaries: options.preserveBoundaries,

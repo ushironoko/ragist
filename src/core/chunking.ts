@@ -3,6 +3,8 @@ import {
   chunkCodeByBoundary,
   chunkMarkdownByBoundary,
 } from "./boundary-aware-chunking.js";
+import { createCSTChunkingOperations } from "./cst-operations.js";
+import { isTreeSitterSupported } from "./parser-factory.js";
 
 export interface ChunkOptions {
   size?: number;
@@ -84,6 +86,52 @@ function createChunks(
   return chunks;
 }
 
+// CST-aware chunking with async support
+export async function chunkTextWithCST(
+  text: string,
+  options: ChunkOptions = {},
+): Promise<string[]> {
+  // Use boundary-aware chunking for markdown and code files if requested
+  if (options.preserveBoundaries && options.filePath) {
+    const ext = path.extname(options.filePath).toLowerCase();
+
+    // Handle Markdown files
+    if (ext === ".md" || ext === ".mdx" || ext === ".markdown") {
+      const boundaryChunks = chunkMarkdownByBoundary(text, {
+        maxChunkSize: options.size || 1000,
+        overlap: options.overlap || 100,
+      });
+      return boundaryChunks.map((chunk) => chunk.content);
+    }
+
+    // Check if tree-sitter is supported for this file type
+    if (isTreeSitterSupported(ext)) {
+      try {
+        const cstOperations = createCSTChunkingOperations();
+        const boundaryChunks = await cstOperations.chunkWithFallback(
+          text,
+          options.filePath,
+          {
+            maxChunkSize: options.size || 1000,
+            overlap: options.overlap || 100,
+          },
+          chunkCodeByBoundary,
+        );
+        return boundaryChunks.map((chunk) => chunk.content);
+      } catch (error) {
+        // Fallback to regex-based chunking
+        console.warn(
+          "CST chunking failed, falling back to regex-based chunking",
+        );
+      }
+    }
+  }
+
+  // Fallback to simple chunking
+  return createChunks(text, options).map((chunk) => chunk.content);
+}
+
+// Backward compatible synchronous version
 export function chunkText(text: string, options: ChunkOptions = {}): string[] {
   // Use boundary-aware chunking for markdown and code files if requested
   if (options.preserveBoundaries && options.filePath) {
