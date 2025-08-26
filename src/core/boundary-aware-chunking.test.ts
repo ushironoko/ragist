@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   type BoundaryChunk,
-  type BoundaryChunkOptions,
   chunkCodeByBoundary,
   chunkMarkdownByBoundary,
 } from "./boundary-aware-chunking.js";
