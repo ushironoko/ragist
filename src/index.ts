@@ -20,6 +20,9 @@ export {
 // Search functions
 export { semanticSearch, hybridSearch } from "./core/search.js";
 
+// Chunking functions
+export { chunkTextWithCST } from "./core/chunking.js";
+
 // Configuration
 export {
   createConfigOperations,

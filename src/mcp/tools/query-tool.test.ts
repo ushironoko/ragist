@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { z } from "zod";
 import type { QueryToolInput } from "../schemas/validation.js";
 import { queryToolSchema } from "../schemas/validation.js";
 

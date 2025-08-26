@@ -70,8 +70,10 @@ describe("list-tool", () => {
     mockService = {
       initialize: vi.fn(),
       close: vi.fn(),
+      saveItem: vi.fn(),
       saveItems: vi.fn(),
       searchItems: vi.fn(),
+      countItems: vi.fn(),
       getStats: vi.fn(),
       listItems: vi.fn(),
       getAdapterInfo: vi.fn(),
@@ -627,10 +629,10 @@ describe("list-tool", () => {
 
       expect(result.success).toBe(true);
       expect(result.stats?.totalItems).toBe(100);
-      expect(result.stats?.bySourceType.gist).toBe(25);
-      expect(result.stats?.bySourceType.github).toBe(40);
-      expect(result.stats?.bySourceType.file).toBe(30);
-      expect(result.stats?.bySourceType.text).toBe(5);
+      expect(result.stats?.bySourceType?.gist).toBe(25);
+      expect(result.stats?.bySourceType?.github).toBe(40);
+      expect(result.stats?.bySourceType?.file).toBe(30);
+      expect(result.stats?.bySourceType?.text).toBe(5);
     });
 
     it("handles empty statistics", async () => {
@@ -975,7 +977,7 @@ describe("list-tool", () => {
       expect(result.success).toBe(true);
       expect(result.items).toHaveLength(0);
       expect(result.stats?.totalItems).toBe(10);
-      expect(result.stats?.bySourceType.gist).toBeUndefined();
+      expect(result.stats?.bySourceType?.gist).toBeUndefined();
     });
 
     it("handles newly initialized database", async () => {

@@ -18,6 +18,7 @@ vi.mock("node:fs/promises", () => ({
 
 vi.mock("./chunking.js", () => ({
   chunkText: vi.fn(),
+  chunkTextWithCST: vi.fn(),
 }));
 
 vi.mock("./embedding.js", () => ({
@@ -32,7 +33,7 @@ vi.mock("./security.js", () => ({
 }));
 
 import { glob } from "node:fs/promises";
-import { chunkText } from "./chunking.js";
+import { chunkTextWithCST } from "./chunking.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
 import {
   validateFilePath,
@@ -54,7 +55,7 @@ describe("indexText", () => {
       listItems: vi.fn().mockResolvedValue([]),
       getStats: vi.fn().mockResolvedValue({ totalItems: 0, bySourceType: {} }),
       close: vi.fn().mockResolvedValue(undefined),
-      getAdapterInfo: vi.fn().mockReturnValue(null),
+      getAdapterInfo: vi.fn().mockResolvedValue(null),
     } as const satisfies DatabaseService;
   });
 
@@ -65,7 +66,7 @@ describe("indexText", () => {
       [0.3, 0.4],
     ];
 
-    vi.mocked(chunkText).mockReturnValue(chunks);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(chunks);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue(embeddings);
 
     const result = await indexText(
@@ -75,7 +76,7 @@ describe("indexText", () => {
       mockService,
     );
 
-    expect(chunkText).toHaveBeenCalledWith("test text", {
+    expect(chunkTextWithCST).toHaveBeenCalledWith("test text", {
       size: 100,
       overlap: 10,
     });
@@ -92,7 +93,7 @@ describe("indexText", () => {
   });
 
   test("handles empty chunks", async () => {
-    vi.mocked(chunkText).mockReturnValue([]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue([]);
 
     const result = await indexText("test text", {}, {}, mockService);
 
@@ -104,7 +105,7 @@ describe("indexText", () => {
   });
 
   test("handles database save errors", async () => {
-    vi.mocked(chunkText).mockReturnValue(["chunk1"]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(["chunk1"]);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue([[0.1, 0.2]]);
     vi.mocked(mockService.saveItems).mockRejectedValue(new Error("DB error"));
 
@@ -132,14 +133,14 @@ describe("indexFile", () => {
       listItems: vi.fn().mockResolvedValue([]),
       getStats: vi.fn().mockResolvedValue({ totalItems: 0, bySourceType: {} }),
       close: vi.fn().mockResolvedValue(undefined),
-      getAdapterInfo: vi.fn().mockReturnValue(null),
+      getAdapterInfo: vi.fn().mockResolvedValue(null),
     } as const satisfies DatabaseService;
   });
 
   test("reads file and indexes content", async () => {
     const fileContent = "file content";
     vi.mocked(readFile).mockResolvedValue(fileContent);
-    vi.mocked(chunkText).mockReturnValue(["chunk1"]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(["chunk1"]);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue([[0.1, 0.2]]);
 
     const result = await indexFile(
@@ -184,7 +185,7 @@ describe("indexFiles", () => {
       listItems: vi.fn().mockResolvedValue([]),
       getStats: vi.fn().mockResolvedValue({ totalItems: 0, bySourceType: {} }),
       close: vi.fn().mockResolvedValue(undefined),
-      getAdapterInfo: vi.fn().mockReturnValue(null),
+      getAdapterInfo: vi.fn().mockResolvedValue(null),
     } as const satisfies DatabaseService;
   });
 
@@ -201,7 +202,7 @@ describe("indexFiles", () => {
       Promise.resolve(path),
     );
     vi.mocked(readFile).mockResolvedValue("file content");
-    vi.mocked(chunkText).mockReturnValue(["chunk1"]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(["chunk1"]);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue([[0.1, 0.2]]);
 
     const result = await indexFiles(
@@ -246,7 +247,7 @@ describe("indexFiles", () => {
       Promise.resolve(path),
     );
     vi.mocked(readFile).mockResolvedValue("file content");
-    vi.mocked(chunkText).mockReturnValue(["chunk1"]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(["chunk1"]);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue([[0.1, 0.2]]);
 
     const result = await indexFiles(
@@ -279,7 +280,7 @@ describe("indexFiles", () => {
       );
 
     vi.mocked(readFile).mockResolvedValue("file content");
-    vi.mocked(chunkText).mockReturnValue(["chunk1"]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(["chunk1"]);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue([[0.1, 0.2]]);
 
     const result = await indexFiles(["*.md"], {}, {}, mockService);
@@ -329,7 +330,7 @@ describe("indexFiles", () => {
       Promise.resolve(path),
     );
     vi.mocked(readFile).mockResolvedValue("file content");
-    vi.mocked(chunkText).mockReturnValue(["chunk1"]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(["chunk1"]);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue([[0.1, 0.2]]);
 
     const progressCalls: string[] = [];
@@ -366,10 +367,10 @@ describe("indexGist", () => {
       listItems: vi.fn().mockResolvedValue([]),
       getStats: vi.fn().mockResolvedValue({ totalItems: 0, bySourceType: {} }),
       close: vi.fn().mockResolvedValue(undefined),
-      getAdapterInfo: vi.fn().mockReturnValue(null),
+      getAdapterInfo: vi.fn().mockResolvedValue(null),
     } as const satisfies DatabaseService;
 
-    global.fetch = vi.fn();
+    vi.stubGlobal("fetch", vi.fn());
   });
 
   test("indexes gist content", async () => {
@@ -382,11 +383,11 @@ describe("indexGist", () => {
     };
 
     vi.mocked(validateGistUrl).mockReturnValue("123");
-    vi.mocked(global.fetch).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => gistData,
     } as Response);
-    vi.mocked(chunkText).mockReturnValue(["chunk1"]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(["chunk1"]);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue([[0.1, 0.2]]);
 
     const result = await indexGist(
@@ -398,7 +399,7 @@ describe("indexGist", () => {
     expect(validateGistUrl).toHaveBeenCalledWith(
       "https://gist.github.com/user/123",
     );
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
       "https://api.github.com/gists/123",
     );
     expect(result).toEqual({
@@ -435,10 +436,10 @@ describe("indexGitHubRepo", () => {
       listItems: vi.fn().mockResolvedValue([]),
       getStats: vi.fn().mockResolvedValue({ totalItems: 0, bySourceType: {} }),
       close: vi.fn().mockResolvedValue(undefined),
-      getAdapterInfo: vi.fn().mockReturnValue(null),
+      getAdapterInfo: vi.fn().mockResolvedValue(null),
     } as const satisfies DatabaseService;
 
-    global.fetch = vi.fn();
+    vi.stubGlobal("fetch", vi.fn());
   });
 
   test("indexes GitHub repository content", async () => {
@@ -457,7 +458,7 @@ describe("indexGitHubRepo", () => {
       owner: "user",
       repo: "repo",
     });
-    vi.mocked(global.fetch)
+    vi.mocked(fetch)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => repoContents,
@@ -466,7 +467,7 @@ describe("indexGitHubRepo", () => {
         ok: true,
         text: async () => "file content",
       } as Response);
-    vi.mocked(chunkText).mockReturnValue(["chunk1"]);
+    vi.mocked(chunkTextWithCST).mockResolvedValue(["chunk1"]);
     vi.mocked(generateEmbeddingsBatch).mockResolvedValue([[0.1, 0.2]]);
 
     const result = await indexGitHubRepo(
