@@ -33,7 +33,7 @@ vi.mock("./security.js", () => ({
 }));
 
 import { glob } from "node:fs/promises";
-import { chunkText, chunkTextWithCST } from "./chunking.js";
+import { chunkTextWithCST } from "./chunking.js";
 import { generateEmbeddingsBatch } from "./embedding.js";
 import {
   validateFilePath,
@@ -370,7 +370,7 @@ describe("indexGist", () => {
       getAdapterInfo: vi.fn().mockResolvedValue(null),
     } as const satisfies DatabaseService;
 
-    global.fetch = vi.fn();
+    vi.stubGlobal("fetch", vi.fn());
   });
 
   test("indexes gist content", async () => {
@@ -383,7 +383,7 @@ describe("indexGist", () => {
     };
 
     vi.mocked(validateGistUrl).mockReturnValue("123");
-    vi.mocked(global.fetch).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => gistData,
     } as Response);
@@ -399,7 +399,7 @@ describe("indexGist", () => {
     expect(validateGistUrl).toHaveBeenCalledWith(
       "https://gist.github.com/user/123",
     );
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
       "https://api.github.com/gists/123",
     );
     expect(result).toEqual({
@@ -439,7 +439,7 @@ describe("indexGitHubRepo", () => {
       getAdapterInfo: vi.fn().mockResolvedValue(null),
     } as const satisfies DatabaseService;
 
-    global.fetch = vi.fn();
+    vi.stubGlobal("fetch", vi.fn());
   });
 
   test("indexes GitHub repository content", async () => {
@@ -458,7 +458,7 @@ describe("indexGitHubRepo", () => {
       owner: "user",
       repo: "repo",
     });
-    vi.mocked(global.fetch)
+    vi.mocked(fetch)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => repoContents,

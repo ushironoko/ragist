@@ -119,7 +119,7 @@ export const listToolSchema = z.object({
 export const infoToolSchema = z.object({});
 
 // Type exports
-export type IndexToolInput = z.infer<typeof indexToolSchema>;
-export type QueryToolInput = z.infer<typeof queryToolSchema>;
-export type ListToolInput = z.infer<typeof listToolSchema>;
+export type IndexToolInput = z.input<typeof indexToolSchema>;
+export type QueryToolInput = z.input<typeof queryToolSchema>;
+export type ListToolInput = z.input<typeof listToolSchema>;
 export type InfoToolInput = z.infer<typeof infoToolSchema>;
