@@ -52,11 +52,6 @@ export const indexToolSchema = z.object({
     .optional()
     .default(200)
     .describe("Overlap between chunks"),
-  autoChunkOptimize: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe("Auto-optimize chunk size based on file type"),
   preserveBoundaries: z
     .boolean()
     .optional()

@@ -15,7 +15,7 @@ vi.mock("../../core/indexer.js", async () => {
   };
 });
 
-describe("index-tool auto-chunk-optimize", () => {
+describe("index-tool with preserve boundaries", () => {
   const mockService = {
     saveItems: vi.fn().mockResolvedValue(["id1", "id2", "id3"]),
     searchItems: vi.fn(),
@@ -25,7 +25,7 @@ describe("index-tool auto-chunk-optimize", () => {
     getStats: vi.fn(),
   } as unknown as DatabaseService;
 
-  it("should pass autoChunkOptimize option when indexing a file", async () => {
+  it("should pass preserveBoundaries option when indexing a file", async () => {
     const { indexFile } = await import("../../core/indexer.js");
     const mockedIndexFile = vi.mocked(indexFile);
 
@@ -34,7 +34,7 @@ describe("index-tool auto-chunk-optimize", () => {
       file: {
         path: "test.js",
       },
-      autoChunkOptimize: true,
+      preserveBoundaries: true,
     };
 
     const result = await handleIndexOperation(input, { service: mockService });
@@ -46,14 +46,13 @@ describe("index-tool auto-chunk-optimize", () => {
       {
         chunkSize: 1000,
         chunkOverlap: 200,
-        autoChunkOptimize: true,
-        preserveBoundaries: false,
+        preserveBoundaries: true,
       },
       mockService,
     );
   });
 
-  it("should default to false when autoChunkOptimize is not specified", async () => {
+  it("should default to false when preserveBoundaries is not specified", async () => {
     const { indexFile } = await import("../../core/indexer.js");
     const mockedIndexFile = vi.mocked(indexFile);
 
@@ -73,7 +72,6 @@ describe("index-tool auto-chunk-optimize", () => {
       {
         chunkSize: 1000,
         chunkOverlap: 200,
-        autoChunkOptimize: false,
         preserveBoundaries: false,
       },
       mockService,
