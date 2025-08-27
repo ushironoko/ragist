@@ -307,13 +307,10 @@ Adapters use async factory functions instead of classes:
 #### Environment Variables
 
 ```bash
-VECTOR_DB_PROVIDER=sqlite
-VECTOR_DB_PATH=./my-database.db
-EMBEDDING_MODEL=gemini-embedding-001
-EMBEDDING_DIMENSION=768
-CHUNK_SIZE=1000
-CHUNK_OVERLAP=200
-BATCH_SIZE=100
+# Only Google Generative AI API key is supported from environment variables
+GOOGLE_GENERATIVE_AI_API_KEY=your-api-key
+
+# All other configurations should be set via config file or CLI arguments
 ```
 
 #### Configuration File (gistdex.config.json)

@@ -66,14 +66,18 @@ describe("createConfigOperations", () => {
       expect(config.vectorDB?.options?.path).toBe("./gistdex.db");
     });
 
-    it("should override with environment variables", async () => {
+    it("should not load configuration from environment variables", async () => {
+      // Environment variables (except GOOGLE_GENERATIVE_AI_API_KEY) are no longer supported
       process.env.VECTOR_DB_PROVIDER = "memory";
+      process.env.CHUNK_SIZE = "2000";
 
       vi.mocked(existsSync).mockReturnValue(false);
 
       const config = await configOperations.load();
 
-      expect(config.vectorDB?.provider).toBe("memory");
+      // Should use defaults, not environment variables
+      expect(config.vectorDB?.provider).toBe("sqlite");
+      expect(config.indexing?.chunkSize).toBeUndefined();
     });
 
     it("should load custom adapters configuration", async () => {

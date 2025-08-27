@@ -15,7 +15,7 @@ RAG (Retrieval-Augmented Generation) search system with pluggable vector databas
   - Memory (built-in) - In-memory storage for testing
   - Custom adapters - Extend with your own implementations
 - **Easy Migration**: Switch between databases without changing application code
-- **Configuration-based**: Select database via configuration file or environment variables
+- **Configuration-based**: Select database via configuration file or CLI arguments
 
 ### 🔍 Smart Content Retrieval
 
@@ -123,6 +123,56 @@ You can also specify options directly:
 ```bash
 npx @ushironoko/gistdex init --provider memory  # Use in-memory database
 npx @ushironoko/gistdex init --provider sqlite --db ./custom-path.db  # Custom SQLite path
+```
+
+## Configuration
+
+Gistdex supports configuration through multiple sources with the following priority:
+1. CLI arguments (highest priority)
+2. Configuration file (`gistdex.config.json`)
+3. Default values (lowest priority)
+
+### Environment Variables
+
+Only the Google Generative AI API key is supported via environment variables:
+
+```bash
+# Required for embedding generation
+export GOOGLE_GENERATIVE_AI_API_KEY=your-api-key
+```
+
+All other settings must be configured via `gistdex.config.json` or CLI arguments.
+
+### Configuration File
+
+Create `gistdex.config.json` in your project root:
+
+```json
+{
+  "vectorDB": {
+    "provider": "sqlite",
+    "options": {
+      "path": "./gistdex.db",
+      "dimension": 768
+    }
+  },
+  "embedding": {
+    "model": "gemini-embedding-001",
+    "dimension": 768
+  },
+  "indexing": {
+    "chunkSize": 1000,
+    "chunkOverlap": 200,
+    "batchSize": 100,
+    "preserveBoundaries": false
+  },
+  "search": {
+    "defaultK": 10,
+    "enableRerank": true,
+    "rerankBoostFactor": 1.5,
+    "hybridKeywordWeight": 0.3
+  }
+}
 ```
 
 ## Usage
