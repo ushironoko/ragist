@@ -5,7 +5,7 @@
  */
 
 // Main API - Database service
-export { createDatabaseService } from "./core/database-service.js";
+export { createDatabaseService } from "./core/database/database-service.js";
 
 // Indexing functions
 export {
@@ -15,20 +15,20 @@ export {
   indexGitHubRepo,
   type IndexOptions,
   type IndexResult,
-} from "./core/indexer.js";
+} from "./core/indexer/indexer.js";
 
 // Search functions
-export { semanticSearch, hybridSearch } from "./core/search.js";
+export { semanticSearch, hybridSearch } from "./core/search/search.js";
 
 // Chunking functions
-export { chunkTextWithCST } from "./core/chunking.js";
+export { chunkTextWithCST } from "./core/chunk/chunking.js";
 
 // Configuration
 export {
   createConfigOperations,
   type GistdexConfig,
-} from "./core/config-operations.js";
-export { defineGistdexConfig } from "./core/config-helpers.js";
+} from "./core/config/config-operations.js";
+export { defineGistdexConfig } from "./core/config/config-helpers.js";
 
 // Types for vector database
 export type {
@@ -55,7 +55,7 @@ export {
   createBaseAdapter,
   type StorageOperations,
 } from "./core/vector-db/adapters/base-adapter.js";
-export { createDatabaseOperations } from "./core/database-operations.js";
+export { createDatabaseOperations } from "./core/database/database-operations.js";
 
 // Built-in adapters (for direct use or reference)
 export { createSQLiteAdapter } from "./core/vector-db/adapters/sqlite-adapter.js";

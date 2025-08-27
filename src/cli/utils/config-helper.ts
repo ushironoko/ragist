@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { createConfigOperations } from "../../core/config-operations.js";
+import { createConfigOperations } from "../../core/config/config-operations.js";
 import type { AdapterFactory } from "../../core/vector-db/adapters/types.js";
 
 export async function getDBConfig(values: {

@@ -13,7 +13,7 @@ vi.mock("./config-helper.js", () => ({
   }),
 }));
 
-vi.mock("../../core/database-operations.js", () => ({
+vi.mock("../../core/database/database-operations.js", () => ({
   createDatabaseOperations: vi.fn().mockReturnValue({
     withReadOnly: vi.fn((fn) => fn({ initialized: true })),
     withDatabase: vi.fn((fn) => fn({ initialized: true })),

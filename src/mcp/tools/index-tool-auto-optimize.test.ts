@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DatabaseService } from "../../core/database-service.js";
+import type { DatabaseService } from "../../core/database/database-service.js";
 import type { IndexToolInput } from "../schemas/validation.js";
 import { handleIndexOperation } from "./index-tool.js";
 
-vi.mock("../../core/indexer.js", async () => {
-  const actual = await vi.importActual("../../core/indexer.js");
+vi.mock("../../core/indexer/indexer.js", async () => {
+  const actual = await vi.importActual("../../core/indexer/indexer.js");
   return {
     ...actual,
     indexFile: vi.fn().mockResolvedValue({
@@ -26,7 +26,7 @@ describe("index-tool with preserve boundaries", () => {
   } as unknown as DatabaseService;
 
   it("should pass preserveBoundaries option when indexing a file", async () => {
-    const { indexFile } = await import("../../core/indexer.js");
+    const { indexFile } = await import("../../core/indexer/indexer.js");
     const mockedIndexFile = vi.mocked(indexFile);
 
     const input: IndexToolInput = {
@@ -53,7 +53,7 @@ describe("index-tool with preserve boundaries", () => {
   });
 
   it("should default to false when preserveBoundaries is not specified", async () => {
-    const { indexFile } = await import("../../core/indexer.js");
+    const { indexFile } = await import("../../core/indexer/indexer.js");
     const mockedIndexFile = vi.mocked(indexFile);
 
     const input: IndexToolInput = {

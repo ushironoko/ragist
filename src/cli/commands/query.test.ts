@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { calculateSearchStats } from "../../core/search.js";
+import { calculateSearchStats } from "../../core/search/search.js";
 import { handleQuery } from "./query.js";
 
 // Mock node:sqlite to avoid import errors
@@ -7,7 +7,7 @@ vi.mock("node:sqlite", () => ({
   DatabaseSync: vi.fn(),
 }));
 
-vi.mock("../../core/database-service.js", () => ({
+vi.mock("../../core/database/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),
     close: vi.fn(),
@@ -26,7 +26,7 @@ vi.mock("../../core/database-service.js", () => ({
   })),
 }));
 
-vi.mock("../../core/search.js", () => ({
+vi.mock("../../core/search/search.js", () => ({
   semanticSearch: vi.fn().mockResolvedValue([
     {
       content: "Test result content",
@@ -83,7 +83,7 @@ describe("handleQuery", () => {
       positionals: ["test", "query"],
     } as any);
 
-    const { semanticSearch } = await import("../../core/search.js");
+    const { semanticSearch } = await import("../../core/search/search.js");
     // TODO: The third parameter uses expect.any(Object) which doesn't verify
     // the actual structure of the service object being passed.
     // Consider adding more specific assertions for the database service.
@@ -103,7 +103,7 @@ describe("handleQuery", () => {
       positionals: ["test", "query"],
     } as any);
 
-    const { hybridSearch } = await import("../../core/search.js");
+    const { hybridSearch } = await import("../../core/search/search.js");
     // TODO: The third parameter uses expect.any(Object) which doesn't verify
     // the actual structure of the service object being passed.
     // Consider adding more specific assertions for the database service.
@@ -126,7 +126,7 @@ describe("handleQuery", () => {
   });
 
   it("handles no results", async () => {
-    const { semanticSearch } = await import("../../core/search.js");
+    const { semanticSearch } = await import("../../core/search/search.js");
     vi.mocked(semanticSearch).mockResolvedValueOnce([]);
 
     await handleQuery({
@@ -153,7 +153,7 @@ describe("handleQuery", () => {
     };
 
     const { semanticSearch, getOriginalContent } = await import(
-      "../../core/search.js"
+      "../../core/search/search.js"
     );
     vi.mocked(semanticSearch).mockResolvedValueOnce([mockResult]);
     vi.mocked(getOriginalContent).mockResolvedValueOnce(
@@ -189,7 +189,7 @@ describe("handleQuery", () => {
     };
 
     const { semanticSearch, getOriginalContent } = await import(
-      "../../core/search.js"
+      "../../core/search/search.js"
     );
     vi.mocked(semanticSearch).mockResolvedValueOnce([mockResult]);
     vi.mocked(getOriginalContent).mockResolvedValueOnce(
@@ -219,7 +219,7 @@ describe("handleQuery", () => {
       positionals: ["test", "query"],
     } as any);
 
-    const { semanticSearch } = await import("../../core/search.js");
+    const { semanticSearch } = await import("../../core/search/search.js");
     expect(semanticSearch).toHaveBeenCalledWith(
       "test query",
       expect.objectContaining({ sourceType: "file" }),
@@ -233,7 +233,7 @@ describe("handleQuery", () => {
       positionals: ["test", "query"],
     } as any);
 
-    const { hybridSearch } = await import("../../core/search.js");
+    const { hybridSearch } = await import("../../core/search/search.js");
     expect(hybridSearch).toHaveBeenCalledWith(
       "test query",
       expect.any(Object),
@@ -247,7 +247,7 @@ describe("handleQuery", () => {
       positionals: ["test", "query"],
     } as any);
 
-    const { semanticSearch } = await import("../../core/search.js");
+    const { semanticSearch } = await import("../../core/search/search.js");
     expect(semanticSearch).toHaveBeenCalledWith(
       "test query",
       expect.objectContaining({ rerank: false }),

@@ -21,9 +21,9 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { createConfigOperations } from "../core/config-operations.js";
-import { createDatabaseOperations } from "../core/database-operations.js";
-import type { DatabaseService } from "../core/database-service.js";
+import { createConfigOperations } from "../core/config/config-operations.js";
+import { createDatabaseOperations } from "../core/database/database-operations.js";
+import type { DatabaseService } from "../core/database/database-service.js";
 import { handleIndexTool } from "./tools/index-tool.js";
 import { handleListTool } from "./tools/list-tool.js";
 import { handleQueryTool } from "./tools/query-tool.js";
