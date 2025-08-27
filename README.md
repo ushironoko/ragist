@@ -145,7 +145,52 @@ All other settings must be configured via `gistdex.config.json` or CLI arguments
 
 ### Configuration File
 
-Create `gistdex.config.json` in your project root:
+Gistdex supports both TypeScript and JSON configuration files. The configuration files are loaded in the following priority order:
+1. `gistdex.config.ts` (TypeScript - Recommended for type safety)
+2. `gistdex.config.js` (JavaScript)
+3. `gistdex.config.json` (JSON)
+4. `.gistdexrc.json` (JSON)
+5. `~/.gistdex/config.json` (User config)
+
+#### TypeScript Configuration (Recommended)
+
+Create `gistdex.config.ts` in your project root for type-safe configuration:
+
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  vectorDB: {
+    provider: "sqlite",
+    options: {
+      path: "./gistdex.db",
+      dimension: 768,
+    },
+  },
+  embedding: {
+    model: "gemini-embedding-001",
+    dimension: 768,
+  },
+  indexing: {
+    chunkSize: 1000,
+    chunkOverlap: 200,
+    batchSize: 100,
+    preserveBoundaries: false,
+  },
+  search: {
+    defaultK: 10,
+    enableRerank: true,
+    rerankBoostFactor: 1.5,
+    hybridKeywordWeight: 0.3,
+  },
+});
+```
+
+The `defineGistdexConfig` helper provides full TypeScript intellisense and type checking for your configuration.
+
+#### JSON Configuration
+
+Alternatively, create `gistdex.config.json` in your project root:
 
 ```json
 {
