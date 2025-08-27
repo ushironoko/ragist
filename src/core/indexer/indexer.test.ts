@@ -16,16 +16,16 @@ vi.mock("node:fs/promises", () => ({
   glob: vi.fn(),
 }));
 
-vi.mock("./chunking.js", () => ({
+vi.mock("../chunk/chunking.js", () => ({
   chunkText: vi.fn(),
   chunkTextWithCST: vi.fn(),
 }));
 
-vi.mock("./embedding.js", () => ({
+vi.mock("../embedding/embedding.js", () => ({
   generateEmbeddingsBatch: vi.fn(),
 }));
 
-vi.mock("./security.js", () => ({
+vi.mock("../security/security.js", () => ({
   SecurityError: class SecurityError extends Error {},
   validateFilePath: vi.fn(),
   validateGistUrl: vi.fn(),

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IndexContext } from "./index.js";
 import { handleIndex } from "./index.js";
 
-vi.mock("../../core/database-operations.js", () => ({
+vi.mock("../../core/database/database-operations.js", () => ({
   createDatabaseOperations: vi.fn(() => ({
     withDatabase: vi.fn(async (operation) => {
       const mockService = {
@@ -19,14 +19,14 @@ vi.mock("../../core/database-operations.js", () => ({
   })),
 }));
 
-vi.mock("../../core/database-service.js", () => ({
+vi.mock("../../core/database/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),
     close: vi.fn(),
   },
 }));
 
-vi.mock("../../core/indexer.js", () => ({
+vi.mock("../../core/indexer/indexer.js", () => ({
   indexText: vi.fn().mockResolvedValue({
     itemsIndexed: 1,
     chunksCreated: 3,
@@ -49,7 +49,7 @@ vi.mock("../../core/indexer.js", () => ({
   }),
 }));
 
-vi.mock("../../core/security.js", () => {
+vi.mock("../../core/security/security.js", () => {
   class SecurityError extends Error {
     constructor(message: string, options?: ErrorOptions) {
       super(message, options);
@@ -120,7 +120,7 @@ describe("handleIndex", () => {
       },
     });
 
-    const { indexText } = await import("../../core/indexer.js");
+    const { indexText } = await import("../../core/indexer/indexer.js");
     // TODO: The last two parameters are using expect.any(Object) which doesn't
     // verify the actual structure of the config and service objects being passed.
     // Consider adding more specific assertions for these parameters.
@@ -142,7 +142,7 @@ describe("handleIndex", () => {
       },
     });
 
-    const { indexFile } = await import("../../core/indexer.js");
+    const { indexFile } = await import("../../core/indexer/indexer.js");
     expect(indexFile).toHaveBeenCalled();
     expect(console.log).toHaveBeenCalledWith("  Items indexed: 1");
     expect(console.log).toHaveBeenCalledWith("  Chunks created: 5");
@@ -155,7 +155,7 @@ describe("handleIndex", () => {
       },
     });
 
-    const { indexGist } = await import("../../core/indexer.js");
+    const { indexGist } = await import("../../core/indexer/indexer.js");
     // TODO: Using expect.any(Object) for config and service parameters.
     // Consider verifying the actual structure of these objects.
     expect(indexGist).toHaveBeenCalledWith(
@@ -175,7 +175,7 @@ describe("handleIndex", () => {
       },
     });
 
-    const { indexGitHubRepo } = await import("../../core/indexer.js");
+    const { indexGitHubRepo } = await import("../../core/indexer/indexer.js");
     expect(indexGitHubRepo).toHaveBeenCalled();
     expect(console.log).toHaveBeenCalledWith("  Items indexed: 5");
     expect(console.log).toHaveBeenCalledWith("  Chunks created: 20");
@@ -183,7 +183,7 @@ describe("handleIndex", () => {
 
   it.skip("handles file not found error", async () => {
     const { existsSync } = await import("node:fs");
-    const securityModule = await import("../../core/security.js");
+    const securityModule = await import("../../core/security/security.js");
     const { validateFilePath } = securityModule;
 
     vi.mocked(validateFilePath).mockResolvedValueOnce(
@@ -205,7 +205,7 @@ describe("handleIndex", () => {
 
   it("handles security error", async () => {
     // Get the mocked modules
-    const securityModule = await import("../../core/security.js");
+    const securityModule = await import("../../core/security/security.js");
     const { validateFilePath, SecurityError } = securityModule;
 
     // Create an instance that will pass instanceof check

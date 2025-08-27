@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DatabaseService } from "./database-service.js";
+import type { DatabaseService } from "../database/database-service.js";
 import { indexFile } from "./indexer.js";
 
 // Mock database service
@@ -16,7 +16,7 @@ const mockDatabaseService: DatabaseService = {
 };
 
 // Mock embedding generation
-vi.mock("./embedding.js", () => ({
+vi.mock("../embedding/embedding.js", () => ({
   generateEmbeddingsBatch: vi.fn().mockImplementation((chunks: string[]) => {
     // Return embeddings matching the number of chunks
     return Promise.resolve(

@@ -4,7 +4,7 @@ import type { IndexToolInput } from "../schemas/validation.js";
 import { indexToolSchema } from "../schemas/validation.js";
 
 // Mock the core modules
-vi.mock("../../core/database-operations.js", () => ({
+vi.mock("../../core/database/database-operations.js", () => ({
   createDatabaseOperations: vi.fn(() => ({
     withDatabase: vi.fn(async (operation) => {
       const mockService = {
@@ -21,14 +21,14 @@ vi.mock("../../core/database-operations.js", () => ({
   })),
 }));
 
-vi.mock("../../core/database-service.js", () => ({
+vi.mock("../../core/database/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),
     close: vi.fn(),
   },
 }));
 
-vi.mock("../../core/indexer.js", () => ({
+vi.mock("../../core/indexer/indexer.js", () => ({
   indexText: vi.fn().mockResolvedValue({
     itemsIndexed: 1,
     chunksCreated: 3,
@@ -56,7 +56,7 @@ vi.mock("../../core/indexer.js", () => ({
   }),
 }));
 
-vi.mock("../../core/security.js", () => {
+vi.mock("../../core/security/security.js", () => {
   class SecurityError extends Error {
     constructor(message: string, options?: ErrorOptions) {
       super(message, options);

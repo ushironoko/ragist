@@ -6,7 +6,7 @@ vi.mock("node:sqlite", () => ({
   DatabaseSync: vi.fn(),
 }));
 
-vi.mock("../../core/database-service.js", () => ({
+vi.mock("../../core/database/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),
     close: vi.fn(),
@@ -58,7 +58,7 @@ describe("handleInfo", () => {
 
   it("handles missing adapter info", async () => {
     const { createDatabaseService } = await import(
-      "../../core/database-service.js"
+      "../../core/database/database-service.js"
     );
     vi.mocked(createDatabaseService).mockImplementationOnce(() => ({
       initialize: vi.fn(),

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DatabaseService } from "../../core/database-service.js";
+import type { DatabaseService } from "../../core/database/database-service.js";
 import type { VectorDocument } from "../../core/vector-db/adapters/types.js";
 import { listToolSchema } from "../schemas/validation.js";
 import {
@@ -9,7 +9,7 @@ import {
 } from "./list-tool.js";
 
 // Mock the core modules
-vi.mock("../../core/database-operations.js", () => ({
+vi.mock("../../core/database/database-operations.js", () => ({
   createDatabaseOperations: vi.fn(() => ({
     withDatabase: vi.fn(async (operation) => {
       const mockService = {
@@ -26,7 +26,7 @@ vi.mock("../../core/database-operations.js", () => ({
   })),
 }));
 
-vi.mock("../../core/database-service.js", () => ({
+vi.mock("../../core/database/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),
     close: vi.fn(),

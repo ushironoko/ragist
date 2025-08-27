@@ -3,7 +3,7 @@ import type { QueryToolInput } from "../schemas/validation.js";
 import { queryToolSchema } from "../schemas/validation.js";
 
 // Mock the core modules
-vi.mock("../../core/database-operations.js", () => ({
+vi.mock("../../core/database/database-operations.js", () => ({
   createDatabaseOperations: vi.fn(() => ({
     withDatabase: vi.fn(async (operation) => {
       const mockService = {
@@ -54,14 +54,14 @@ vi.mock("../../core/database-operations.js", () => ({
   })),
 }));
 
-vi.mock("../../core/database-service.js", () => ({
+vi.mock("../../core/database/database-service.js", () => ({
   databaseService: {
     initialize: vi.fn(),
     close: vi.fn(),
   },
 }));
 
-vi.mock("../../core/search.js", () => ({
+vi.mock("../../core/search/search.js", () => ({
   semanticSearch: vi.fn().mockResolvedValue([
     {
       id: "semantic-1",
@@ -99,13 +99,13 @@ vi.mock("../../core/search.js", () => ({
   rerankResults: vi.fn((query, results) => results),
 }));
 
-vi.mock("../../core/embedding.js", () => ({
+vi.mock("../../core/embedding/embedding.js", () => ({
   generateEmbedding: vi
     .fn()
     .mockResolvedValue(new Array(768).fill(0).map(() => Math.random())),
 }));
 
-vi.mock("../../core/security.js", () => ({
+vi.mock("../../core/security/security.js", () => ({
   validateQuery: vi.fn().mockImplementation((query) => query),
   SecurityError: class SecurityError extends Error {
     constructor(message: string, options?: ErrorOptions) {
