@@ -4,7 +4,7 @@ This guide covers Gistdex installation and basic usage.
 
 ## Prerequisites
 
-- Node.js 24.2.0+ or Bun 1.1.14+
+- Node.js 24.6.0+ (Required to avoid ExperimentalWarning from node:sqlite) or Bun 1.1.14+
 - npm, pnpm, yarn, or bun
 - Google AI API Key ([Google AI Studio](https://makersuite.google.com/app/apikey))
 
@@ -109,7 +109,24 @@ This command will:
 1. Prompt for your Google AI API key (get one at [Google AI Studio](https://makersuite.google.com/app/apikey))
 2. Let you choose the vector database provider (SQLite recommended)
 3. Configure the database path
-4. Create `.env` and `gistdex.config.json` files automatically
+4. Create `.env` and `gistdex.config.ts` files automatically
+
+The generated `gistdex.config.ts` file provides type-safe configuration with TypeScript intellisense:
+
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  vectorDB: {
+    provider: "sqlite",
+    options: {
+      path: "./gistdex.db",
+      dimension: 768,
+    },
+  },
+  // ... other configuration
+});
+```
 
 ## Your First Index
 
@@ -154,11 +171,10 @@ npx @ushironoko/gistdex query --full "configuration options"
 
 ## Claude Integration
 
-### Claude Code
-
-Add Gistdex to Claude Code with a single command:
+Add Gistdex to Claude with MCP support:
 
 ```bash
+# For Claude Code
 claude mcp add gistdex -- npx @ushironoko/gistdex@latest --mcp
 ```
 
@@ -181,9 +197,9 @@ Windows users can configure Claude Desktop by adding to `claude_desktop_config.j
 }
 ```
 
-Note: macOS support is not available due to a [known issue](https://github.com/modelcontextprotocol/servers/issues/1748).
+Note: Claude Desktop on macOS is not supported due to a [known issue](https://github.com/modelcontextprotocol/servers/issues/1748).
 
-See the [MCP Integration Guide](./mcp.md) for full details.
+See the [MCP Integration Guide](./mcp.md) for details.
 
 ## Bun-specific Setup
 

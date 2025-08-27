@@ -7,94 +7,60 @@ Gistdex can be configured through multiple methods. This guide covers configurat
 Configuration is loaded in the following order (highest to lowest priority):
 
 1. **Command-line arguments** - Override all other settings
-2. **Environment variables** - System or `.env` file
-3. **Configuration files** - JSON configuration files
-4. **Default values** - Built-in defaults
-
-## Environment Variables
-
-The most common way to configure Gistdex is through environment variables.
-
-### Required Variables
-
-```bash
-# Google AI API key for embeddings
-GOOGLE_GENERATIVE_AI_API_KEY="your-api-key-here"
-```
-
-### Optional Variables
-
-```bash
-# Vector database configuration
-VECTOR_DB_PROVIDER="sqlite"              # Database provider (default: sqlite, bun-sqlite for Bun runtime)
-VECTOR_DB_PATH="./my-database.db"        # Database file path (default: ./gistdex.db)
-CUSTOM_SQLITE_PATH="/opt/homebrew/bin/sqlite" # Path to SQLite binary (required for Bun on macOS only)
-
-# Embedding configuration
-EMBEDDING_MODEL="gemini-embedding-001"     # Google AI model (default: gemini-embedding-001)
-EMBEDDING_DIMENSION="768"                # Vector dimensions (default: 768)
-
-# Chunking configuration
-CHUNK_SIZE="1000"                        # Characters per chunk (default: 1000)
-CHUNK_OVERLAP="200"                      # Overlap between chunks (default: 200)
-BATCH_SIZE="100"                         # Batch size for indexing (default: 100)
-
-# Search configuration
-DEFAULT_K="5"                            # Default number of results (default: 5)
-ENABLE_RERANK="true"                     # Enable result re-ranking (default: true)
-HYBRID_KEYWORD_WEIGHT="0.3"              # Weight for keyword search in hybrid mode (default: 0.3)
-```
-
-### Using .env Files
-
-Create a `.env` file in your project root:
-
-::: code-group
-
-```bash [Basic]
-# .env
-GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
-VECTOR_DB_PATH=./my-project.db
-```
-
-```bash [Custom]
-# .env
-GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
-VECTOR_DB_PATH=./my-project.db
-CHUNK_SIZE=2000
-CHUNK_OVERLAP=400
-```
-
-```bash [Full]
-# .env
-GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
-VECTOR_DB_PROVIDER=sqlite
-VECTOR_DB_PATH=./knowledge-base.db
-EMBEDDING_MODEL=gemini-embedding-001
-EMBEDDING_DIMENSION=768
-CHUNK_SIZE=1500
-CHUNK_OVERLAP=300
-BATCH_SIZE=50
-DEFAULT_K=10
-ENABLE_RERANK=true
-HYBRID_KEYWORD_WEIGHT=0.4
-```
-
-:::
+2. **Configuration files** - TypeScript or JSON configuration files
+3. **Default values** - Built-in defaults
 
 ## Configuration Files
 
-Gistdex looks for configuration files in these locations (in order):
+Gistdex supports both TypeScript and JSON configuration files. The configuration files are loaded in the following priority order:
 
-1. `./gistdex.config.json` - Project-specific config
-2. `./.gistdexrc.json` - Alternative project config
-3. `~/.gistdex/config.json` - User global config
+1. `gistdex.config.ts` - TypeScript configuration (Recommended for type safety)
+2. `gistdex.config.js` - JavaScript configuration
+3. `gistdex.config.json` - JSON configuration
+4. `.gistdexrc.json` - Alternative JSON configuration
+5. `~/.gistdex/config.json` - User global configuration
 
-### Configuration Schema
+### TypeScript Configuration (Recommended)
 
-::: code-group
+Create `gistdex.config.ts` in your project root for type-safe configuration:
 
-```json [Full]
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  vectorDB: {
+    provider: "sqlite",
+    options: {
+      path: "./gistdex.db",
+      dimension: 768,
+    },
+  },
+  embedding: {
+    model: "gemini-embedding-001",
+    dimension: 768,
+  },
+  indexing: {
+    chunkSize: 1000,
+    chunkOverlap: 200,
+    batchSize: 100,
+    preserveBoundaries: false,
+  },
+  search: {
+    defaultK: 10,
+    enableRerank: true,
+    rerankBoostFactor: 1.5,
+    hybridKeywordWeight: 0.3,
+  },
+});
+```
+
+The `defineGistdexConfig` helper provides full TypeScript intellisense and type checking for your configuration.
+
+### JSON Configuration
+
+Alternatively, create `gistdex.config.json` in your project root:
+
+```json
 {
   "vectorDB": {
     "provider": "sqlite",
@@ -103,9 +69,6 @@ Gistdex looks for configuration files in these locations (in order):
       "dimension": 768
     }
   },
-  "customAdapters": {
-    "myAdapter": "./adapters/my-adapter.js"
-  },
   "embedding": {
     "model": "gemini-embedding-001",
     "dimension": 768
@@ -113,10 +76,11 @@ Gistdex looks for configuration files in these locations (in order):
   "indexing": {
     "chunkSize": 1000,
     "chunkOverlap": 200,
-    "batchSize": 100
+    "batchSize": 100,
+    "preserveBoundaries": false
   },
   "search": {
-    "defaultK": 5,
+    "defaultK": 10,
     "enableRerank": true,
     "rerankBoostFactor": 1.5,
     "hybridKeywordWeight": 0.3
@@ -124,55 +88,29 @@ Gistdex looks for configuration files in these locations (in order):
 }
 ```
 
-```json [Minimal]
-{
-  "vectorDB": {
-    "options": {
-      "path": "./my-database.db"
-    }
-  }
-}
+## Environment Variables
+
+Only the Google Generative AI API key is supported via environment variables:
+
+```bash
+# Required for embedding generation
+export GOOGLE_GENERATIVE_AI_API_KEY=your-api-key
 ```
 
-```json [Code]
-{
-  "indexing": {
-    "chunkSize": 500,
-    "chunkOverlap": 100
-  },
-  "search": {
-    "defaultK": 10,
-    "enableRerank": true
-  }
-}
+All other settings must be configured via configuration file or CLI arguments.
+
+### .env File
+
+The `.env` file is automatically created when you run `gistdex init`. It contains your Google AI API key:
+
+```bash
+# .env (created by gistdex init)
+GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
 ```
 
-```json [Docs]
-{
-  "indexing": {
-    "chunkSize": 1500,
-    "chunkOverlap": 300,
-    "batchSize": 50
-  },
-  "search": {
-    "defaultK": 5,
-    "hybridKeywordWeight": 0.4
-  }
-}
-```
+If you need to update your API key, edit the `.env` file directly.
 
-```json [Bun]
-{
-  "vectorDB": {
-    "provider": "bun-sqlite",
-    "options": {
-      "path": "./gistdex.db",
-      "customSqlitePath": "/opt/homebrew/bin/sqlite"
-    }
-  }
-```
-
-:::
+## Configuration Schema
 
 ### Field Descriptions
 
@@ -180,7 +118,7 @@ Gistdex looks for configuration files in these locations (in order):
 
 - `provider`: Database adapter to use (`sqlite`, `bun-sqlite`, `memory`, or custom)
   - `sqlite`: Standard SQLite adapter (Node.js)
-  - `bun-sqlite`: SQLite adapter optimized for Bun runtime (set via `VECTOR_DB_PROVIDER=bun-sqlite`)
+  - `bun-sqlite`: SQLite adapter optimized for Bun runtime
   - `memory`: In-memory storage for testing
 - `options`: Provider-specific options
   - `path`: Database file location (SQLite/Bun-SQLite)
@@ -195,13 +133,14 @@ Gistdex looks for configuration files in these locations (in order):
 #### embedding
 
 - `model`: Google AI embedding model name (gemini-embedding-001 or text-embedding-004)
-- `dimension`: Vector dimensions (768 default)
+- `dimension`: Vector dimensions (768 default, max 3072 for gemini-embedding-001)
 
 #### indexing
 
-- `chunkSize`: Maximum characters per chunk
+- `chunkSize`: Maximum characters per chunk (auto-optimized based on file type if not specified)
 - `chunkOverlap`: Characters shared between adjacent chunks
 - `batchSize`: Number of chunks to process at once
+- `preserveBoundaries`: Enable semantic boundary preservation for code files (uses AST/CST parsing)
 
 #### search
 
@@ -209,6 +148,15 @@ Gistdex looks for configuration files in these locations (in order):
 - `enableRerank`: Whether to re-rank results for better accuracy
 - `rerankBoostFactor`: Multiplier for re-ranking scores
 - `hybridKeywordWeight`: Balance between semantic and keyword search (0-1)
+
+## Automatic Chunk Optimization
+
+When `chunkSize` and `chunkOverlap` are not explicitly specified, Gistdex automatically optimizes these values based on file type:
+
+- **Code files** (.js, .ts, .py, etc.): 650 chars chunk, 130 chars overlap
+- **Documentation** (.md, .mdx): 1250 chars chunk, 250 chars overlap
+- **Articles/Text** (.txt, .html): 1750 chars chunk, 350 chars overlap
+- **Default**: 1000 chars chunk, 200 chars overlap
 
 ## Command-Line Overrides
 
@@ -218,8 +166,79 @@ Command-line arguments override all other configuration:
 # Override chunk size for this command only
 npx @ushironoko/gistdex index --chunk-size 2000 --chunk-overlap 500 --file document.md
 
+# Enable preserve boundaries for semantic chunking
+npx @ushironoko/gistdex index --preserve-boundaries --file code.js
+# Or use shorthand
+npx @ushironoko/gistdex index -p --file code.js
+
 # Override search settings
 npx @ushironoko/gistdex query -k 10 --no-rerank "search query"
+```
+
+## Configuration Examples
+
+### For Code Projects
+
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  vectorDB: {
+    provider: "sqlite",
+    options: {
+      path: "./codebase.db",
+      dimension: 768,
+    },
+  },
+  indexing: {
+    preserveBoundaries: true,  // Enable AST/CST-based chunking
+    // chunkSize and chunkOverlap will be auto-optimized
+  },
+  search: {
+    defaultK: 10,
+    enableRerank: true,
+  },
+});
+```
+
+### For Documentation
+
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  vectorDB: {
+    provider: "sqlite",
+    options: {
+      path: "./docs.db",
+      dimension: 768,
+    },
+  },
+  indexing: {
+    chunkSize: 1500,
+    chunkOverlap: 300,
+    preserveBoundaries: false,
+  },
+  search: {
+    defaultK: 5,
+    hybridKeywordWeight: 0.4,  // Increase keyword weight for docs
+  },
+});
+```
+
+### For Testing
+
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  vectorDB: {
+    provider: "memory",  // In-memory storage
+    options: {
+      dimension: 768,
+    },
+  },
+});
 ```
 
 ## Best Practices
@@ -232,9 +251,12 @@ npx @ushironoko/gistdex query -k 10 --no-rerank "search query"
 
 ### Performance
 
-- **Chunk Size**: Larger chunks (1000-2000) for documents, smaller (200-500) for code
+- **Chunk Size**: Let Gistdex auto-optimize or use:
+  - 500-700 chars for code
+  - 1000-1500 chars for documentation
+  - 1500-2000 chars for articles
 - **Overlap**: 10-20% of chunk size is usually optimal
-- **Batch Size**: Increase for better performance with large datasets
+- **Preserve Boundaries**: Enable for code files to maintain semantic integrity
 
 ### Storage
 
@@ -242,32 +264,33 @@ npx @ushironoko/gistdex query -k 10 --no-rerank "search query"
 - **Backup**: Regular backups of your `.db` file
 - **Permissions**: Ensure write permissions for database directory
 
-## Troubleshooting
-
-See [Troubleshooting Guide](../reference/troubleshooting.md) for common issues.
-
-## Advanced Configuration
-
-### Custom Adapters
+## Custom Adapters
 
 Register custom vector database adapters by specifying the path to your adapter file:
 
-```json
-{
-  "customAdapters": {
-    "my-adapter": "./path/to/my-adapter.js"
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  customAdapters: {
+    "my-adapter": "./path/to/my-adapter.js",
   },
-  "vectorDB": {
-    "provider": "my-adapter",
-    "options": {
+  vectorDB: {
+    provider: "my-adapter",
+    options: {
       // Adapter-specific options
-    }
-  }
-}
+    },
+  },
+});
 ```
 
 Custom adapters must export an async factory function that returns a `VectorDBAdapter` interface. See `/templates/adapter-template.ts` for implementation details.
 
+## Troubleshooting
+
+See [Troubleshooting Guide](../reference/troubleshooting.md) for common issues.
+
 ## See Also
 
 - [CLI Reference](../reference/cli.md)
+- [Getting Started](./getting-started.md)

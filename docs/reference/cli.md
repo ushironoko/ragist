@@ -55,7 +55,7 @@ This command runs an interactive setup that:
 - Lets you choose a vector database provider (SQLite or Memory)
 - Configures the database path
 - Creates `.env` file with your API key
-- Creates `gistdex.config.json` with your preferences
+- Creates `gistdex.config.ts` with type-safe configuration
 - Initializes the vector database
 
 ### `gistdex index`
@@ -79,8 +79,9 @@ npx @ushironoko/gistdex index [options]
 | `--github <url>`      | Index a GitHub repository               | `--github https://github.com/...`    |
 | `--branch <branch>`   | GitHub branch (default: main)           | `--branch develop`                   |
 | `--paths <paths>`     | GitHub paths to index (comma-separated) | `--paths "src,docs"`                 |
-| `--chunk-size <n>`    | Set chunk size (default: 1000)          | `--chunk-size 2000`                  |
-| `--chunk-overlap <n>` | Set chunk overlap (default: 200)        | `--chunk-overlap 100`                |
+| `--chunk-size <n>`    | Set chunk size (auto-optimized by default) | `--chunk-size 2000`                  |
+| `--chunk-overlap <n>` | Set chunk overlap (auto-optimized by default) | `--chunk-overlap 100`                |
+| `--preserve-boundaries`, `-p` | Preserve semantic boundaries (code files) | `--preserve-boundaries`      |
 
 #### Examples
 
@@ -95,6 +96,11 @@ npx @ushironoko/gistdex index --files "src/**/*.js,docs/**/*.md"
 
 # Index with custom chunking
 npx @ushironoko/gistdex index --file large-doc.md --chunk-size 2000 --chunk-overlap 500
+
+# Index code with semantic boundaries
+npx @ushironoko/gistdex index --files "src/**/*.js" --preserve-boundaries
+# Or use shorthand
+npx @ushironoko/gistdex index --files "src/**/*.js" -p
 ```
 
 ```bash [github]
@@ -272,57 +278,60 @@ npx @ushironoko/gistdex help
 Gistdex can be configured through multiple methods (in order of precedence):
 
 1. **Command-line arguments**
-2. **Environment variables**
-3. **Configuration files**
-4. **Default values**
+2. **Configuration files** (TypeScript or JSON)
+3. **Default values**
 
 ### Environment Variables
+
+Only the Google AI API key is supported via environment variables:
 
 ```bash
 # Required for embeddings
 export GOOGLE_GENERATIVE_AI_API_KEY="your-api-key"
-
-# Optional configuration
-export VECTOR_DB_PROVIDER="sqlite"
-export VECTOR_DB_PATH="./my-database.db"
-export EMBEDDING_MODEL="gemini-embedding-001"
-export CHUNK_SIZE="1000"
-export CHUNK_OVERLAP="200"
 ```
+
+All other settings must be configured via configuration file or CLI arguments.
 
 ### Configuration Files
 
-Gistdex looks for configuration in these locations:
+Gistdex looks for configuration in these locations (in priority order):
 
-- `./gistdex.config.json`
+- `./gistdex.config.ts` (TypeScript - Recommended)
+- `./gistdex.config.js` (JavaScript)
+- `./gistdex.config.json` (JSON)
 - `./.gistdexrc.json`
 - `~/.gistdex/config.json`
 
-Example configuration:
+TypeScript configuration (recommended):
 
-```json
-{
-  "vectorDB": {
-    "provider": "sqlite",
-    "options": {
-      "path": "./gistdex.db"
-    }
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  vectorDB: {
+    provider: "sqlite",
+    options: {
+      path: "./gistdex.db",
+      dimension: 768,
+    },
   },
-  "embedding": {
-    "model": "gemini-embedding-001",
-    "dimension": 768
+  embedding: {
+    model: "gemini-embedding-001",
+    dimension: 768,
   },
-  "indexing": {
-    "chunkSize": 1000,
-    "chunkOverlap": 200,
-    "batchSize": 100
+  indexing: {
+    chunkSize: 1000,
+    chunkOverlap: 200,
+    batchSize: 100,
+    preserveBoundaries: false,
   },
-  "search": {
-    "defaultK": 5,
-    "enableRerank": true,
-    "hybridKeywordWeight": 0.3
-  }
-}
+  search: {
+    defaultK: 5,
+    enableRerank: true,
+    rerankBoostFactor: 1.5,
+    hybridKeywordWeight: 0.3,
+  },
+});
 ```
 
 ## Exit Codes
@@ -340,8 +349,14 @@ Example configuration:
 ### Performance Optimization
 
 ```bash
-# Index large datasets with optimal settings
-npx @ushironoko/gistdex index --files "**/*.md" --chunk-size 500 --chunk-overlap 50
+# Let Gistdex auto-optimize chunk settings based on file type
+npx @ushironoko/gistdex index --files "**/*.md"
+
+# Enable semantic boundary preservation for code
+npx @ushironoko/gistdex index --files "**/*.js" --preserve-boundaries
+
+# Manual optimization for specific needs
+npx @ushironoko/gistdex index --files "**/*.txt" --chunk-size 2000 --chunk-overlap 400
 
 # Fast search without re-ranking
 npx @ushironoko/gistdex query --no-rerank "quick search"
