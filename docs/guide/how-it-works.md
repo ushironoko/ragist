@@ -48,7 +48,7 @@ Gistdex starts by fetching content from various sources:
 
 ```typescript
 // Simplified flow - actual implementation in src/core/indexer.ts
-const content = await readFile(filePath, 'utf-8');
+const content = await readFile(filePath, "utf-8");
 // or for Gists/GitHub
 const response = await fetch(url);
 const content = await response.text();
@@ -56,17 +56,24 @@ const content = await response.text();
 
 ### 2. Content Chunking
 
-Large documents are split into smaller, overlapping chunks using `chunkText()`:
+Large documents are split into smaller, overlapping chunks for efficient semantic search. Gistdex provides multiple chunking strategies optimized for different content types.
+
+#### Chunking Approaches
+
+##### Standard Text Chunking
+
+For regular text and documentation, `chunkText()` splits by character count:
 
 ```typescript
 // From src/core/chunking.ts
 const chunks = chunkText(text, {
-  size: 1000,    // characters per chunk
-  overlap: 200   // overlapping characters
+  size: 1000, // characters per chunk
+  overlap: 200, // overlapping characters
 });
 ```
 
 Example:
+
 ```
 Original: "The quick brown fox jumps over the lazy dog"
          ↓
@@ -76,10 +83,115 @@ Chunks (size=20, overlap=5):
   [3] " the lazy dog"
 ```
 
-**Why chunking?**
-- **Precision**: Smaller chunks = more accurate search results
-- **Context**: Overlaps preserve meaning across boundaries
-- **Efficiency**: Optimizes embedding generation and storage
+##### Semantic Boundary Preservation (`--preserve-boundaries`)
+
+When enabled, Gistdex uses specialized parsers to maintain semantic boundaries:
+
+**For Markdown Files (.md, .mdx, .markdown)**
+
+Uses a custom Markdown parser that:
+
+- Identifies headings, code blocks, lists, and paragraphs
+- Keeps related content together (e.g., heading with its content)
+- Preserves complete sections when possible
+- Splits at line boundaries if section exceeds maxChunkSize
+
+**For Code Files (Tree-sitter supported)**
+
+Uses Tree-sitter CST (Concrete Syntax Tree) parsing that:
+
+- Parses code into a syntax tree
+- Identifies functions, classes, and other constructs
+- Splits at semantic boundaries (function/class boundaries)
+- If a function/class exceeds maxChunkSize, splits at line boundaries with overlap
+
+Supported languages:
+
+- JavaScript/TypeScript (.js, .jsx, .ts, .tsx, .mjs, .mts, .cjs)
+- Python (.py)
+- Go (.go)
+- Rust (.rs)
+- Ruby (.rb)
+- C/C++ (.c, .cpp, .h)
+- Java (.java)
+- HTML (.html)
+- CSS/SCSS/Sass (.css, .scss, .sass)
+- Bash/Shell (.sh, .bash)
+
+#### Configuration Options
+
+##### Automatic Optimization (Default)
+
+When chunk size and overlap are not specified, Gistdex automatically optimizes based on file type:
+
+| File Type     | Auto Chunk Size | Auto Overlap | Extensions                    |
+| ------------- | --------------- | ------------ | ----------------------------- |
+| Code          | 650             | 130          | .js, .ts, .py, .go, .rs, etc. |
+| Documentation | 1250            | 250          | .md, .mdx, .rst               |
+| Articles      | 1750            | 350          | .txt, .html                   |
+| Default       | 1000            | 200          | All other files               |
+
+```bash
+# Let Gistdex auto-optimize (recommended)
+npx @ushironoko/gistdex index --file code.js
+# Automatically uses: chunk-size 650, overlap 130
+```
+
+##### Manual Configuration
+
+Override automatic optimization when needed:
+
+```bash
+# Force specific settings
+npx @ushironoko/gistdex index --chunk-size 2000 --chunk-overlap 400 --file doc.md
+
+# Enable semantic boundaries
+npx @ushironoko/gistdex index --preserve-boundaries --file code.py
+# Or use shorthand
+npx @ushironoko/gistdex index -p --file code.js
+```
+
+#### Examples
+
+**Markdown with preserve-boundaries:**
+
+````markdown
+# Configuration Guide ← Heading section starts
+
+This section explains... ← Kept with heading
+
+## Database Setup ← New section boundary
+
+Configure your database... ← New section content
+
+```sql ← Code block treated as section
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY
+);
+```
+````
+
+**Code with preserve-boundaries:**
+
+```javascript
+// Standard chunking (might split mid-function):
+Chunk 1: "function processUser(data) {\n  validateDa"
+Chunk 2: "ta(data);\n  return saveUser(data);\n}\n\nfunc"
+
+// With preserve-boundaries (keeps functions intact):
+Chunk 1: "function processUser(data) {\n  validateData(data);\n  return saveUser(data);\n}"
+Chunk 2: "function validateData(data) {\n  if (!data.name) throw new Error();\n}"
+```
+
+#### Trade-offs
+
+**Using `--preserve-boundaries`:**
+
+- ✅ More accurate search results (complete semantic units)
+- ✅ Better context preservation
+- ⚠️ 3-5x more chunks than standard chunking
+- ⚠️ More embeddings to generate and store
+- ⚠️ Higher processing time
 
 ### 3. Embedding Generation
 
@@ -92,11 +204,13 @@ const embeddings = await generateEmbeddingsBatch(chunks);
 ```
 
 Example:
+
 ```
 "The quick brown fox" → [0.124, -0.892, 0.567, ...] (768 dimensions)
 ```
 
 These vectors capture semantic meaning:
+
 - Similar concepts have similar vectors
 - Distance between vectors represents semantic similarity
 
@@ -120,6 +234,7 @@ CREATE INDEX vec_idx ON chunks(embedding);
 ### 5. Metadata Preservation
 
 Each chunk maintains metadata:
+
 - `sourceId`: Links chunks from the same document
 - `chunkIndex`: Preserves order
 - `type`: Source type (gist, file, etc.)
@@ -178,50 +293,6 @@ For full content display, the original content is retrieved:
 const fullContent = await getOriginalContent(result, service);
 ```
 
-## Chunking Configuration
-
-### Manual Chunk Size Settings
-
-You can configure chunk size and overlap based on your content:
-
-```bash
-# Default settings
-npx @ushironoko/gistdex index --chunk-size 1000 --chunk-overlap 200
-
-# Smaller chunks for code
-npx @ushironoko/gistdex index --chunk-size 500 --chunk-overlap 100
-
-# Larger chunks for documents
-npx @ushironoko/gistdex index --chunk-size 2000 --chunk-overlap 400
-```
-
-### Recommended Settings by Content Type
-
-| Content Type | Suggested Size | Suggested Overlap |
-|-------------|---------------|-------------------|
-| Code        | 500-800       | 100-150          |
-| Documentation| 1000-1500    | 200-300          |
-| Articles    | 1500-2000    | 300-400          |
-| Mixed (default) | 1000     | 200              |
-
-**Note**: These are suggestions. Gistdex uses fixed chunk sizes that you specify - it doesn't automatically detect content type.
-
-### Overlap Importance
-
-Overlaps prevent loss of meaning at boundaries:
-
-```
-Without overlap:
-  Chunk 1: "...implement the"
-  Chunk 2: "function carefully..."
-  Lost: "the function" relationship
-
-With overlap:
-  Chunk 1: "...implement the function"
-  Chunk 2: "the function carefully..."
-  Preserved: Complete context
-```
-
 ## Hybrid Search
 
 When `--hybrid` is enabled, Gistdex combines semantic and keyword matching:
@@ -229,8 +300,8 @@ When `--hybrid` is enabled, Gistdex combines semantic and keyword matching:
 ```typescript
 // From src/core/search.ts
 const results = await hybridSearch(query, {
-  keywordWeight: 0.3,  // 30% weight for keyword matching
-  k: 10,               // Number of results
+  keywordWeight: 0.3, // 30% weight for keyword matching
+  k: 10, // Number of results
 });
 ```
 
@@ -259,26 +330,29 @@ const results = await hybridSearch(query, {
 ## Performance Features
 
 ### 1. Batch Processing
+
 Embeddings are generated in batches to reduce API calls:
 
 ```typescript
 // Batch processing (actual function from src/core/embedding.ts)
 const embeddings = await generateEmbeddingsBatch(texts, {
-  batchSize: 100,  // Process 100 texts at a time
+  batchSize: 100, // Process 100 texts at a time
   onProgress: (processed, total) => {
     console.log(`Processed ${processed}/${total}`);
-  }
+  },
 });
 ```
 
 This reduces API calls and improves throughput when indexing large amounts of content.
 
 ### 2. Database Optimizations
+
 - **Indexed columns**: Fast lookups on source_id, created_at, and vector fields
 - **Vector indexing**: sqlite-vec provides optimized vector similarity search
 - **Foreign key relationships**: Efficient source-to-chunk mapping
 
 ### 3. Efficient Storage
+
 - **Embeddings stored once**: Vectors are persisted in SQLite database
 - **Configuration caching**: Settings loaded once per session
 - **Source deduplication**: Original content stored once, even with multiple chunks
@@ -329,21 +403,25 @@ Let's trace a complete index and search operation:
 ## Security Features
 
 ### API Key Protection
+
 - Stored in `.env` file only
 - Masked during input (shows `*` characters)
 - Never logged in console output
 
 ### Path Security
+
 - Path traversal protection (`..` patterns blocked)
 - Restricted to current working directory
 - System directories blocked (/etc, /root, etc.)
 - Symbolic link validation
 
 ### URL Restrictions
+
 - Only GitHub and Gist URLs allowed for remote indexing
 - Other domains blocked for security
 
 ### Data Privacy
+
 - All processing is local
 - No telemetry or analytics
 - Database stored locally
@@ -358,15 +436,22 @@ You can create custom adapters for different storage backends:
 // Create your adapter (see templates/adapter-template.ts)
 export const createMyAdapter = async (config): Promise<VectorDBAdapter> => {
   return {
-    initialize: async () => { /* ... */ },
-    insert: async (doc) => { /* ... */ },
-    search: async (embedding, options) => { /* ... */ },
+    initialize: async () => {
+      /* ... */
+    },
+    insert: async (doc) => {
+      /* ... */
+    },
+    search: async (embedding, options) => {
+      /* ... */
+    },
     // ... other required methods
   };
 };
 ```
 
 Register in configuration:
+
 ```json
 {
   "customAdapters": {

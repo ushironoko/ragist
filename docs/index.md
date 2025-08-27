@@ -26,13 +26,13 @@ features:
     details: Uses SQLite with sqlite-vec extension for local vector storage
   - icon: 🤖
     title: MCP Support
-    details: Integrate with Claude Code through Model Context Protocol
+    details: Integrate with Claude through Model Context Protocol
   - icon: 🔧
-    title: Extensible Design
-    details: Support for custom vector database adapters through plugin system
+    title: Extensible
+    details: Add custom vector database adapters
   - icon: 💡
-    title: Configurable Chunking
-    details: Adjust chunk size and overlap based on your content type
+    title: Auto Chunk Optimization
+    details: Automatic chunk sizing based on file type
 ---
 
 ## Quick Start
@@ -80,10 +80,9 @@ npx @ushironoko/gistdex query "how to implement authentication"
 
 Gistdex uses semantic search to find content based on meaning rather than exact keywords. It indexes your code snippets, documentation, and text files for natural language queries.
 
-### Features
+### Key Points
 
 - **Local Storage**: Data stays on your machine using SQLite
-- **MCP Server**: Works with Claude Code through Model Context Protocol
-- **CLI Interface**: Command-line tool with standard Unix conventions
-- **Multiple Backends**: SQLite by default, extensible to other databases
+- **MCP Server**: Works with Claude through Model Context Protocol
+- **CLI Tool**: Command-line interface
 - **Open Source**: MIT licensed

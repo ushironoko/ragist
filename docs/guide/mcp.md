@@ -1,6 +1,6 @@
 # MCP Integration
 
-Gistdex implements a Model Context Protocol (MCP) server for integration with Claude Code and Claude Desktop (Windows), allowing Claude to index and search content during conversations.
+Gistdex implements a Model Context Protocol (MCP) server for integration with Claude, allowing it to index and search content during conversations.
 
 ## What is MCP?
 
