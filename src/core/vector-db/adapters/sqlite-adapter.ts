@@ -1,14 +1,21 @@
-import { DatabaseSync, type SQLInputValue } from "node:sqlite";
+import { DatabaseSync } from "node:sqlite";
 import * as sqliteVec from "sqlite-vec";
 import { VECTOR_DB_CONSTANTS } from "../constants.js";
-import {
-  DatabaseNotInitializedError,
-  DocumentNotFoundError,
-  VectorDBError,
-} from "../errors.js";
+import { DocumentNotFoundError, VectorDBError } from "../errors.js";
 import { buildSQLWhereClause } from "../utils/filter.js";
 import { generateDocumentId, validateDimension } from "../utils/validation.js";
 import { createBatchOperations } from "./common-operations.js";
+import {
+  type SQLiteRowWithSource,
+  ensureInitialized as ensureInit,
+  rowToSearchResult,
+  rowToVectorDocument,
+} from "./sqlite-common.js";
+import {
+  type SQLInputValue,
+  SQLiteQueries,
+  createSQLiteSchema,
+} from "./sqlite-schema.js";
 import type {
   ListOptions,
   SearchOptions,
@@ -35,21 +42,7 @@ export const createSQLiteAdapter = (
 
   // Helper function to ensure database is initialized
   const ensureInitialized = (): void => {
-    if (!db || !initialized) {
-      throw new DatabaseNotInitializedError();
-    }
-  };
-
-  // Helper function to parse metadata JSON
-  const parseMetadata = (
-    metadataJson: string | null,
-  ): Record<string, unknown> | undefined => {
-    if (!metadataJson) return undefined;
-    try {
-      return JSON.parse(metadataJson);
-    } catch {
-      return undefined;
-    }
+    ensureInit(db, initialized);
   };
 
   // Initialize the database
@@ -95,49 +88,7 @@ Original error: ${
       }
 
       // Create tables with vector support
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS sources (
-          source_id TEXT PRIMARY KEY,
-          original_content TEXT NOT NULL,
-          title TEXT,
-          url TEXT,
-          source_type TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS documents (
-          id TEXT PRIMARY KEY,
-          source_id TEXT,
-          content TEXT NOT NULL,
-          metadata TEXT,
-          vec_rowid INTEGER,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (source_id) REFERENCES sources(source_id) ON DELETE CASCADE
-        );
-
-        CREATE VIRTUAL TABLE IF NOT EXISTS vec_documents 
-        USING vec0(embedding float[${dimension}]);
-
-        CREATE INDEX IF NOT EXISTS idx_sources_source_type 
-        ON sources(source_type);
-
-        CREATE INDEX IF NOT EXISTS idx_documents_source_id 
-        ON documents(source_id);
-
-        CREATE INDEX IF NOT EXISTS idx_documents_created_at 
-        ON documents(created_at);
-        
-        CREATE INDEX IF NOT EXISTS idx_documents_vec_rowid 
-        ON documents(vec_rowid);
-
-        CREATE TRIGGER IF NOT EXISTS update_timestamp 
-        AFTER UPDATE ON documents
-        BEGIN
-          UPDATE documents SET updated_at = CURRENT_TIMESTAMP 
-          WHERE id = NEW.id;
-        END;
-      `);
+      db.exec(createSQLiteSchema(Number(dimension)));
 
       initialized = true;
     } catch (error) {
@@ -162,7 +113,7 @@ Original error: ${
     if (sourceId) {
       // Check if source already exists
       const existingSource = db
-        ?.prepare("SELECT source_id FROM sources WHERE source_id = ?")
+        ?.prepare(SQLiteQueries.SELECT_SOURCE)
         .get(sourceId) as { source_id: string } | undefined;
 
       if (!existingSource) {
@@ -176,9 +127,13 @@ Original error: ${
             const url = document.metadata?.url || null;
             const sourceType = document.metadata?.sourceType || null;
 
-            db?.prepare(
-              "INSERT INTO sources (source_id, original_content, title, url, source_type) VALUES (?, ?, ?, ?, ?)",
-            ).run(sourceId, originalContent, title, url, sourceType);
+            db?.prepare(SQLiteQueries.INSERT_SOURCE).run(
+              sourceId,
+              originalContent,
+              title,
+              url,
+              sourceType,
+            );
           }
         }
       }
@@ -189,23 +144,20 @@ Original error: ${
     const embeddingFloat32 = new Float32Array(document.embedding);
 
     // Insert vector into vec_documents table
-    const vecInsertStmt = db?.prepare(
-      "INSERT INTO vec_documents(embedding) VALUES (?)",
-    );
+    const vecInsertStmt = db?.prepare(SQLiteQueries.INSERT_VECTOR);
     const vecResult = vecInsertStmt?.run(embeddingFloat32) as {
       lastInsertRowid: number | bigint;
     };
     const vecRowId = vecResult?.lastInsertRowid;
 
     // Prepare metadata without originalContent (as it's stored in sources table)
-    const metadata = { ...document.metadata };
-    delete metadata.originalContent;
+    const metadata = document.metadata ? { ...document.metadata } : {};
+    if ("originalContent" in metadata) {
+      delete metadata.originalContent;
+    }
 
     // Insert document with foreign key reference to vector
-    const docInsertStmt = db?.prepare(
-      `INSERT INTO documents (id, source_id, content, metadata, vec_rowid) 
-       VALUES (?, ?, ?, ?, ?)`,
-    );
+    const docInsertStmt = db?.prepare(SQLiteQueries.INSERT_DOCUMENT);
     docInsertStmt?.run(
       id,
       sourceIdToUse,
@@ -221,62 +173,13 @@ Original error: ${
   const get = async (id: string): Promise<VectorDocument | null> => {
     ensureInitialized();
 
-    const query = `
-      SELECT d.id, d.source_id, d.content, d.metadata, v.embedding, 
-             s.original_content, s.title, s.url, s.source_type
-      FROM documents d
-      JOIN vec_documents v ON d.vec_rowid = v.rowid
-      LEFT JOIN sources s ON d.source_id = s.source_id
-      WHERE d.id = ?
-    `;
-
-    const result = db?.prepare(query).get(id) as
-      | {
-          id: string;
-          source_id: string | null;
-          content: string;
-          metadata: string | null;
-          embedding: Buffer;
-          original_content: string | null;
-          title: string | null;
-          url: string | null;
-          source_type: string | null;
-        }
-      | undefined;
+    const result = db
+      ?.prepare(SQLiteQueries.SELECT_DOCUMENT_WITH_SOURCE)
+      .get(id) as SQLiteRowWithSource | undefined;
 
     if (!result) return null;
 
-    let metadata = parseMetadata(result.metadata);
-
-    // Add source-related metadata if available
-    if (result.source_id) {
-      metadata = {
-        ...metadata,
-        sourceId: result.source_id,
-      };
-
-      // Add originalContent only for first chunk (chunkIndex = 0)
-      if (metadata?.chunkIndex === 0 && result.original_content) {
-        metadata.originalContent = result.original_content;
-      }
-
-      if (result.title) metadata.title = result.title;
-      if (result.url) metadata.url = result.url;
-      if (result.source_type) metadata.sourceType = result.source_type;
-    }
-
-    return {
-      id: result.id,
-      content: result.content,
-      embedding: Array.from(
-        new Float32Array(
-          result.embedding.buffer,
-          result.embedding.byteOffset,
-          result.embedding.length / 4,
-        ),
-      ),
-      metadata,
-    };
+    return rowToVectorDocument(result);
   };
 
   // Update a document
@@ -296,7 +199,7 @@ Original error: ${
 
     // Get the vec_rowid for the document
     const existingDoc = db
-      ?.prepare("SELECT vec_rowid FROM documents WHERE id = ?")
+      ?.prepare(SQLiteQueries.SELECT_DOCUMENT_VEC_ROWID)
       .get(id) as { vec_rowid: number } | undefined;
 
     if (!existingDoc) {
@@ -306,15 +209,13 @@ Original error: ${
     // Update vector if provided
     if (updates.embedding) {
       const embeddingFloat32 = new Float32Array(updates.embedding);
-      const vecUpdateStmt = db?.prepare(
-        "UPDATE vec_documents SET embedding = ? WHERE rowid = ?",
-      );
+      const vecUpdateStmt = db?.prepare(SQLiteQueries.UPDATE_VECTOR);
       vecUpdateStmt?.run(embeddingFloat32, existingDoc.vec_rowid);
     }
 
     // Prepare metadata without originalContent
     const metadata = updates.metadata ? { ...updates.metadata } : undefined;
-    if (metadata) {
+    if (metadata && "originalContent" in metadata) {
       delete metadata.originalContent;
     }
 
@@ -347,7 +248,7 @@ Original error: ${
 
     // Get the vec_rowid and source_id before deletion
     const doc = db
-      ?.prepare("SELECT vec_rowid, source_id FROM documents WHERE id = ?")
+      ?.prepare(SQLiteQueries.DELETE_DOCUMENT_VEC_ROWID_SOURCE)
       .get(id) as { vec_rowid: number; source_id: string | null } | undefined;
 
     if (!doc) {
@@ -355,26 +256,22 @@ Original error: ${
     }
 
     // Delete from documents table
-    const deleteDocStmt = db?.prepare("DELETE FROM documents WHERE id = ?");
+    const deleteDocStmt = db?.prepare(SQLiteQueries.DELETE_DOCUMENT);
     deleteDocStmt?.run(id);
 
     // Delete from vec_documents table
-    const deleteVecStmt = db?.prepare(
-      "DELETE FROM vec_documents WHERE rowid = ?",
-    );
+    const deleteVecStmt = db?.prepare(SQLiteQueries.DELETE_VECTOR);
     deleteVecStmt?.run(doc.vec_rowid);
 
     // Check if this was the last document for the source
     if (doc.source_id) {
       const remainingDocs = db
-        ?.prepare("SELECT COUNT(*) as count FROM documents WHERE source_id = ?")
+        ?.prepare(SQLiteQueries.COUNT_DOCUMENTS_BY_SOURCE)
         .get(doc.source_id) as { count: number };
 
       if (remainingDocs.count === 0) {
         // Delete the source if no more documents reference it
-        const deleteSourceStmt = db?.prepare(
-          "DELETE FROM sources WHERE source_id = ?",
-        );
+        const deleteSourceStmt = db?.prepare(SQLiteQueries.DELETE_SOURCE);
         deleteSourceStmt?.run(doc.source_id);
       }
     }
@@ -393,22 +290,7 @@ Original error: ${
     const { whereClause, params } = buildSQLWhereClause(options.filter);
 
     // Build the base query for vector search
-    const baseQuery = `
-      SELECT 
-        d.id,
-        d.source_id,
-        d.content,
-        d.metadata,
-        v.distance,
-        v.embedding,
-        s.original_content,
-        s.title,
-        s.url,
-        s.source_type
-      FROM vec_documents v
-      JOIN documents d ON d.vec_rowid = v.rowid
-      LEFT JOIN sources s ON d.source_id = s.source_id
-    `;
+    const baseQuery = SQLiteQueries.VECTOR_SEARCH_BASE;
 
     // Build WHERE clause with vector search condition
     const vectorCondition = `v.rowid IN (
@@ -425,55 +307,13 @@ Original error: ${
     // Execute the query
     const stmt = db?.prepare(query);
     const embeddingFloat32 = new Float32Array(embedding);
-    const results = stmt?.all(...params, embeddingFloat32, k, k) as Array<{
-      id: string;
-      source_id: string | null;
-      content: string;
-      metadata: string | null;
-      distance: number;
-      embedding: Buffer;
-      original_content: string | null;
-      title: string | null;
-      url: string | null;
-      source_type: string | null;
-    }>;
+    const results = stmt?.all(...params, embeddingFloat32, k, k) as
+      | SQLiteRowWithSource[]
+      | undefined;
 
     if (!results) return [];
 
-    return results.map((row) => {
-      let metadata = parseMetadata(row.metadata);
-
-      // Add source-related metadata if available
-      if (row.source_id) {
-        metadata = {
-          ...metadata,
-          sourceId: row.source_id,
-        };
-
-        // Add originalContent only for first chunk (chunkIndex = 0)
-        if (metadata?.chunkIndex === 0 && row.original_content) {
-          metadata.originalContent = row.original_content;
-        }
-
-        if (row.title) metadata.title = row.title;
-        if (row.url) metadata.url = row.url;
-        if (row.source_type) metadata.sourceType = row.source_type;
-      }
-
-      return {
-        id: row.id,
-        content: row.content,
-        embedding: Array.from(
-          new Float32Array(
-            row.embedding.buffer,
-            row.embedding.byteOffset,
-            row.embedding.length / 4,
-          ),
-        ),
-        metadata,
-        score: 1 - row.distance, // Convert distance to similarity score
-      };
-    });
+    return results.map(rowToSearchResult);
   };
 
   // List documents
@@ -484,13 +324,7 @@ Original error: ${
     const offset = options.offset ?? 0;
     const { whereClause, params } = buildSQLWhereClause(options.filter);
 
-    const baseQuery = `
-      SELECT d.id, d.source_id, d.content, d.metadata, v.embedding,
-             s.original_content, s.title, s.url, s.source_type
-      FROM documents d
-      JOIN vec_documents v ON d.vec_rowid = v.rowid
-      LEFT JOIN sources s ON d.source_id = s.source_id
-    `;
+    const baseQuery = SQLiteQueries.LIST_DOCUMENTS_BASE;
 
     const query = whereClause
       ? `${baseQuery} WHERE ${whereClause} ORDER BY d.created_at DESC LIMIT ? OFFSET ?`
@@ -498,53 +332,11 @@ Original error: ${
     params.push(limit, offset);
 
     const stmt = db?.prepare(query);
-    const results = stmt?.all(...params) as Array<{
-      id: string;
-      source_id: string | null;
-      content: string;
-      metadata: string | null;
-      embedding: Buffer;
-      original_content: string | null;
-      title: string | null;
-      url: string | null;
-      source_type: string | null;
-    }>;
+    const results = stmt?.all(...params) as SQLiteRowWithSource[] | undefined;
 
     if (!results) return [];
 
-    return results.map((row) => {
-      let metadata = parseMetadata(row.metadata);
-
-      // Add source-related metadata if available
-      if (row.source_id) {
-        metadata = {
-          ...metadata,
-          sourceId: row.source_id,
-        };
-
-        // Add originalContent only for first chunk (chunkIndex = 0)
-        if (metadata?.chunkIndex === 0 && row.original_content) {
-          metadata.originalContent = row.original_content;
-        }
-
-        if (row.title) metadata.title = row.title;
-        if (row.url) metadata.url = row.url;
-        if (row.source_type) metadata.sourceType = row.source_type;
-      }
-
-      return {
-        id: row.id,
-        content: row.content,
-        embedding: Array.from(
-          new Float32Array(
-            row.embedding.buffer,
-            row.embedding.byteOffset,
-            row.embedding.length / 4,
-          ),
-        ),
-        metadata,
-      };
-    });
+    return results.map(rowToVectorDocument);
   };
 
   // Count documents
