@@ -21,18 +21,18 @@ features:
   - icon: 📚
     title: Multi-Source Indexing
     details: Index content from GitHub Gists, repositories, local files, or plain text
-  - icon: 🚀
-    title: Local Storage
-    details: Uses SQLite with sqlite-vec extension for local vector storage
-  - icon: 🤖
-    title: MCP Support
-    details: Integrate with Claude through Model Context Protocol
-  - icon: 🔧
-    title: Extensible
-    details: Add custom vector database adapters
   - icon: 💡
     title: Auto Chunk Optimization
-    details: Automatic chunk sizing based on file type
+    details: Automatic chunk sizing based on file type powered by tree-sitter
+  - icon: 🚀
+    title: Node.js and Bun running
+    details: npm, pnpm, yarn, or bun. Available everywhere
+  - icon: 🤖
+    title: MCP Ready
+    details: Integrate with Claude through Model Context Protocol
+  - icon: 🔧
+    title: Extensible Database
+    details: Add custom vector database adapters
 ---
 
 ## Quick Start
@@ -82,7 +82,7 @@ Gistdex uses semantic search to find content based on meaning rather than exact 
 
 ### Key Points
 
+- **Preserve Boundaries with tree-sitter**: Automatic chunk optimization using tree-sitter CST
 - **Local Storage**: Data stays on your machine using SQLite
 - **MCP Server**: Works with Claude through Model Context Protocol
 - **CLI Tool**: Command-line interface
-- **Open Source**: MIT licensed
