@@ -7,12 +7,7 @@ Semantic search CLI tool for indexing and searching content using vector databas
 
 ## Documentation
 
-Full documentation: [https://ushironoko.github.io/gistdex/](https://ushironoko.github.io/gistdex/)
-
-- [Getting Started Guide](https://ushironoko.github.io/gistdex/guide/getting-started)
-- [Configuration](https://ushironoko.github.io/gistdex/guide/configuration)
-- [CLI Reference](https://ushironoko.github.io/gistdex/reference/cli)
-- [MCP Integration](https://ushironoko.github.io/gistdex/guide/mcp)
+Full documentation: [https://gistdex.vercel.app/](https://gistdex.vercel.app/)
 
 ## Quick Start
 
@@ -89,7 +84,7 @@ MIT © [ushironoko](https://github.com/ushironoko)
 
 ## Links
 
-- [Documentation](https://ushironoko.github.io/gistdex/)
+- [Documentation](https://gistdex.vercel.app/)
 - [npm Package](https://www.npmjs.com/package/@ushironoko/gistdex)
 - [GitHub Repository](https://github.com/ushironoko/gistdex)
 - [Issue Tracker](https://github.com/ushironoko/gistdex/issues)
