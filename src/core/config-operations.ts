@@ -2,7 +2,6 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { parseInteger } from "./utils/config-parser.js";
 import type {
   AdapterFactory,
   VectorDBConfig,
@@ -62,151 +61,6 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
   };
 
   /**
-   * Load configuration from environment variables
-   */
-  const loadFromEnv = (): GistdexConfig => {
-    const config: GistdexConfig = {};
-
-    // Vector DB configuration
-    if (process.env.VECTOR_DB_PROVIDER) {
-      config.vectorDB = {
-        provider: process.env.VECTOR_DB_PROVIDER,
-        options: {},
-      };
-
-      if (process.env.VECTOR_DB_CONFIG) {
-        try {
-          config.vectorDB.options = JSON.parse(process.env.VECTOR_DB_CONFIG);
-        } catch {
-          // Invalid JSON, ignore
-        }
-      }
-
-      // Provider-specific env vars
-      if (
-        process.env.VECTOR_DB_PROVIDER === "sqlite" ||
-        process.env.VECTOR_DB_PROVIDER === "bun-sqlite" ||
-        process.env.VECTOR_DB_PROVIDER === "sqlite-bun"
-      ) {
-        // Support both VECTOR_DB_PATH and SQLITE_DB_PATH for backward compatibility
-        const dbPath = process.env.VECTOR_DB_PATH || process.env.SQLITE_DB_PATH;
-        if (dbPath) {
-          if (!config.vectorDB.options) {
-            config.vectorDB.options = {};
-          }
-          config.vectorDB.options.path = dbPath;
-        }
-
-        // Custom SQLite library path (for Bun on macOS)
-        if (process.env.CUSTOM_SQLITE_PATH) {
-          if (!config.vectorDB.options) {
-            config.vectorDB.options = {};
-          }
-          config.vectorDB.options.customSqlitePath =
-            process.env.CUSTOM_SQLITE_PATH;
-        }
-
-        // SQLite vector extension path
-        if (process.env.SQLITE_VEC_PATH) {
-          if (!config.vectorDB.options) {
-            config.vectorDB.options = {};
-          }
-          config.vectorDB.options.sqliteVecPath = process.env.SQLITE_VEC_PATH;
-        }
-      }
-    }
-
-    // Embedding configuration
-    if (process.env.EMBEDDING_MODEL || process.env.EMBEDDING_DIMENSION) {
-      config.embedding = {};
-      if (process.env.EMBEDDING_MODEL) {
-        config.embedding.model = process.env.EMBEDDING_MODEL;
-      }
-      const embeddingDim = parseInteger(process.env.EMBEDDING_DIMENSION);
-      if (embeddingDim) {
-        config.embedding.dimension = embeddingDim;
-      }
-    }
-
-    // Indexing configuration
-    if (
-      process.env.CHUNK_SIZE ||
-      process.env.CHUNK_OVERLAP ||
-      process.env.BATCH_SIZE ||
-      process.env.PRESERVE_BOUNDARIES
-    ) {
-      config.indexing = {};
-      const chunkSize = parseInteger(process.env.CHUNK_SIZE);
-      if (chunkSize) {
-        config.indexing.chunkSize = chunkSize;
-      }
-      const chunkOverlap = parseInteger(process.env.CHUNK_OVERLAP);
-      if (chunkOverlap) {
-        config.indexing.chunkOverlap = chunkOverlap;
-      }
-      const batchSize = parseInteger(process.env.BATCH_SIZE);
-      if (batchSize) {
-        config.indexing.batchSize = batchSize;
-      }
-      if (process.env.PRESERVE_BOUNDARIES === "true") {
-        config.indexing.preserveBoundaries = true;
-      }
-    }
-
-    return config;
-  };
-
-  /**
-   * Merge multiple configurations
-   */
-  const mergeConfigs = (...configs: GistdexConfig[]): GistdexConfig => {
-    const result: GistdexConfig = {};
-
-    for (const config of configs) {
-      if (config.vectorDB) {
-        result.vectorDB = {
-          ...result.vectorDB,
-          ...config.vectorDB,
-          options: {
-            ...result.vectorDB?.options,
-            ...config.vectorDB.options,
-          },
-        };
-      }
-
-      if (config.embedding) {
-        result.embedding = {
-          ...result.embedding,
-          ...config.embedding,
-        };
-      }
-
-      if (config.indexing) {
-        result.indexing = {
-          ...result.indexing,
-          ...config.indexing,
-        };
-      }
-
-      if (config.search) {
-        result.search = {
-          ...result.search,
-          ...config.search,
-        };
-      }
-
-      if (config.customAdapters) {
-        result.customAdapters = {
-          ...result.customAdapters,
-          ...config.customAdapters,
-        };
-      }
-    }
-
-    return result;
-  };
-
-  /**
    * Apply default configuration values
    */
   const applyDefaults = (config: GistdexConfig): GistdexConfig => {
@@ -261,25 +115,19 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
   };
 
   /**
-   * Load configuration from various sources
-   * Priority: CLI args > Environment variables > Config file > Defaults
+   * Load configuration from file
+   * Priority: Config file > Defaults
    */
   const load = async (path?: string): Promise<GistdexConfig> => {
     if (cachedConfig && !path) {
       return cachedConfig;
     }
 
-    // Try to load config file
+    // Load config file
     const configFile = await loadConfigFile(path);
 
-    // Merge with environment variables
-    const envConfig = loadFromEnv();
-
-    // Merge all configs (env overwrites file)
-    const merged = mergeConfigs(configFile, envConfig);
-
     // Apply defaults
-    const config = applyDefaults(merged);
+    const config = applyDefaults(configFile);
 
     cachedConfig = config;
     return config;
@@ -427,6 +275,5 @@ export const createConfigOperations = (configPath = "gistdex.config.json") => {
     loadCustomAdapters,
     getVectorDBConfig,
     reset,
-    mergeConfigs,
   };
 };
