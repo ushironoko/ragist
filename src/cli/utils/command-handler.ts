@@ -1,5 +1,5 @@
-import { createDatabaseOperations } from "../../core/database-operations.js";
-import type { DatabaseService } from "../../core/database-service.js";
+import { createDatabaseOperations } from "../../core/database/database-operations.js";
+import type { DatabaseService } from "../../core/database/database-service.js";
 import { getDBConfig } from "./config-helper.js";
 
 export interface CommandContext {

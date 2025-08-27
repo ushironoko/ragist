@@ -1,4 +1,4 @@
-import type { DatabaseService } from "../../core/database-service.js";
+import type { DatabaseService } from "../../core/database/database-service.js";
 import { type ListToolInput, listToolSchema } from "../schemas/validation.js";
 import {
   type BaseToolOptions,

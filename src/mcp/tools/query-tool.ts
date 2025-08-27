@@ -1,10 +1,10 @@
-import type { DatabaseService } from "../../core/database-service.js";
+import type { DatabaseService } from "../../core/database/database-service.js";
 import {
   getOriginalContent,
   hybridSearch,
   rerankResults,
   semanticSearch,
-} from "../../core/search.js";
+} from "../../core/search/search.js";
 import type { VectorSearchResult } from "../../core/vector-db/adapters/types.js";
 import { type QueryToolInput, queryToolSchema } from "../schemas/validation.js";
 import {

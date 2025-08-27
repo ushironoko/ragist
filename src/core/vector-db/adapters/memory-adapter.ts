@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { cosineSimilarity } from "../../embedding.js";
+import { cosineSimilarity } from "../../embedding/embedding.js";
 import { VECTOR_DB_CONSTANTS } from "../constants.js";
 import { DocumentNotFoundError } from "../errors.js";
 import { applyMetadataFilter } from "../utils/filter.js";

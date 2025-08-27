@@ -1,11 +1,11 @@
-import type { DatabaseService } from "../../core/database-service.js";
+import type { DatabaseService } from "../../core/database/database-service.js";
 import {
   indexFile,
   indexFiles,
   indexGist,
   indexGitHubRepo,
   indexText,
-} from "../../core/indexer.js";
+} from "../../core/indexer/indexer.js";
 import { type IndexToolInput, indexToolSchema } from "../schemas/validation.js";
 import {
   type BaseToolOptions,

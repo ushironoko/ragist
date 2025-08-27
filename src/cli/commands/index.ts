@@ -5,8 +5,11 @@ import {
   indexGist,
   indexGitHubRepo,
   indexText,
-} from "../../core/indexer.js";
-import { SecurityError, validateFilePath } from "../../core/security.js";
+} from "../../core/indexer/indexer.js";
+import {
+  SecurityError,
+  validateFilePath,
+} from "../../core/security/security.js";
 import { parseCliInteger } from "../utils/arg-parser.js";
 import { displayErrors } from "../utils/cli-helpers.js";
 import { createWriteCommandHandler } from "../utils/command-handler.js";

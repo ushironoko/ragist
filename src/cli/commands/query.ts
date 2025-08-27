@@ -3,7 +3,7 @@ import {
   getOriginalContent,
   hybridSearch,
   semanticSearch,
-} from "../../core/search.js";
+} from "../../core/search/search.js";
 import { parseCliInteger } from "../utils/arg-parser.js";
 import { createReadOnlyCommandHandler } from "../utils/command-handler.js";
 import { handleCliError } from "../utils/error-handler.js";

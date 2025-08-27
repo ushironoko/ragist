@@ -1,6 +1,6 @@
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import type { ZodType, ZodTypeDef } from "zod";
-import type { DatabaseService } from "../../core/database-service.js";
+import type { DatabaseService } from "../../core/database/database-service.js";
 
 /**
  * Base options for all tool handlers
