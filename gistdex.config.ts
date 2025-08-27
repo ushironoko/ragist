@@ -2,7 +2,7 @@ import { defineGistdexConfig } from "@ushironoko/gistdex";
 
 export default defineGistdexConfig({
   vectorDB: {
-    provider: "sqlite",
+    provider: "bun-sqlite",
     options: {
       path: "./gistdex.db",
       dimension: 768,
