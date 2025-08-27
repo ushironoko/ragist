@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1] - 2025-08-27
+
+- Merge pull request #73 from ushironoko:refactor-1
+- fix: update import paths for database and search modules
+- refactor
+- fix format
+
+
 ## [1.0.0] - 2025-08-27
 
 - Merge pull request #72 from ushironoko:refactor-sqlite-schemas
