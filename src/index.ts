@@ -28,6 +28,7 @@ export {
   createConfigOperations,
   type GistdexConfig,
 } from "./core/config-operations.js";
+export { defineGistdexConfig } from "./core/config-helpers.js";
 
 // Types for vector database
 export type {

@@ -1,9 +1,0 @@
-{
-  "vectorDB": {
-    "provider": "sqlite",
-    "options": {
-      "path": "./gistdex.db",
-      "dimension": 768
-    }
-  }
-}

@@ -313,7 +313,50 @@ GOOGLE_GENERATIVE_AI_API_KEY=your-api-key
 # All other configurations should be set via config file or CLI arguments
 ```
 
-#### Configuration File (gistdex.config.json)
+#### Configuration Files
+
+Gistdex supports both TypeScript and JSON configuration files, loaded in the following priority:
+1. `gistdex.config.ts` (TypeScript - Recommended)
+2. `gistdex.config.js` (JavaScript)
+3. `gistdex.config.json` (JSON)
+4. `.gistdexrc.json` (JSON)
+5. `~/.gistdex/config.json` (User config)
+
+##### TypeScript Configuration (gistdex.config.ts)
+
+```typescript
+import { defineGistdexConfig } from "@ushironoko/gistdex";
+
+export default defineGistdexConfig({
+  vectorDB: {
+    provider: "sqlite",
+    options: {
+      path: "./gistdex.db",
+      dimension: 768,
+    },
+  },
+  customAdapters: {
+    myAdapter: "./adapters/my-adapter.js",
+  },
+  embedding: {
+    model: "gemini-embedding-001",
+    dimension: 768,
+  },
+  indexing: {
+    chunkSize: 1000,
+    chunkOverlap: 200,
+    batchSize: 100,
+  },
+  search: {
+    defaultK: 10,
+    enableRerank: true,
+    rerankBoostFactor: 1.5,
+    hybridKeywordWeight: 0.3,
+  },
+});
+```
+
+##### JSON Configuration (gistdex.config.json)
 
 ```json
 {

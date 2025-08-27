@@ -51,13 +51,13 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
     console.log(chalk.bold.cyan("\n🎨 Welcome to Gistdex Setup!\n"));
     console.log(
       chalk.gray(
-        "This utility will help you create a .env file and gistdex.config.json\n",
+        "This utility will help you create a .env file and gistdex.config.ts\n",
       ),
     );
   }
 
   const envPath = join(cwd(), ".env");
-  const configPath = join(cwd(), "gistdex.config.json");
+  const configPath = join(cwd(), "gistdex.config.ts");
 
   // Check for existing files
   const envExists = existsSync(envPath);
@@ -66,7 +66,7 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
   if ((envExists || configExists) && !force) {
     const existingFiles = [];
     if (envExists) existingFiles.push(".env");
-    if (configExists) existingFiles.push("gistdex.config.json");
+    if (configExists) existingFiles.push("gistdex.config.ts");
 
     console.log(
       chalk.yellow(
@@ -194,10 +194,10 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
     await createEnvFile(envPath, config);
     envSpinner.succeed(chalk.green("Created .env file"));
 
-    // Create gistdex.config.json
-    const configSpinner = ora("Creating gistdex.config.json...").start();
+    // Create gistdex.config.ts
+    const configSpinner = ora("Creating gistdex.config.ts...").start();
     await createConfigFile(configPath, config);
-    configSpinner.succeed(chalk.green("Created gistdex.config.json"));
+    configSpinner.succeed(chalk.green("Created gistdex.config.ts"));
 
     // Success message
     console.log(chalk.bold.green("\n✅ Setup complete!\n"));
@@ -320,8 +320,15 @@ async function createConfigFile(
     configData.vectorDB.options.sqliteVecPath = config.sqliteVecPath;
   }
 
-  // If not using defaults, we could add more customization here
-  // For now, we'll use the defaults as specified
+  // Generate TypeScript config file
+  const tsConfigContent = `import { defineGistdexConfig } from "@ushironoko/gistdex";
 
-  await fs.writeFile(path, JSON.stringify(configData, null, 2), "utf-8");
+export default defineGistdexConfig(${JSON.stringify(
+    configData,
+    null,
+    2,
+  ).replace(/"([^"]+)":/g, "$1:")});
+`;
+
+  await fs.writeFile(path, tsConfigContent, "utf-8");
 }
