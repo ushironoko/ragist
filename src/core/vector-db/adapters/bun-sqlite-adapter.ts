@@ -1,23 +1,15 @@
-import { VECTOR_DB_CONSTANTS } from "../constants.js";
-import { DocumentNotFoundError, VectorDBError } from "../errors.js";
-import { buildSQLWhereClause } from "../utils/filter.js";
-import { generateDocumentId, validateDimension } from "../utils/validation.js";
-import { createBatchOperations } from "./common-operations.js";
+/**
+ * Bun SQLite adapter using Bun's built-in SQLite module with sqlite-vec extension
+ */
+
+import { VectorDBError } from "../errors.js";
 import {
-  type SQLiteRowWithSource,
-  ensureInitialized as ensureInit,
-  rowToSearchResult,
-  rowToVectorDocument,
-} from "./sqlite-common.js";
-import { SQLiteQueries, createSQLiteSchema } from "./sqlite-schema.js";
-import type {
-  ListOptions,
-  SearchOptions,
-  VectorDBAdapter,
-  VectorDBConfig,
-  VectorDocument,
-  VectorSearchResult,
-} from "./types.js";
+  type SQLiteOperations,
+  type SQLitePreparedStatement,
+  createSQLiteAdapterBase,
+} from "./base-sqlite-adapter.js";
+import { SQLiteQueries } from "./sqlite-schema.js";
+import type { VectorDBAdapter, VectorDBConfig } from "./types.js";
 
 // Type definitions for Bun's SQLite
 interface BunDatabase {
@@ -25,7 +17,6 @@ interface BunDatabase {
   exec(sql: string): void;
   close(): void;
   loadExtension(path: string): void;
-  transaction<T>(fn: () => T): () => T;
 }
 
 interface BunStatement {
@@ -33,6 +24,45 @@ interface BunStatement {
   get(...params: unknown[]): unknown;
   all(...params: unknown[]): unknown[];
 }
+
+/**
+ * Creates SQLiteOperations implementation for Bun SQLite
+ * Uses function composition and closure instead of class
+ */
+const createBunSQLiteOperations = (db: BunDatabase): SQLiteOperations => {
+  // Track open state in closure
+  let isOpenFlag = true;
+
+  return {
+    exec(sql: string): void {
+      db.exec(sql);
+    },
+
+    prepare(sql: string): SQLitePreparedStatement {
+      const stmt = db.prepare(sql);
+      return {
+        run(...params: unknown[]) {
+          return stmt.run(...params);
+        },
+        get(...params: unknown[]) {
+          return stmt.get(...params);
+        },
+        all(...params: unknown[]) {
+          return stmt.all(...params);
+        },
+      };
+    },
+
+    close(): void {
+      db.close();
+      isOpenFlag = false;
+    },
+
+    isOpen(): boolean {
+      return isOpenFlag;
+    },
+  };
+};
 
 /**
  * Creates a Bun-specific SQLite adapter for vector database operations.
@@ -44,23 +74,9 @@ interface BunStatement {
 export const createBunSQLiteAdapter = (
   config: VectorDBConfig,
 ): VectorDBAdapter => {
-  // Private state
-  let db: BunDatabase | null = null;
   const dbPath = config.options?.path ?? "./gistdex.db";
-  const dimension =
-    config.options?.dimension ?? VECTOR_DB_CONSTANTS.DEFAULT_DIMENSION;
-  let initialized = false;
-  const batchOps = createBatchOperations();
 
-  // Helper function to ensure database is initialized
-  const ensureInitialized = (): void => {
-    ensureInit(db, initialized);
-  };
-
-  // Initialize the database
-  const initialize = async (): Promise<void> => {
-    if (initialized) return;
-
+  const initializeConnection = async (): Promise<SQLiteOperations> => {
     try {
       // Check if running in Bun runtime
       if (typeof Bun === "undefined") {
@@ -159,7 +175,7 @@ ${possiblePaths.join("\n")}`,
       }
 
       // Create database connection with Bun's SQLite
-      db = new Database(dbPathStr, { create: true });
+      const db = new Database(dbPathStr, { create: true }) as BunDatabase;
 
       // Load sqlite-vec extension for vector operations
       try {
@@ -189,10 +205,7 @@ ${possiblePaths.join("\n")}`,
         db.loadExtension(sqliteVecPath);
       } catch (extError) {
         // Close the database connection before throwing error
-        if (db) {
-          db.close();
-          db = null;
-        }
+        db.close();
 
         // Provide clear error message with suggestions
         const errorMessage = `SQLite vector extension (sqlite-vec) could not be loaded in Bun. 
@@ -217,316 +230,24 @@ Original error: ${
         });
       }
 
-      // Create tables with vector support
-      db.exec(createSQLiteSchema(Number(dimension)));
-
-      initialized = true;
+      return createBunSQLiteOperations(db);
     } catch (error) {
-      console.error("Bun SQLite initialization error:", error);
-      throw new VectorDBError(
-        "Failed to initialize Bun SQLite vector database",
-        {
-          cause: error,
-        },
-      );
+      throw new VectorDBError("Failed to initialize Bun SQLite connection", {
+        cause: error,
+      });
     }
   };
 
-  // Insert a document
-  const insert = async (document: VectorDocument): Promise<string> => {
-    ensureInitialized();
+  // Bun SQLite requires vec_f32 wrapper for vector operations
+  const prepareEmbeddingForInsert = (embedding: Float32Array) => embedding;
 
-    const id = generateDocumentId(document.id);
-    validateDimension(document.embedding, Number(dimension));
-
-    // Check for sourceId and originalContent in metadata
-    const sourceId = document.metadata?.sourceId;
-    let sourceIdToUse: string | null = null;
-
-    if (sourceId) {
-      // Check if source already exists
-      const existingSource = db
-        ?.prepare(SQLiteQueries.SELECT_SOURCE)
-        .get(sourceId) as { source_id: string } | undefined;
-
-      if (!existingSource) {
-        // Extract source-related metadata for first chunk
-        const chunkIndex = document.metadata?.chunkIndex;
-        if (chunkIndex === 0 || chunkIndex === undefined) {
-          const originalContent = document.metadata?.originalContent;
-          if (originalContent) {
-            // Insert into sources table
-            const title = document.metadata?.title || null;
-            const url = document.metadata?.url || null;
-            const sourceType = document.metadata?.sourceType || null;
-
-            db?.prepare(SQLiteQueries.INSERT_SOURCE).run(
-              sourceId,
-              originalContent,
-              title,
-              url,
-              sourceType,
-            );
-          }
-        }
-      }
-      sourceIdToUse = String(sourceId);
-    }
-
-    // Convert embedding array to Float32Array for sqlite-vec
-    const embeddingFloat32 = new Float32Array(document.embedding);
-
-    // Insert vector into vec_documents table using vec_f32 function
-    const vecInsertStmt = db?.prepare(SQLiteQueries.INSERT_VECTOR_BUN);
-    const vecResult = vecInsertStmt?.run(embeddingFloat32) as {
-      lastInsertRowid: number | bigint;
-    };
-    const vecRowId = vecResult?.lastInsertRowid;
-
-    // Prepare metadata without originalContent (as it's stored in sources table)
-    const metadata = document.metadata ? { ...document.metadata } : {};
-    if ("originalContent" in metadata) {
-      delete metadata.originalContent;
-    }
-
-    // Insert document with foreign key reference to vector
-    const docInsertStmt = db?.prepare(SQLiteQueries.INSERT_DOCUMENT);
-    docInsertStmt?.run(
-      id,
-      sourceIdToUse,
-      document.content,
-      metadata ? JSON.stringify(metadata) : null,
-      vecRowId,
-    );
-
-    return id;
-  };
-
-  // Get a document by ID
-  const get = async (id: string): Promise<VectorDocument | null> => {
-    ensureInitialized();
-
-    const result = db
-      ?.prepare(SQLiteQueries.SELECT_DOCUMENT_WITH_SOURCE)
-      .get(id) as SQLiteRowWithSource | undefined;
-
-    if (!result) return null;
-
-    return rowToVectorDocument(result);
-  };
-
-  // Update a document
-  const update = async (
-    id: string,
-    updates: Partial<VectorDocument>,
-  ): Promise<void> => {
-    ensureInitialized();
-
-    if (!id) {
-      throw new VectorDBError("Document ID is required for update");
-    }
-
-    if (updates.embedding) {
-      validateDimension(updates.embedding, Number(dimension));
-    }
-
-    // Get the vec_rowid for the document
-    const existingDoc = db
-      ?.prepare(SQLiteQueries.SELECT_DOCUMENT_VEC_ROWID)
-      .get(id) as { vec_rowid: number } | undefined;
-
-    if (!existingDoc) {
-      throw new DocumentNotFoundError(id);
-    }
-
-    // Update vector if provided
-    if (updates.embedding) {
-      const embeddingFloat32 = new Float32Array(updates.embedding);
-      const vecUpdateStmt = db?.prepare(SQLiteQueries.UPDATE_VECTOR_BUN);
-      vecUpdateStmt?.run(embeddingFloat32, existingDoc.vec_rowid);
-    }
-
-    // Prepare metadata without originalContent
-    const metadata = updates.metadata ? { ...updates.metadata } : undefined;
-    if (metadata && "originalContent" in metadata) {
-      delete metadata.originalContent;
-    }
-
-    // Build update query dynamically based on what's being updated
-    const updateFields: string[] = [];
-    const updateValues: (string | number | null | Uint8Array | Float32Array)[] =
-      [];
-
-    if (updates.content !== undefined) {
-      updateFields.push("content = ?");
-      updateValues.push(updates.content);
-    }
-
-    if (metadata !== undefined) {
-      updateFields.push("metadata = ?");
-      updateValues.push(JSON.stringify(metadata));
-    }
-
-    if (updateFields.length > 0) {
-      updateValues.push(id);
-      const docUpdateStmt = db?.prepare(
-        `UPDATE documents SET ${updateFields.join(", ")} WHERE id = ?`,
-      );
-      docUpdateStmt?.run(...updateValues);
-    }
-  };
-
-  // Delete a document
-  const deleteDoc = async (id: string): Promise<void> => {
-    ensureInitialized();
-
-    // Get the vec_rowid and source_id before deletion
-    const doc = db
-      ?.prepare(SQLiteQueries.DELETE_DOCUMENT_VEC_ROWID_SOURCE)
-      .get(id) as { vec_rowid: number; source_id: string | null } | undefined;
-
-    if (!doc) {
-      throw new DocumentNotFoundError(id);
-    }
-
-    // Use transaction for atomic deletion
-    const transactionFn = db?.transaction(() => {
-      // Delete from documents table
-      const deleteDocStmt = db?.prepare(SQLiteQueries.DELETE_DOCUMENT);
-      deleteDocStmt?.run(id);
-
-      // Delete from vec_documents table
-      const deleteVecStmt = db?.prepare(SQLiteQueries.DELETE_VECTOR);
-      deleteVecStmt?.run(doc.vec_rowid);
-
-      // Check if this was the last document for the source
-      if (doc.source_id) {
-        const remainingDocs = db
-          ?.prepare(SQLiteQueries.COUNT_DOCUMENTS_BY_SOURCE)
-          .get(doc.source_id) as { count: number };
-
-        if (remainingDocs.count === 0) {
-          // Delete the source if no more documents reference it
-          const deleteSourceStmt = db?.prepare(SQLiteQueries.DELETE_SOURCE);
-          deleteSourceStmt?.run(doc.source_id);
-        }
-      }
-    });
-
-    // Execute the transaction
-    if (transactionFn) {
-      transactionFn();
-    }
-  };
-
-  // Search for similar documents
-  const search = async (
-    embedding: number[],
-    options: SearchOptions = {},
-  ): Promise<VectorSearchResult[]> => {
-    ensureInitialized();
-
-    validateDimension(embedding, Number(dimension));
-
-    const k = options.k ?? VECTOR_DB_CONSTANTS.DEFAULT_SEARCH_K;
-    const { whereClause, params } = buildSQLWhereClause(options.filter);
-
-    // Build the base query for vector search
-    const baseQuery = SQLiteQueries.VECTOR_SEARCH_BASE;
-
-    // Build WHERE clause with vector search condition (Bun uses vec_f32)
-    const vectorCondition = `v.rowid IN (
-        SELECT rowid FROM vec_documents
-        WHERE embedding MATCH vec_f32(?)
-        ORDER BY distance
-        LIMIT ?
-      )`;
-
-    const query = whereClause
-      ? `${baseQuery} WHERE ${whereClause} AND ${vectorCondition} ORDER BY v.distance LIMIT ?`
-      : `${baseQuery} WHERE ${vectorCondition} ORDER BY v.distance LIMIT ?`;
-
-    // Execute the query
-    const stmt = db?.prepare(query);
-    const embeddingFloat32 = new Float32Array(embedding);
-    const results = stmt?.all(...params, embeddingFloat32, k, k) as
-      | SQLiteRowWithSource[]
-      | undefined;
-
-    if (!results) return [];
-
-    return results.map(rowToSearchResult);
-  };
-
-  // List documents
-  const list = async (options: ListOptions = {}): Promise<VectorDocument[]> => {
-    ensureInitialized();
-
-    const limit = options.limit ?? VECTOR_DB_CONSTANTS.DEFAULT_LIST_LIMIT;
-    const offset = options.offset ?? 0;
-    const { whereClause, params } = buildSQLWhereClause(options.filter);
-
-    const baseQuery = SQLiteQueries.LIST_DOCUMENTS_BASE;
-
-    const query = whereClause
-      ? `${baseQuery} WHERE ${whereClause} ORDER BY d.created_at DESC LIMIT ? OFFSET ?`
-      : `${baseQuery} ORDER BY d.created_at DESC LIMIT ? OFFSET ?`;
-    params.push(limit, offset);
-
-    const stmt = db?.prepare(query);
-    const results = stmt?.all(...params) as SQLiteRowWithSource[] | undefined;
-
-    if (!results) return [];
-
-    return results.map(rowToVectorDocument);
-  };
-
-  // Count documents
-  const count = async (filter?: Record<string, unknown>): Promise<number> => {
-    ensureInitialized();
-
-    const { whereClause, params } = buildSQLWhereClause(filter);
-
-    const query = whereClause
-      ? `SELECT COUNT(*) as count FROM documents WHERE ${whereClause}`
-      : "SELECT COUNT(*) as count FROM documents";
-
-    const result = db?.prepare(query).get(...params) as { count: number };
-    return result?.count ?? 0;
-  };
-
-  // Close the database connection
-  const close = async (): Promise<void> => {
-    if (db) {
-      db.close();
-      db = null;
-      initialized = false;
-    }
-  };
-
-  // Get database information
-  const getInfo = () => {
-    return {
-      provider: "bun-sqlite",
-      version: "1.0.0",
-      capabilities: ["vector-search", "metadata-filter", "batch-operations"],
-    };
-  };
-
-  // Return the adapter interface with batch operations
-  return {
-    initialize,
-    insert,
-    get,
-    update,
-    delete: deleteDoc,
-    search,
-    list,
-    count,
-    close,
-    getInfo,
-    insertBatch: (documents: VectorDocument[]) =>
-      batchOps.insertBatch(documents, insert),
-    deleteBatch: (ids: string[]) => batchOps.deleteBatch(ids, deleteDoc),
-  };
+  return createSQLiteAdapterBase({
+    config,
+    initializeConnection,
+    prepareEmbeddingForInsert,
+    vectorInsertSQL: SQLiteQueries.INSERT_VECTOR_BUN,
+    vectorUpdateSQL: SQLiteQueries.UPDATE_VECTOR_BUN,
+    vectorSearchSQL: "vec_f32(?)",
+    providerName: "bun-sqlite",
+  });
 };

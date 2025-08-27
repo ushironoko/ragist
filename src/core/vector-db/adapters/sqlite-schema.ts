@@ -3,6 +3,8 @@
  * This module contains all SQL DDL statements for creating tables, indexes, and triggers
  */
 
+import type { Buffer } from "node:buffer";
+
 /**
  * Creates the SQL schema for the vector database
  * @param dimension - The dimension of the vector embeddings
@@ -121,4 +123,11 @@ export const SQLiteQueries = {
 /**
  * SQL input value type for prepared statements
  */
-export type SQLInputValue = string | number | null | Uint8Array | Float32Array;
+export type SQLInputValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Uint8Array
+  | Float32Array
+  | Buffer;
