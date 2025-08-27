@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] - 2025-08-27
+
+- Merge pull request #75 from ushironoko:fix-init
+- docs: update configuration and CLI documentation for .env file handling and API key management
+- fix: update handleInit to conditionally create .env file based on API key input; add tests for API key scenarios
+- Merge pull request #74 from ushironoko:fix-version-bump
+- fix: reorder build step in release workflow
+
+
 ## [1.0.1] - 2025-08-27
 
 - Merge pull request #73 from ushironoko:refactor-1
