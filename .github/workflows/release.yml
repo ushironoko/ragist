@@ -63,9 +63,6 @@ jobs:
       - name: Run lint
         run: pnpm run lint
 
-      - name: Build
-        run: pnpm run build
-
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
@@ -80,6 +77,9 @@ jobs:
             pnpm version ${{ github.event.inputs.release-type }} --no-git-tag-version
           fi
           echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Build
+        run: pnpm run build
 
       - name: Generate changelog
         run: |
