@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.0] - 2025-08-27
+
+- Merge pull request #72 from ushironoko:refactor-sqlite-schemas
+- fix README
+- refactor: implement base SQLite adapter for unified vector database operations
+- refactor: consolidate SQLite adapter utilities and schema definitions
+- Merge pull request #71 from ushironoko:fix-v1-document
+- Refactor configuration documentation and enhance chunking strategies
+- Merge pull request #70 from ushironoko:support-define-gistdex-config
+- refactor: migrate configuration to TypeScript, update related documentation
+- Merge pull request #69 from ushironoko:deprecated-env-cconfig-loader
+- refactor: remove environment variable support for configuration, update documentation
+- Merge pull request #68 from ushironoko:remove-douto-chunk-optimize
+- refactor: remove auto-chunk-optimize option and streamline chunking logic
+
+
 ## [0.11.0] - 2025-08-26
 
 - Merge pull request #67 from ushironoko/auto-chunk-optimization
