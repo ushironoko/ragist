@@ -96,14 +96,9 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
       ),
     );
     const apiKey = await password({
-      message: "Enter your Google Generative AI API Key:",
+      message:
+        "Enter your Google Generative AI API Key (leave empty to skip .env creation):",
       mask: "*",
-      validate: (value) => {
-        if (!value || value.trim().length === 0) {
-          return "API key is required";
-        }
-        return true;
-      },
     });
 
     // Vector DB configuration
@@ -189,10 +184,21 @@ export async function handleInit(options: InitOptions = {}): Promise<void> {
     // Generate files
     console.log(chalk.bold("\n📦 Generating files...\n"));
 
-    // Create .env file
-    const envSpinner = ora("Creating .env file...").start();
-    await createEnvFile(envPath, config);
-    envSpinner.succeed(chalk.green("Created .env file"));
+    // Create .env file only if API key is provided
+    if (config.apiKey && config.apiKey.trim().length > 0) {
+      const envSpinner = ora("Creating .env file...").start();
+      await createEnvFile(envPath, config);
+      envSpinner.succeed(chalk.green("Created .env file"));
+    } else {
+      console.log(
+        chalk.yellow("⚠️  Skipping .env file creation (no API key provided)"),
+      );
+      console.log(
+        chalk.gray(
+          "   You'll need to set GOOGLE_GENERATIVE_AI_API_KEY in your environment",
+        ),
+      );
+    }
 
     // Create gistdex.config.ts
     const configSpinner = ora("Creating gistdex.config.ts...").start();
@@ -228,70 +234,7 @@ async function createEnvFile(path: string, config: InitConfig): Promise<void> {
     "# Google AI API Key (Required)",
     "# Get your API key from: https://makersuite.google.com/app/apikey",
     `GOOGLE_GENERATIVE_AI_API_KEY=${config.apiKey}`,
-    "",
-    "# Embedding Model Configuration (Optional)",
-    "# gemini-embedding-001: Multilingual support including Japanese",
-    "# text-embedding-004: English-only",
-    "# Default: gemini-embedding-001",
-    "# EMBEDDING_MODEL=gemini-embedding-001",
-    "",
-    "# Embedding Dimension (Optional, default: 768)",
-    "# Common values: 768 (recommended for performance), 3072 (max for gemini-embedding-001)",
-    "# EMBEDDING_DIMENSION=768",
-    "",
-    "# Vector Database Configuration (Optional)",
-    "# Provider: sqlite (default) or memory",
   ];
-
-  // Only uncomment VECTOR_DB_PROVIDER if not using default
-  if (config.provider !== "sqlite") {
-    lines.push(`VECTOR_DB_PROVIDER=${config.provider}`);
-  } else {
-    lines.push("# VECTOR_DB_PROVIDER=sqlite");
-  }
-
-  lines.push(
-    "",
-    "# SQLite Database Path (Optional, default: gistdex.db)",
-    "# Only used when VECTOR_DB_PROVIDER=sqlite or bun-sqlite",
-  );
-
-  // Only uncomment SQLITE_DB_PATH if not using default
-  if (
-    (config.provider === "sqlite" || config.provider === "bun-sqlite") &&
-    config.dbPath &&
-    config.dbPath !== "./gistdex.db" &&
-    config.dbPath !== "gistdex.db"
-  ) {
-    lines.push(`SQLITE_DB_PATH=${config.dbPath}`);
-  } else {
-    lines.push("# SQLITE_DB_PATH=gistdex.db");
-  }
-
-  // Add custom SQLite path for Bun on macOS
-  if (config.customSqlitePath) {
-    lines.push(
-      "",
-      "# Custom SQLite Library Path (for Bun on macOS)",
-      `CUSTOM_SQLITE_PATH=${config.customSqlitePath}`,
-    );
-  }
-
-  // Add SQLite vector extension path if specified
-  if (config.sqliteVecPath) {
-    lines.push(
-      "",
-      "# SQLite Vector Extension Path",
-      `SQLITE_VEC_PATH=${config.sqliteVecPath}`,
-    );
-  }
-
-  lines.push(
-    "",
-    "# Advanced Configuration (Optional)",
-    "# You can also use VECTOR_DB_CONFIG for JSON configuration",
-    '# VECTOR_DB_CONFIG={"provider":"memory","options":{"dimension":768}}',
-  );
 
   await fs.writeFile(path, lines.join("\n"), "utf-8");
 }
