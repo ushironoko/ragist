@@ -404,7 +404,7 @@ Let's trace a complete index and search operation:
 
 ### API Key Protection
 
-- Stored in `.env` file only
+- Stored in `.env` file or environment variable
 - Masked during input (shows `*` characters)
 - Never logged in console output
 

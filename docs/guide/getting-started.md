@@ -107,9 +107,10 @@ bunx --bun @ushironoko/gistdex init
 This command will:
 
 1. Prompt for your Google AI API key (get one at [Google AI Studio](https://makersuite.google.com/app/apikey))
+   - Leave empty to skip `.env` creation if you prefer to set the API key via environment variable
 2. Let you choose the vector database provider (SQLite recommended)
 3. Configure the database path
-4. Create `.env` and `gistdex.config.ts` files automatically
+4. Create `gistdex.config.ts` file (and `.env` file if API key is provided)
 
 The generated `gistdex.config.ts` file provides type-safe configuration with TypeScript intellisense:
 

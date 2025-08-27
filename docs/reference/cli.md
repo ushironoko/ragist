@@ -51,12 +51,16 @@ yarn dlx @ushironoko/gistdex --init
 
 This command runs an interactive setup that:
 
-- Prompts for your Google AI API key
+- Prompts for your Google AI API key (leave empty to skip `.env` creation)
 - Lets you choose a vector database provider (SQLite or Memory)
 - Configures the database path
-- Creates `.env` file with your API key
+- Creates `.env` file with your API key (only if API key is provided)
 - Creates `gistdex.config.ts` with type-safe configuration
 - Initializes the vector database
+
+::: info
+The `.env` file now contains only the `GOOGLE_GENERATIVE_AI_API_KEY`. All other configuration options are managed via `gistdex.config.ts` or CLI arguments.
+:::
 
 ### `gistdex index`
 

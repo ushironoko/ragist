@@ -101,14 +101,18 @@ All other settings must be configured via configuration file or CLI arguments.
 
 ### .env File
 
-The `.env` file is automatically created when you run `gistdex init`. It contains your Google AI API key:
+The `.env` file is created when you run `gistdex init` and provide an API key. It contains only your Google AI API key:
 
 ```bash
 # .env (created by gistdex init)
 GOOGLE_GENERATIVE_AI_API_KEY=your-api-key-here
 ```
 
-If you need to update your API key, edit the `.env` file directly.
+::: tip
+If you leave the API key empty during `gistdex init`, the `.env` file will be skipped and you'll need to set `GOOGLE_GENERATIVE_AI_API_KEY` as an environment variable.
+:::
+
+If you need to update your API key, edit the `.env` file directly or set the environment variable.
 
 ## Configuration Schema
 
