@@ -15,7 +15,6 @@ export interface IndexOptions {
   chunkSize?: number;
   chunkOverlap?: number;
   batchSize?: number;
-  autoChunkOptimize?: boolean;
   preserveBoundaries?: boolean;
   onProgress?: (message: string, progress?: number) => void;
 }
@@ -143,41 +142,15 @@ export async function indexFile(
       filePath,
     };
 
-    // Apply optimal chunk settings if auto-optimize is enabled
+    // Apply optimal chunk settings automatically if not specified
     let finalOptions = options;
-    if (
-      options.autoChunkOptimize &&
-      !options.chunkSize &&
-      !options.chunkOverlap
-    ) {
+    if (!options.chunkSize && !options.chunkOverlap) {
       const optimalSettings = getOptimalChunkSettings(filePath);
       finalOptions = {
         ...options,
         chunkSize: optimalSettings.chunkSize,
         chunkOverlap: optimalSettings.chunkOverlap,
       };
-    }
-
-    // Enable boundary preservation for code and markdown files by default if autoChunkOptimize is enabled
-    if (options.autoChunkOptimize && options.preserveBoundaries === undefined) {
-      const ext = filePath.toLowerCase();
-      if (
-        ext.endsWith(".md") ||
-        ext.endsWith(".mdx") ||
-        ext.endsWith(".js") ||
-        ext.endsWith(".ts") ||
-        ext.endsWith(".jsx") ||
-        ext.endsWith(".tsx") ||
-        ext.endsWith(".py") ||
-        ext.endsWith(".java") ||
-        ext.endsWith(".rs") ||
-        ext.endsWith(".go")
-      ) {
-        finalOptions = {
-          ...finalOptions,
-          preserveBoundaries: true,
-        };
-      }
     }
 
     return indexText(content, fileMetadata, finalOptions, service);

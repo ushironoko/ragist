@@ -63,13 +63,13 @@ const indexArgs = {
   },
   "chunk-size": { type: "string" as const, description: "Text chunk size" },
   "chunk-overlap": { type: "string" as const, description: "Chunk overlap" },
-  "auto-chunk-optimize": {
-    type: "string" as const,
-    description: "Auto-optimize chunk size based on file type (true/false)",
-  },
   "preserve-boundaries": {
-    type: "string" as const,
-    description: "Preserve semantic boundaries when chunking (true/false)",
+    type: "boolean" as const,
+    description: "Preserve semantic boundaries when chunking",
+  },
+  p: {
+    type: "boolean" as const,
+    description: "Preserve semantic boundaries when chunking (shorthand)",
   },
   title: { type: "string" as const, description: "Custom title for content" },
   url: { type: "string" as const, description: "Source URL metadata" },

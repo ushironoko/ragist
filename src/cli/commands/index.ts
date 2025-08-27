@@ -29,8 +29,8 @@ export interface IndexContext {
     url?: string;
     "chunk-size"?: string;
     "chunk-overlap"?: string;
-    "auto-chunk-optimize"?: string;
-    "preserve-boundaries"?: string;
+    "preserve-boundaries"?: boolean;
+    p?: boolean;
     branch?: string;
     paths?: string;
   };
@@ -42,8 +42,7 @@ export const handleIndex = createWriteCommandHandler<IndexContext>(
     const options = {
       chunkSize: parseCliInteger(values["chunk-size"], 1000) ?? 1000,
       chunkOverlap: parseCliInteger(values["chunk-overlap"], 200) ?? 200,
-      autoChunkOptimize: values["auto-chunk-optimize"] === "true",
-      preserveBoundaries: values["preserve-boundaries"] === "true",
+      preserveBoundaries: values["preserve-boundaries"] ?? values.p ?? false,
       onProgress: createProgressReporter("Indexing", (message, progress) => {
         if (progress !== undefined) {
           const percentage = Math.round(progress * 100);
