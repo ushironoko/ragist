@@ -87,7 +87,7 @@ Chunks (size=20, overlap=5):
 
 When enabled, Gistdex uses specialized parsers to maintain semantic boundaries:
 
-**For Markdown Files (.md, .mdx, .markdown)**
+**For Markdown Files (.md, .mdx)**
 
 Uses a custom Markdown parser that:
 
@@ -127,7 +127,7 @@ When chunk size and overlap are not specified, Gistdex automatically optimizes b
 | File Type     | Auto Chunk Size | Auto Overlap | Extensions                    |
 | ------------- | --------------- | ------------ | ----------------------------- |
 | Code          | 650             | 130          | .js, .ts, .py, .go, .rs, etc. |
-| Documentation | 1250            | 250          | .md, .mdx, .rst               |
+| Documentation | 1250            | 250          | .md, .mdx                     |
 | Articles      | 1750            | 350          | .txt, .html                   |
 | Default       | 1000            | 200          | All other files               |
 
