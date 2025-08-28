@@ -59,22 +59,22 @@ describe("CLI main entry point", () => {
     mockConsoleError.mockRestore();
   });
 
-  it("should show help when no arguments are provided", async () => {
-    const { showHelp } = await import("./commands/help.js");
+  it("should let gunshi handle help when no arguments are provided", async () => {
+    const { cli } = await import("gunshi");
     process.argv = ["node", "cli.js"];
 
     await main();
-    expect(showHelp).toHaveBeenCalled();
-    expect(mockExit).toHaveBeenCalledWith(0);
+    // Gunshi's cli function should be called to handle help
+    expect(cli).toHaveBeenCalled();
   });
 
-  it("should show help with --help flag", async () => {
-    const { showHelp } = await import("./commands/help.js");
+  it("should let gunshi handle help with --help flag", async () => {
+    const { cli } = await import("gunshi");
     process.argv = ["node", "cli.js", "--help"];
 
     await main();
-    expect(showHelp).toHaveBeenCalled();
-    expect(mockExit).toHaveBeenCalledWith(0);
+    // Gunshi's cli function should be called to handle help
+    expect(cli).toHaveBeenCalled();
   });
 
   it("should show version with --version flag", async () => {

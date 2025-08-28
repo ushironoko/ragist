@@ -15,6 +15,7 @@ Thumbs.db
 .vscode/
 *.iml
 _research
+tmp/
 
 # VitePress build output
 docs/.vitepress/dist/
