@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.2] - 2025-08-28
+
+- bugfix: query
+
+
 ## [1.1.1] - 2025-08-28
 
 - Merge pull request #76 from ushironoko:fix-help-commands-use-gunshi
