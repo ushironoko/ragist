@@ -253,9 +253,12 @@ export async function main(): Promise<void> {
       subCommands,
     };
 
+    // If no arguments provided, add --help flag to show help
+    const cliArgs = args.length === 0 ? ["--help"] : args;
+
     try {
       // Use main command - gunshi will handle command routing and help
-      await cli(args, mainCommand, cliOptions);
+      await cli(cliArgs, mainCommand, cliOptions);
     } catch (error) {
       console.error(
         "Error:",
