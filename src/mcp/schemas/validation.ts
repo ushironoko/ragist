@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+// Common database configuration schemas
+export const databaseConfigSchema = z.object({
+  provider: z
+    .string()
+    .optional()
+    .describe("Vector database provider (e.g., 'sqlite', 'memory')"),
+  db: z.string().optional().describe("Database file path"),
+});
+
 // Index tool schemas
 export const indexTextSchema = z.object({
   content: z.string().describe("The text content to index"),
@@ -57,6 +66,11 @@ export const indexToolSchema = z.object({
     .optional()
     .default(false)
     .describe("Preserve semantic boundaries when chunking"),
+  provider: z
+    .string()
+    .optional()
+    .describe("Vector database provider (e.g., 'sqlite', 'memory')"),
+  db: z.string().optional().describe("Database file path"),
 });
 
 // Query tool schemas
@@ -88,6 +102,11 @@ export const queryToolSchema = z.object({
     .optional()
     .default(false)
     .describe("Return full original content"),
+  provider: z
+    .string()
+    .optional()
+    .describe("Vector database provider (e.g., 'sqlite', 'memory')"),
+  db: z.string().optional().describe("Database file path"),
 });
 
 // List tool schemas
@@ -108,6 +127,11 @@ export const listToolSchema = z.object({
     .optional()
     .default(false)
     .describe("Return statistics only"),
+  provider: z
+    .string()
+    .optional()
+    .describe("Vector database provider (e.g., 'sqlite', 'memory')"),
+  db: z.string().optional().describe("Database file path"),
 });
 
 // Info tool schemas

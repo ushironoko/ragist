@@ -109,6 +109,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             description: "Overlap between chunks",
             default: 200,
           },
+          preserveBoundaries: {
+            type: "boolean",
+            description: "Preserve semantic boundaries when chunking",
+            default: false,
+          },
+          provider: {
+            type: "string",
+            description: "Vector database provider (e.g., 'sqlite', 'memory')",
+          },
+          db: {
+            type: "string",
+            description: "Database file path",
+          },
         },
         required: ["type"],
       },
@@ -148,6 +161,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             description: "Return full original content",
             default: false,
           },
+          provider: {
+            type: "string",
+            description: "Vector database provider (e.g., 'sqlite', 'memory')",
+          },
+          db: {
+            type: "string",
+            description: "Database file path",
+          },
         },
         required: ["query"],
       },
@@ -173,6 +194,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             description: "Return statistics only",
             default: false,
           },
+          provider: {
+            type: "string",
+            description: "Vector database provider (e.g., 'sqlite', 'memory')",
+          },
+          db: {
+            type: "string",
+            description: "Database file path",
+          },
         },
       },
     },
@@ -188,8 +217,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const configOps = createConfigOperations();
     const config = await configOps.load();
 
+    // Check if database config is overridden by the tool arguments
+    let dbConfig = config.vectorDB;
+    if (args && typeof args === "object") {
+      const { provider, db } = args as { provider?: string; db?: string };
+      if (provider || db) {
+        dbConfig = {
+          ...config.vectorDB,
+          provider: provider || config.vectorDB?.provider || "sqlite",
+          options: {
+            ...config.vectorDB?.options,
+            ...(db && { path: db }),
+          },
+        };
+      }
+    }
+
     // Use database operations for proper resource management
-    const dbOps = createDatabaseOperations(config.vectorDB);
+    const dbOps = createDatabaseOperations(dbConfig);
 
     return await dbOps.withDatabase(async (dbService) => {
       service = dbService;
