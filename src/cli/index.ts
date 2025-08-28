@@ -6,13 +6,16 @@ import { loadEnvironmentVariables } from "../core/utils/env-loader.js";
 loadEnvironmentVariables({ envFilePath: ".env" });
 
 import { cli, define } from "gunshi";
+import { generate } from "gunshi/generator";
 import packageJson from "../../package.json" with { type: "json" };
-import { showHelp } from "./commands/help.js";
-import { handleIndex } from "./commands/index.js";
-import { handleInfo } from "./commands/info.js";
-import { handleInit } from "./commands/init.js";
-import { handleList } from "./commands/list.js";
-import { handleQuery } from "./commands/query.js";
+import {
+  getDBConfig,
+  handleIndex as runIndexCommand,
+} from "./commands/index.js";
+import { handleInfo as runInfoCommand } from "./commands/info.js";
+import { handleInit as runInitCommand } from "./commands/init.js";
+import { handleList as runListCommand } from "./commands/list.js";
+import { handleQuery as runQueryCommand } from "./commands/query.js";
 import { showVersion } from "./commands/version.js";
 import { handleSpecialFlags } from "./utils/special-flags.js";
 
@@ -34,12 +37,14 @@ const dbArgs = {
 // Define commands
 const initCommand = define({
   name: "init",
-  description: "Initialize the database",
-  args: dbArgs,
-  run: async (_ctx) => {
-    // handleInit doesn't use these CLI args, it has its own interactive prompts
-    await handleInit({});
-  },
+  description: "Initialize a new Gistdex project with .env and config files",
+  args: {},
+  examples: `# Initialize Gistdex configuration
+$ gistdex init
+
+# Or use the short flag
+$ gistdex --init`,
+  run: async (ctx) => runInitCommand(ctx.values),
 });
 
 const indexArgs = {
@@ -81,8 +86,24 @@ const indexCommand = define({
   name: "index",
   description: "Index content into the database",
   args: indexArgs,
+  examples: `# Index a GitHub Gist
+$ gistdex index --gist https://gist.github.com/user/abc123
+
+# Index a single file
+$ gistdex index --file ./document.md
+
+# Index multiple files with glob patterns
+$ gistdex index --files "data/*.md"
+$ gistdex index --files "**/*.txt,docs/*.md"
+
+# Index with preserve boundaries for code files
+$ gistdex index --file ./code.ts --preserve-boundaries
+
+# Index a GitHub repository
+$ gistdex index --github https://github.com/user/repo`,
   run: async (ctx) => {
-    await handleIndex(ctx);
+    await getDBConfig(ctx.values);
+    return runIndexCommand({ values: ctx.values });
   },
 });
 
@@ -117,48 +138,67 @@ const queryArgs = {
 
 const queryCommand = define({
   name: "query",
-  description: "Search indexed content",
-  args: queryArgs,
-  run: async (ctx) => {
-    await handleQuery(ctx);
+  description: "Search indexed content using semantic/hybrid search",
+  args: {
+    ...queryArgs,
+    _: { type: "string" as const, description: "Search query" },
   },
+  examples: `# Search indexed content
+$ gistdex query "vector search implementation"
+
+# Get more results
+$ gistdex query -k 10 "embeddings"
+
+# Use hybrid search
+$ gistdex query --hybrid "database optimization"
+
+# Show full original content
+$ gistdex query --full "specific search"`,
+  run: async (ctx) => runQueryCommand({ values: ctx.values }),
 });
 
 const listCommand = define({
   name: "list",
-  description: "List indexed items",
+  description: "List all indexed items with metadata",
   args: {
     ...dbArgs,
-    stats: {
-      type: "boolean" as const,
-      description: "Show only statistics",
-    },
+    stats: { type: "boolean" as const, description: "Show statistics only" },
   },
-  run: async (ctx) => {
-    await handleList(ctx);
-  },
+  examples: `# List all indexed items
+$ gistdex list
+
+# Show statistics only
+$ gistdex list --stats`,
+  run: async (ctx) => runListCommand({ values: ctx.values }),
 });
 
 const infoCommand = define({
   name: "info",
   description: "Show database adapter information",
-  args: dbArgs,
-  run: async (ctx) => {
-    await handleInfo(ctx);
+  args: {
+    provider: {
+      type: "string" as const,
+      description: "Vector database provider",
+    },
   },
-});
+  examples: `# Show database adapter info
+$ gistdex info
 
-const helpCommand = define({
-  name: "help",
-  description: "Show help message",
-  run: async () => {
-    showHelp();
-  },
+# Show info for specific provider
+$ gistdex info --provider sqlite`,
+  run: async (ctx) => runInfoCommand({ values: ctx.values }),
 });
 
 const versionCommand = define({
   name: "version",
   description: "Show CLI version",
+  args: {},
+  examples: `# Show version
+$ gistdex version
+
+# Or use flags
+$ gistdex --version
+$ gistdex -v`,
   run: async () => {
     showVersion();
   },
@@ -174,6 +214,23 @@ subCommands.set("query", queryCommand);
 subCommands.set("list", listCommand);
 subCommands.set("info", infoCommand);
 subCommands.set("version", versionCommand);
+
+// Define main command - this will be shown in help
+const mainCommand = define({
+  name: "gistdex",
+  description: "RAG Search System for Gist and GitHub Repositories",
+  run: async () => {
+    // Show help when no subcommand is provided
+    const helpText = await generate(null, mainCommand, {
+      name: "gistdex",
+      version: packageJson.version,
+      description:
+        "A CLI tool for indexing and searching content using vector databases",
+      subCommands,
+    });
+    console.log(helpText);
+  },
+});
 
 // Main entry point
 
@@ -196,10 +253,12 @@ export async function main(): Promise<void> {
       subCommands,
     };
 
+    // If no arguments provided, add --help flag to show help
+    const cliArgs = args.length === 0 ? ["--help"] : args;
+
     try {
-      // Use help command as the default/main command
-      // gunshi will handle command routing based on the first argument
-      await cli(args, helpCommand, cliOptions);
+      // Use main command - gunshi will handle command routing and help
+      await cli(cliArgs, mainCommand, cliOptions);
     } catch (error) {
       console.error(
         "Error:",

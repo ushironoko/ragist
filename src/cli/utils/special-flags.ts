@@ -3,7 +3,6 @@
  * These handle flags that bypass normal command processing
  */
 
-import { showHelp } from "../commands/help.js";
 import { showVersion } from "../commands/version.js";
 
 export interface SpecialFlagResult {
@@ -33,19 +32,7 @@ async function handleMcpMode(): Promise<void> {
 export async function handleSpecialFlags(
   args: string[],
 ): Promise<SpecialFlagResult> {
-  // No arguments - show help
-  if (args.length === 0) {
-    showHelp();
-    return { handled: true, shouldExit: true };
-  }
-
-  // Help flags
-  if (args[0] === "--help" || args[0] === "-h") {
-    showHelp();
-    return { handled: true, shouldExit: true };
-  }
-
-  // Version flags
+  // Version flags - handle before gunshi processes them
   if (args[0] === "--version" || args[0] === "-v") {
     showVersion();
     return { handled: true, shouldExit: true };
@@ -75,5 +62,6 @@ export async function handleSpecialFlags(
     return { handled: false };
   }
 
+  // Let gunshi handle --help and no arguments (which shows help automatically)
   return { handled: false };
 }
