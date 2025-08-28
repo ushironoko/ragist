@@ -139,10 +139,7 @@ const queryArgs = {
 const queryCommand = define({
   name: "query",
   description: "Search indexed content using semantic/hybrid search",
-  args: {
-    ...queryArgs,
-    _: { type: "string" as const, description: "Search query" },
-  },
+  args: queryArgs,
   examples: `# Search indexed content
 $ gistdex query "vector search implementation"
 
@@ -154,7 +151,7 @@ $ gistdex query --hybrid "database optimization"
 
 # Show full original content
 $ gistdex query --full "specific search"`,
-  run: async (ctx) => runQueryCommand({ values: ctx.values }),
+  run: async (ctx) => runQueryCommand(ctx),
 });
 
 const listCommand = define({

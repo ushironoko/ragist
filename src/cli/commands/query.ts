@@ -24,13 +24,9 @@ interface QueryContext {
 
 export const handleQuery = createReadOnlyCommandHandler<QueryContext>(
   async (service, ctx) => {
-    // Access positionals directly from the context
     // gunshi provides positionals in the context
-    // Skip the first element if it's "query" (the subcommand name)
     const positionals = ctx.positionals || [];
-    const filteredPositionals =
-      positionals[0] === "query" ? positionals.slice(1) : positionals;
-    const query = filteredPositionals.join(" ").trim();
+    const query = positionals.join(" ").trim();
 
     if (!query) {
       handleCliError(new Error("No query specified"));
