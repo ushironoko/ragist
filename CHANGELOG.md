@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1] - 2025-08-28
+
+- Merge pull request #76 from ushironoko:fix-help-commands-use-gunshi
+- refactor: use gunshi's automatic help generation
+- fix help commands
+- fix document for how-it-works
+- fix document in top
+
+
 ## [1.1.0] - 2025-08-27
 
 - Merge pull request #75 from ushironoko:fix-init
