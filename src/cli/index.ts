@@ -64,11 +64,8 @@ const indexArgs = {
   "chunk-overlap": { type: "string" as const, description: "Chunk overlap" },
   "preserve-boundaries": {
     type: "boolean" as const,
+    short: "p",
     description: "Preserve semantic boundaries when chunking",
-  },
-  p: {
-    type: "boolean" as const,
-    description: "Preserve semantic boundaries when chunking (shorthand)",
   },
   title: { type: "string" as const, description: "Custom title for content" },
   url: { type: "string" as const, description: "Source URL metadata" },

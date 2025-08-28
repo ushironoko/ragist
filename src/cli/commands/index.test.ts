@@ -245,4 +245,69 @@ describe("handleIndex", () => {
     );
     expect(process.exit).toHaveBeenCalledWith(1);
   });
+
+  describe("preserve boundaries option", () => {
+    it("respects --preserve-boundaries flag", async () => {
+      await handleIndex({
+        values: {
+          text: "Hello world",
+          "preserve-boundaries": true,
+        },
+      });
+
+      const { indexText } = await import("../../core/indexer/indexer.js");
+      expect(indexText).toHaveBeenCalledWith(
+        "Hello world",
+        expect.any(Object),
+        expect.objectContaining({
+          preserveBoundaries: true,
+          chunkSize: 1000,
+          chunkOverlap: 200,
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it("respects -p shorthand flag", async () => {
+      // When using -p, gunshi will set preserve-boundaries to true
+      await handleIndex({
+        values: {
+          text: "Hello world",
+          "preserve-boundaries": true, // gunshi converts -p to preserve-boundaries
+        },
+      });
+
+      const { indexText } = await import("../../core/indexer/indexer.js");
+      expect(indexText).toHaveBeenCalledWith(
+        "Hello world",
+        expect.any(Object),
+        expect.objectContaining({
+          preserveBoundaries: true,
+          chunkSize: 1000,
+          chunkOverlap: 200,
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it("defaults preserveBoundaries to false when not specified", async () => {
+      await handleIndex({
+        values: {
+          text: "Hello world",
+        },
+      });
+
+      const { indexText } = await import("../../core/indexer/indexer.js");
+      expect(indexText).toHaveBeenCalledWith(
+        "Hello world",
+        expect.any(Object),
+        expect.objectContaining({
+          preserveBoundaries: false,
+          chunkSize: 1000,
+          chunkOverlap: 200,
+        }),
+        expect.any(Object),
+      );
+    });
+  });
 });
