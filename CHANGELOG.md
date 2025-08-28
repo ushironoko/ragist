@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.4] - 2025-08-28
+
+- bugfic: mcp tool use
+
+
 ## [1.1.3] - 2025-08-28
 
 - bugfix: p shorthand
