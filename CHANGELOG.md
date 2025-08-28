@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.3] - 2025-08-28
+
+- bugfix: p shorthand
+
+
 ## [1.1.2] - 2025-08-28
 
 - bugfix: query
