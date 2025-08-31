@@ -1,7 +1,7 @@
-import Parser from "web-tree-sitter";
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import Parser from "web-tree-sitter";
 import type { Language } from "web-tree-sitter";
 import {
   type SupportedLanguage,
@@ -33,13 +33,15 @@ const LANGUAGE_WASM_MAP: Record<SupportedLanguage, string> = {
 let isInitialized = false;
 const initializeParser = async () => {
   if (!isInitialized) {
-    // Find the wasm directory relative to dist
-    const wasmDir = join(__dirname, "../wasm");
+    // Find the wasm directory relative to project root
+    // In production: dist/../wasm
+    // In test: src/core/chunk/../../../wasm
+    const wasmDir = join(__dirname, "../../../wasm");
     const treeSitterWasmPath = join(wasmDir, "tree-sitter.wasm");
-    
+
     // Read the tree-sitter.wasm file
     const wasmModule = await readFile(treeSitterWasmPath);
-    
+
     // Initialize with the WASM module
     await Parser.init(wasmModule);
     isInitialized = true;
@@ -50,9 +52,12 @@ const initializeParser = async () => {
 const languageCache = new Map<SupportedLanguage, Language>();
 
 // Load a language WASM file
-const loadLanguage = async (languageName: SupportedLanguage): Promise<Language | null> => {
+const loadLanguage = async (
+  languageName: SupportedLanguage,
+): Promise<Language | null> => {
   if (languageCache.has(languageName)) {
-    return languageCache.get(languageName)!;
+    const cached = languageCache.get(languageName);
+    if (cached) return cached;
   }
 
   const wasmFileName = LANGUAGE_WASM_MAP[languageName];
@@ -61,12 +66,12 @@ const loadLanguage = async (languageName: SupportedLanguage): Promise<Language |
   }
 
   try {
-    // Load from bundled wasm directory
-    const wasmPath = join(__dirname, "../wasm", wasmFileName);
-    
+    // Load from bundled wasm directory (same level as above)
+    const wasmPath = join(__dirname, "../../../wasm", wasmFileName);
+
     // Read the WASM file as buffer
     const wasmBuffer = await readFile(wasmPath);
-    
+
     // Load the language from buffer
     const language = await Parser.Language.load(wasmBuffer);
     languageCache.set(languageName, language);
@@ -100,7 +105,8 @@ export const createParserFactory = (): ParserFactory => {
 
     // Check if we already have a parser for this language
     if (parsers.has(language)) {
-      return parsers.get(language)!;
+      const existingParser = parsers.get(language);
+      if (existingParser) return existingParser;
     }
 
     // Load the language
@@ -113,7 +119,7 @@ export const createParserFactory = (): ParserFactory => {
     const parser = new Parser();
     parser.setLanguage(lang);
     parsers.set(language, parser);
-    
+
     return parser;
   };
 

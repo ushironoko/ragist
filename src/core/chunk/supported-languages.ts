@@ -1,7 +1,7 @@
 // Centralized list of supported languages for CST parsing
 export const SUPPORTED_LANGUAGES = [
   "javascript",
-  "typescript", 
+  "typescript",
   "tsx",
   "python",
   "go",
@@ -15,4 +15,4 @@ export const SUPPORTED_LANGUAGES = [
   "bash",
 ] as const;
 
-export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];

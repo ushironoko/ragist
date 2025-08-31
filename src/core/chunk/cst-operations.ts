@@ -150,13 +150,19 @@ export const createCSTChunkingOperations = () => {
     } catch (error) {
       // If CST parsing failed, notify the user once
       if (!reportedFailure) {
-        console.error(`\n❌ CRITICAL: CST-based code parsing FAILED`);
-        console.error("Tree-sitter native modules are REQUIRED but couldn't be loaded.");
-        console.error("This typically happens with npx/pnpm dlx due to native module compilation issues.");
+        console.error("\n❌ CRITICAL: CST-based code parsing FAILED");
+        console.error(
+          "Tree-sitter native modules are REQUIRED but couldn't be loaded.",
+        );
+        console.error(
+          "This typically happens with npx/pnpm dlx due to native module compilation issues.",
+        );
         console.error("\n📦 REQUIRED ACTION - Install gistdex properly:");
         console.error("  Option 1: npm install -g @ushironoko/gistdex");
         console.error("  Option 2: npm install --save-dev @ushironoko/gistdex");
-        console.error("\n⚠️  WARNING: Falling back to basic text chunking (suboptimal for code search)\n");
+        console.error(
+          "\n⚠️  WARNING: Falling back to basic text chunking (suboptimal for code search)\n",
+        );
         reportedFailure = true;
       }
 

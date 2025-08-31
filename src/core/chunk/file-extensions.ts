@@ -3,7 +3,10 @@
  * This module provides a single source of truth for all file extension handling
  */
 
-import { SUPPORTED_LANGUAGES, type SupportedLanguage } from "./supported-languages.js";
+import {
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+} from "./supported-languages.js";
 
 // Re-export for backward compatibility
 export { SUPPORTED_LANGUAGES, type SupportedLanguage };
