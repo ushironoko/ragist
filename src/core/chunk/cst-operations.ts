@@ -37,19 +37,30 @@ const createNodeTraverser = (language: string) => {
 
       if (isCurrentBoundary && !insideBoundary) {
         // Check if parent is a language-specific modifier node to include modifiers
-        let textToUse = node.text;
-        let startIndex = node.startIndex;
-        
-        if (isModifierNode(node.parent?.type, language)) {
-          textToUse = node.parent.text;
-          startIndex = node.parent.startIndex;
-        }
-        
+        const { textToUse, startIndex, endIndex } = (() => {
+          const parent = node.parent;
+          if (parent && isModifierNode(parent.type, language)) {
+            return {
+              textToUse: parent.text,
+              startIndex: parent.startIndex,
+              endIndex: parent.endIndex,
+            };
+          }
+          return {
+            textToUse: node.text,
+            startIndex: node.startIndex,
+            endIndex: node.endIndex,
+          };
+        })();
+
         boundaries.push({
+          // Keep the actual boundary type and name from the current node
+          // (e.g., "function_declaration", "foo") for proper identification,
+          // even when including parent modifier text (e.g., "export")
           type: node.type,
           name: extractName(node),
           startIndex: startIndex,
-          endIndex: node.endIndex,
+          endIndex: endIndex,
           text: textToUse,
         });
         // Child nodes inside boundary nodes are not treated as boundaries

@@ -235,8 +235,8 @@ export const isModifierNode = (
   language: string,
 ): boolean => {
   if (!parentType) return false;
-  
+
   const modifiers = LANGUAGE_MODIFIER_NODES[language] || [];
-  
+
   return modifiers.includes(parentType);
 };
