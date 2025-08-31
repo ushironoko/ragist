@@ -3,14 +3,7 @@
  * This module provides a single source of truth for all file extension handling
  */
 
-/**
- * File extensions type
- */
-export type FileExtension = `.${string}`;
-
-/**
- * Supported languages for tree-sitter parsers
- */
+// Centralized list of supported languages for CST parsing
 export const SUPPORTED_LANGUAGES = [
   "javascript",
   "typescript",
@@ -28,6 +21,11 @@ export const SUPPORTED_LANGUAGES = [
 ] as const;
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+/**
+ * File extensions type
+ */
+export type FileExtension = `.${string}`;
 
 /**
  * All text file extensions supported by the system

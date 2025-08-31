@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { SyntaxNode } from "tree-sitter";
+import type { SyntaxNode } from "web-tree-sitter";
 import type {
   BoundaryChunk,
   BoundaryChunkOptions,
@@ -150,10 +150,11 @@ export const createCSTChunkingOperations = () => {
     } catch (error) {
       // If CST parsing failed, notify the user once
       if (!reportedFailure) {
-        console.warn(`⚠️  CST parser not available for ${language} files`);
-        console.warn("Falling back to regular text chunking.");
-        console.warn("For better code indexing, install gistdex locally:");
-        console.warn("  npm install -g @ushironoko/gistdex");
+        if (process.env.DEBUG_GISTDEX) {
+          console.debug("\n⚠️  CST-based code parsing failed");
+          console.debug("Falling back to basic text chunking");
+          console.debug(`Failed file: ${filePath}`);
+        }
         reportedFailure = true;
       }
 
