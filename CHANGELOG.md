@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.8] - 2025-08-31
+
+- Merge pull request #80 from ushironoko/fix-export
+- fix
+- WIP
+
+
 ## [1.1.7] - 2025-08-31
 
 - Merge pull request #79 from ushironoko:use-wasm-parser
