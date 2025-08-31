@@ -211,3 +211,32 @@ export const createNodeNameExtractor = (language: string) => {
     return identifierChild?.text;
   };
 };
+
+// Language-specific modifier node types that should be included with their children
+export const LANGUAGE_MODIFIER_NODES: Record<string, string[]> = {
+  javascript: ["export_statement"],
+  typescript: ["export_statement"],
+  tsx: ["export_statement"],
+  python: ["decorated_definition"], // @decorator patterns
+  go: [], // Go includes modifiers in function_declaration
+  rust: ["visibility_modifier"], // pub modifier
+  java: ["modifiers"], // public, private, static, etc.
+  ruby: [], // Ruby doesn't have export-like modifiers
+  c: [], // C includes modifiers in function_definition
+  cpp: [], // C++ includes modifiers in function_definition
+  html: [],
+  css: [],
+  bash: [],
+};
+
+// Check if a parent node is a modifier that should be included
+export const isModifierNode = (
+  parentType: string | undefined,
+  language: string,
+): boolean => {
+  if (!parentType) return false;
+  
+  const modifiers = LANGUAGE_MODIFIER_NODES[language] || [];
+  
+  return modifiers.includes(parentType);
+};

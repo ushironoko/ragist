@@ -8,6 +8,7 @@ import { getLanguageFromExtension } from "./file-extensions.js";
 import {
   createBoundaryNodeTypes,
   createNodeNameExtractor,
+  isModifierNode,
 } from "./language-node-types.js";
 import type { ParserFactory } from "./parser-factory.js";
 import { createParserFactory } from "./parser-factory.js";
@@ -35,12 +36,21 @@ const createNodeTraverser = (language: string) => {
       const isCurrentBoundary = isBoundary(node.type);
 
       if (isCurrentBoundary && !insideBoundary) {
+        // Check if parent is a language-specific modifier node to include modifiers
+        let textToUse = node.text;
+        let startIndex = node.startIndex;
+        
+        if (isModifierNode(node.parent?.type, language)) {
+          textToUse = node.parent.text;
+          startIndex = node.parent.startIndex;
+        }
+        
         boundaries.push({
           type: node.type,
           name: extractName(node),
-          startIndex: node.startIndex,
+          startIndex: startIndex,
           endIndex: node.endIndex,
-          text: node.text,
+          text: textToUse,
         });
         // Child nodes inside boundary nodes are not treated as boundaries
         for (const child of node.children) {
