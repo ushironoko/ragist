@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.6] - 2025-08-31
+
+- Merge pull request #78 from ushironoko:fix-externals-2
+- fix externals 2
+
+
 ## [1.1.5] - 2025-08-31
 
 - Merge pull request #77 from ushironoko:fix-external-tree-sitter
