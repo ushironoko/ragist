@@ -20,7 +20,7 @@ interface CSTBoundary {
   text: string;
 }
 
-// ノード走査操作
+// Node traversal operations
 const createNodeTraverser = (language: string) => {
   const boundaryNodeTypes = createBoundaryNodeTypes(language);
   const extractName = createNodeNameExtractor(language);
@@ -42,12 +42,12 @@ const createNodeTraverser = (language: string) => {
           endIndex: node.endIndex,
           text: node.text,
         });
-        // 境界ノード内の子ノードは境界として扱わない
+        // Child nodes inside boundary nodes are not treated as boundaries
         for (const child of node.children) {
           visit(child, true);
         }
       } else {
-        // 境界ノードでない場合は、子ノードを同じ境界状態で探索
+        // If not a boundary node, traverse child nodes with the same boundary state
         for (const child of node.children) {
           visit(child, insideBoundary);
         }
@@ -61,7 +61,7 @@ const createNodeTraverser = (language: string) => {
   return { traverse };
 };
 
-// CST解析操作
+// CST parsing operations
 const createCSTOperations = (factory: ParserFactory) => {
   const parseAndExtractBoundaries = async (
     code: string,
@@ -92,7 +92,7 @@ const createCSTOperations = (factory: ParserFactory) => {
   return { parseAndExtractBoundaries, boundariesToChunks };
 };
 
-// withパターンの関数合成
+// Function composition with 'with' pattern
 export const withCSTParsing = async <T>(
   factory: ParserFactory,
   operation: (ops: ReturnType<typeof createCSTOperations>) => Promise<T>,
@@ -101,15 +101,17 @@ export const withCSTParsing = async <T>(
   try {
     return await operation(ops);
   } finally {
-    // リソースのクリーンアップはファクトリーレベルで管理
+    // Resource cleanup is managed at the factory level
   }
 };
 
-// CST操作のエクスポート（テスト用）
+// Export CST operations (for testing)
 export { createCSTOperations };
 
-// 高レベルチャンキング操作
+// High-level chunking operations
 export const createCSTChunkingOperations = () => {
+  let reportedFailure = false;
+
   const chunkWithCST = async (
     code: string,
     language: string,
@@ -142,12 +144,23 @@ export const createCSTChunkingOperations = () => {
     const factory = createParserFactory();
 
     try {
-      return await chunkWithCST(code, language, options, factory);
+      const result = await chunkWithCST(code, language, options, factory);
+      // CST parsing succeeded
+      return result;
     } catch (error) {
-      if (process.env.DEBUG_GISTDEX) {
-        console.warn(`CST parsing failed for ${filePath}:`, error);
+      // If CST parsing failed, notify the user once
+      if (!reportedFailure) {
+        console.warn(`⚠️  CST parser not available for ${language} files`);
+        console.warn("Falling back to regular text chunking.");
+        console.warn("For better code indexing, install gistdex locally:");
+        console.warn("  npm install -g @ushironoko/gistdex");
+        reportedFailure = true;
       }
-      // Silently fall back to regular chunking
+
+      if (process.env.DEBUG_GISTDEX) {
+        console.debug(`CST parsing failed for ${filePath}:`, error);
+      }
+
       return fallback(code, language, options);
     } finally {
       factory.dispose();
