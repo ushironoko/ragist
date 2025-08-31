@@ -71,6 +71,12 @@ importers:
       tree-sitter-typescript:
         specifier: 0.23.2
         version: 0.23.2(tree-sitter@0.21.1)
+      tree-sitter-wasms:
+        specifier: 0.1.11
+        version: 0.1.11
+      web-tree-sitter:
+        specifier: 0.24.5
+        version: 0.24.5
       zod:
         specifier: 3.25.76
         version: 3.25.76
@@ -2599,6 +2605,9 @@ packages:
       tree-sitter:
         optional: true
 
+  tree-sitter-wasms@0.1.11:
+    resolution: {integrity: sha512-26sE4+qoTi1CbzHdo9sHs9pRE/jXVFVRigSG/5TNAbwhSMVjHfMAg4UjmOhAFAIx5UxgoQuaURwqhm0SRNrpWA==}
+
   tree-sitter@0.21.1:
     resolution: {integrity: sha512-7dxoA6kYvtgWw80265MyqJlkRl4yawIjO7S5MigytjELkX43fV2WsAXzsNfO7sBpPPCF5Gp0+XzHk0DwLCq3xQ==}
 
@@ -2833,6 +2842,9 @@ packages:
 
   web-tree-sitter@0.21.0:
     resolution: {integrity: sha512-iJ+QJ6ikN9D9cG7Kh6q3KtAstYFUQbYZ8OjuPEJYWfj2kLrmp5I3C2n6WjE1Y3jvj7nJbkcrJytJGWUEhCxn+g==}
+
+  web-tree-sitter@0.24.5:
+    resolution: {integrity: sha512-+J/2VSHN8J47gQUAvF8KDadrfz6uFYVjxoxbKWDoXVsH2u7yLdarCnIURnrMA6uSRkgX3SdmqM5BOoQjPdSh5w==}
 
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
@@ -5252,6 +5264,8 @@ snapshots:
     optionalDependencies:
       tree-sitter: 0.21.1
 
+  tree-sitter-wasms@0.1.11: {}
+
   tree-sitter@0.21.1:
     dependencies:
       node-addon-api: 8.5.0
@@ -5536,6 +5550,8 @@ snapshots:
       typescript: 5.7.3
 
   web-tree-sitter@0.21.0: {}
+
+  web-tree-sitter@0.24.5: {}
 
   which@2.0.2:
     dependencies:

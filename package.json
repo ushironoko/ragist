@@ -20,9 +20,12 @@
     "LICENSE",
     "CHANGELOG.md",
     "templates",
-    "package.json"
+    "package.json",
+    "wasm"
   ],
   "scripts": {
+    "postinstall": "node scripts/check-tree-sitter.js || true",
+    "prebuild": "node --enable-source-maps --experimental-strip-types scripts/copy-wasm-files.ts",
     "dev": "tsdown --watch",
     "build": "tsdown",
     "start": "node dist/cli/index.js",
@@ -32,7 +35,7 @@
     "lint": "biome check --write .",
     "format": "biome format --write .",
     "tsc": "tsgo --noEmit",
-    "prePublish": "pnpm format &&pnpm run lint && pnpm run tsc && pnpm run test && pnpm run build && pnpm run docs:build",
+    "prepublishOnly": "pnpm format && pnpm run lint && pnpm run tsc && pnpm run test && pnpm run build && pnpm run docs:build",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
@@ -100,6 +103,8 @@
     "tree-sitter-ruby": "0.21.0",
     "tree-sitter-rust": "0.21.0",
     "tree-sitter-typescript": "0.23.2",
+    "tree-sitter-wasms": "0.1.11",
+    "web-tree-sitter": "0.24.5",
     "zod": "3.25.76"
   },
   "devDependencies": {

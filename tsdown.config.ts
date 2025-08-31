@@ -12,7 +12,10 @@ export default defineConfig({
   sourcemap: true,
   outDir: "dist",
   target: "node24",
+  // Keep all tree-sitter modules external  
   external: [
+    "web-tree-sitter",
+    "tree-sitter-wasms",
     "tree-sitter",
     "tree-sitter-javascript",
     "tree-sitter-typescript",
