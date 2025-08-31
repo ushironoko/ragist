@@ -1,5 +1,5 @@
-// 各言語のノードタイプ定義
-// Tree-sitter各パーサーのドキュメントとnode-types.jsonから抽出
+// Node type definitions for each language
+// Extracted from Tree-sitter parser documents and node-types.json
 
 export const LANGUAGE_NODE_TYPES = {
   javascript: {
@@ -26,12 +26,26 @@ export const LANGUAGE_NODE_TYPES = {
     imports: ["import_statement"],
     variables: ["variable_declaration", "lexical_declaration"],
   },
+  tsx: {
+    functions: [
+      "function_declaration",
+      "function_expression",
+      "arrow_function",
+    ],
+    classes: ["class_declaration"],
+    methods: ["method_definition"],
+    interfaces: ["interface_declaration"],
+    types: ["type_alias_declaration"],
+    imports: ["import_statement"],
+    variables: ["variable_declaration", "lexical_declaration"],
+    jsx: ["jsx_element", "jsx_self_closing_element", "jsx_fragment"],
+  },
   python: {
     functions: ["function_definition"],
     classes: ["class_definition"],
-    methods: ["function_definition"], // クラス内のメソッドも function_definition
+    methods: ["function_definition"], // Methods inside classes are also function_definition
     imports: ["import_statement", "import_from_statement"],
-    variables: ["assignment"], // Pythonの変数代入
+    variables: ["assignment"], // Python variable assignment
   },
   go: {
     functions: ["function_declaration"],
@@ -101,14 +115,14 @@ export const LANGUAGE_NODE_TYPES = {
   },
 } as const;
 
-// すべての境界ノードタイプを収集
+// Collect all boundary node types
 export const createBoundaryNodeTypes = (language: string): Set<string> => {
   const nodeTypes = new Set<string>();
   const langConfig =
     LANGUAGE_NODE_TYPES[language as keyof typeof LANGUAGE_NODE_TYPES];
 
   if (!langConfig) {
-    // デフォルト（JavaScript）を使用
+    // Use default (JavaScript)
     const defaultConfig = LANGUAGE_NODE_TYPES.javascript;
     Object.values(defaultConfig)
       .flat()
@@ -122,20 +136,21 @@ export const createBoundaryNodeTypes = (language: string): Set<string> => {
   return nodeTypes;
 };
 
-// ノード名抽出の言語別実装
+// Language-specific node name extraction
 export const createNodeNameExtractor = (language: string) => {
   return (node: any): string | undefined => {
-    // 共通的な名前フィールドの確認
+    // Check common name field
     const nameField = node.childForFieldName?.("name");
     if (nameField?.text) {
       return nameField.text;
     }
 
-    // 言語固有の処理
+    // Language-specific processing
     switch (language) {
       case "javascript":
       case "typescript":
-        // Arrow function の場合、親の variable_declarator から名前を取得
+      case "tsx":
+        // For arrow functions, get name from parent variable_declarator
         if (node.type === "arrow_function") {
           const parent = node.parent;
           if (parent?.type === "variable_declarator") {
@@ -145,7 +160,7 @@ export const createNodeNameExtractor = (language: string) => {
             }
           }
         }
-        // メソッドの場合、key フィールドから名前を取得
+        // For methods, get name from key field
         if (node.type === "method_definition") {
           const keyNode = node.childForFieldName("key");
           if (keyNode?.text) {
@@ -155,11 +170,11 @@ export const createNodeNameExtractor = (language: string) => {
         break;
 
       case "python":
-        // Python の場合、name フィールドがほとんどの場合で使われる
+        // For Python, name field is used in most cases
         break;
 
       case "go":
-        // Go の method_declaration の場合
+        // For Go method_declaration
         if (node.type === "method_declaration") {
           const nameNode = node.childForFieldName("name");
           if (nameNode?.text) {
@@ -169,7 +184,7 @@ export const createNodeNameExtractor = (language: string) => {
         break;
 
       case "rust":
-        // Rust の function_item の場合
+        // For Rust function_item
         if (node.type === "function_item") {
           const nameNode = node.childForFieldName("name");
           if (nameNode?.text) {
@@ -179,7 +194,7 @@ export const createNodeNameExtractor = (language: string) => {
         break;
 
       case "java":
-        // Java の method_declaration の場合
+        // For Java method_declaration
         if (node.type === "method_declaration") {
           const nameNode = node.childForFieldName("name");
           if (nameNode?.text) {
@@ -189,7 +204,7 @@ export const createNodeNameExtractor = (language: string) => {
         break;
     }
 
-    // フォールバック: identifier ノードを探す
+    // Fallback: look for identifier node
     const identifierChild = node.children?.find?.(
       (child: any) => child.type === "identifier",
     );

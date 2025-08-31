@@ -14,6 +14,7 @@ export type FileExtension = `.${string}`;
 export const SUPPORTED_LANGUAGES = [
   "javascript",
   "typescript",
+  "tsx",
   "python",
   "go",
   "rust",
@@ -92,7 +93,7 @@ export const LANGUAGE_PARSERS = new Map<FileExtension, SupportedLanguage>([
   [".js", "javascript"],
   [".jsx", "javascript"],
   [".ts", "typescript"],
-  [".tsx", "typescript"],
+  [".tsx", "tsx"],
   [".mjs", "javascript"],
   [".mts", "typescript"],
   [".cjs", "javascript"],

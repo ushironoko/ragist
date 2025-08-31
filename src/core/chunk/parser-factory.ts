@@ -4,17 +4,120 @@ import {
   isSupportedLanguage,
 } from "./file-extensions.js";
 
-// 言語モジュールローダー
+// Static imports (optional)
+let treeSitterJavaScript: any;
+let treeSitterTypeScript: any;
+let treeSitterTsx: any;
+let treeSitterPython: any;
+let treeSitterGo: any;
+let treeSitterRust: any;
+let treeSitterJava: any;
+let treeSitterRuby: any;
+let treeSitterC: any;
+let treeSitterCpp: any;
+let treeSitterHtml: any;
+let treeSitterCss: any;
+let treeSitterBash: any;
+
+// Attempt static imports
+try {
+  treeSitterJavaScript = (await import("tree-sitter-javascript")).default;
+} catch {}
+try {
+  const ts = await import("tree-sitter-typescript");
+  treeSitterTypeScript = ts.default?.typescript || ts.typescript;
+  treeSitterTsx = ts.default?.tsx || ts.tsx;
+} catch {}
+try {
+  treeSitterPython = (await import("tree-sitter-python")).default;
+} catch {}
+try {
+  treeSitterGo = (await import("tree-sitter-go")).default;
+} catch {}
+try {
+  treeSitterRust = (await import("tree-sitter-rust")).default;
+} catch {}
+try {
+  treeSitterJava = (await import("tree-sitter-java")).default;
+} catch {}
+try {
+  treeSitterRuby = (await import("tree-sitter-ruby")).default;
+} catch {}
+try {
+  treeSitterC = (await import("tree-sitter-c")).default;
+} catch {}
+try {
+  treeSitterCpp = (await import("tree-sitter-cpp")).default;
+} catch {}
+try {
+  treeSitterHtml = (await import("tree-sitter-html")).default;
+} catch {}
+try {
+  treeSitterCss = (await import("tree-sitter-css")).default;
+} catch {}
+try {
+  treeSitterBash = (await import("tree-sitter-bash")).default;
+} catch {}
+
+// Language module loader
 const createLanguageLoader =
   () =>
   async (language: SupportedLanguage): Promise<any> => {
     try {
+      // Check statically imported modules first
+      switch (language) {
+        case "javascript":
+          if (treeSitterJavaScript) return treeSitterJavaScript;
+          break;
+        case "typescript":
+          if (treeSitterTypeScript) return treeSitterTypeScript;
+          break;
+        case "tsx":
+          if (treeSitterTsx) return treeSitterTsx;
+          break;
+        case "python":
+          if (treeSitterPython) return treeSitterPython;
+          break;
+        case "go":
+          if (treeSitterGo) return treeSitterGo;
+          break;
+        case "rust":
+          if (treeSitterRust) return treeSitterRust;
+          break;
+        case "java":
+          if (treeSitterJava) return treeSitterJava;
+          break;
+        case "ruby":
+          if (treeSitterRuby) return treeSitterRuby;
+          break;
+        case "c":
+          if (treeSitterC) return treeSitterC;
+          break;
+        case "cpp":
+          if (treeSitterCpp) return treeSitterCpp;
+          break;
+        case "html":
+          if (treeSitterHtml) return treeSitterHtml;
+          break;
+        case "css":
+          if (treeSitterCss) return treeSitterCss;
+          break;
+        case "bash":
+          if (treeSitterBash) return treeSitterBash;
+          break;
+      }
+
+      // If static import failed, try dynamic import
       switch (language) {
         case "javascript":
           return (await import("tree-sitter-javascript")).default;
         case "typescript": {
           const ts = await import("tree-sitter-typescript");
-          return ts.typescript;
+          return ts.default?.typescript || ts.typescript;
+        }
+        case "tsx": {
+          const ts = await import("tree-sitter-typescript");
+          return ts.default?.tsx || ts.tsx;
         }
         case "python":
           return (await import("tree-sitter-python")).default;
@@ -40,28 +143,41 @@ const createLanguageLoader =
           return null;
       }
     } catch (error) {
-      // Tree-sitter modules might not be available in production builds
-      // This is expected when native modules are not bundled
-      if (process.env.DEBUG_GISTDEX) {
-        console.warn(`Failed to load tree-sitter-${language}:`, error);
+      // Detailed error message when tree-sitter modules are not available
+      if (process.env.DEBUG_GISTDEX || process.env.NODE_ENV !== "production") {
+        console.error(`\n⚠️  CST parser not available for ${language}`);
+        console.error("This may happen when:");
+        console.error("  1. Running with pnpm dlx or npx");
+        console.error("  2. tree-sitter modules are not installed");
+        console.error(
+          "  3. Native modules are incompatible with your platform",
+        );
+        console.error("\nTo ensure CST parsing works:");
+        console.error(
+          "  - Install globally: npm install -g @ushironoko/gistdex",
+        );
+        console.error(
+          "  - Or install locally: npm install @ushironoko/gistdex",
+        );
+        console.error("\nFalling back to regular text chunking...\n");
       }
       return null;
     }
   };
 
-// パーサーファクトリーのインターフェース
+// Parser factory interface
 export interface ParserFactory {
   createParser: (language: string) => Promise<Parser | null>;
   dispose: () => void;
 }
 
-// パーサーファクトリー関数
+// Parser factory function
 export const createParserFactory = (): ParserFactory => {
   const parsers = new Map<string, Parser>();
   const loader = createLanguageLoader();
 
   const createParser = async (language: string): Promise<Parser | null> => {
-    // 型ガードで安全にSupportedLanguageかチェック
+    // Type guard to safely check if it's a SupportedLanguage
     if (!isSupportedLanguage(language)) {
       return null;
     }
