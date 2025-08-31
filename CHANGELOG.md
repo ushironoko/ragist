@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.7] - 2025-08-31
+
+- Merge pull request #79 from ushironoko:use-wasm-parser
+- fix deps
+- fix path
+- fix use wasm-parser
+
+
 ## [1.1.6] - 2025-08-31
 
 - Merge pull request #78 from ushironoko:fix-externals-2
