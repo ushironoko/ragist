@@ -57,8 +57,9 @@ describe("CST operations - Additional Languages", () => {
       const classDec = result.find((b) => b.type === "class_declaration");
       expect(classDec).toBeDefined();
 
+      // Methods should not be separate boundaries as they're inside the class
       const methodDec = result.find((b) => b.type === "method_declaration");
-      expect(methodDec).toBeDefined();
+      expect(methodDec).toBeUndefined();
     });
   });
 

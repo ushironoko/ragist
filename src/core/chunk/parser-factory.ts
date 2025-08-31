@@ -39,7 +39,12 @@ const createLanguageLoader =
         default:
           return null;
       }
-    } catch {
+    } catch (error) {
+      // Tree-sitter modules might not be available in production builds
+      // This is expected when native modules are not bundled
+      if (process.env.DEBUG_GISTDEX) {
+        console.warn(`Failed to load tree-sitter-${language}:`, error);
+      }
       return null;
     }
   };

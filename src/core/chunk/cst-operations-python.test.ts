@@ -40,9 +40,9 @@ describe("CST operations - Python", () => {
     expect(classDef).toBeDefined();
     expect(classDef?.name).toBe("Calculator");
 
-    // Python methods are also function_definition
+    // Methods should not be separate boundaries as they're inside the class
     const methods = result.filter((b) => b.type === "function_definition");
-    expect(methods.length).toBeGreaterThan(0);
+    expect(methods.length).toBe(0);
   });
 
   it("should detect async functions", async () => {
