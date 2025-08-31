@@ -12,22 +12,6 @@ export default defineConfig({
   sourcemap: true,
   outDir: "dist",
   target: "node24",
-  // Keep all tree-sitter modules external
-  external: [
-    "web-tree-sitter",
-    "tree-sitter-wasms",
-    "tree-sitter",
-    "tree-sitter-javascript",
-    "tree-sitter-typescript",
-    "tree-sitter-python",
-    "tree-sitter-go",
-    "tree-sitter-rust",
-    "tree-sitter-java",
-    "tree-sitter-ruby",
-    "tree-sitter-c",
-    "tree-sitter-cpp",
-    "tree-sitter-html",
-    "tree-sitter-css",
-    "tree-sitter-bash",
-  ],
+  // Keep web-tree-sitter modules external (they use WASM files)
+  external: ["web-tree-sitter", "tree-sitter-wasms"],
 });

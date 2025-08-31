@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import Parser from "web-tree-sitter";
 import type { Language } from "web-tree-sitter";
 import {
@@ -8,42 +7,25 @@ import {
   isSupportedLanguage,
 } from "./file-extensions.js";
 
-// Get the directory of this file for resolving WASM paths
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Map language names to WASM file names
-const LANGUAGE_WASM_MAP: Record<SupportedLanguage, string> = {
-  javascript: "tree-sitter-javascript.wasm",
-  typescript: "tree-sitter-typescript.wasm",
-  tsx: "tree-sitter-tsx.wasm",
-  python: "tree-sitter-python.wasm",
-  go: "tree-sitter-go.wasm",
-  rust: "tree-sitter-rust.wasm",
-  java: "tree-sitter-java.wasm",
-  ruby: "tree-sitter-ruby.wasm",
-  c: "tree-sitter-c.wasm",
-  cpp: "tree-sitter-cpp.wasm",
-  html: "tree-sitter-html.wasm",
-  css: "tree-sitter-css.wasm",
-  bash: "tree-sitter-bash.wasm",
-};
+// Create require function for resolving module paths in ESM
+const require = createRequire(import.meta.url);
 
 // Initialize web-tree-sitter once
 let isInitialized = false;
 const initializeParser = async () => {
   if (!isInitialized) {
-    // Find the wasm directory relative to project root
-    // In production: dist/../wasm
-    // In test: src/core/chunk/../../../wasm
-    const wasmDir = join(__dirname, "../../../wasm");
-    const treeSitterWasmPath = join(wasmDir, "tree-sitter.wasm");
-
-    // Read the tree-sitter.wasm file
-    const wasmModule = await readFile(treeSitterWasmPath);
-
-    // Initialize with the WASM module
-    await Parser.init(wasmModule);
+    // Load tree-sitter.wasm from web-tree-sitter package
+    try {
+      // Try to load from node_modules (works for both local and global installs)
+      const treeSitterWasmPath = require.resolve(
+        "web-tree-sitter/tree-sitter.wasm",
+      );
+      const wasmModule = await readFile(treeSitterWasmPath);
+      await Parser.init(wasmModule);
+    } catch {
+      // Fallback: let web-tree-sitter handle it automatically
+      await Parser.init();
+    }
     isInitialized = true;
   }
 };
@@ -60,14 +42,12 @@ const loadLanguage = async (
     if (cached) return cached;
   }
 
-  const wasmFileName = LANGUAGE_WASM_MAP[languageName];
-  if (!wasmFileName) {
-    return null;
-  }
-
   try {
-    // Load from bundled wasm directory (same level as above)
-    const wasmPath = join(__dirname, "../../../wasm", wasmFileName);
+    // Construct WASM filename from language name
+    const wasmFileName = `tree-sitter-${languageName}.wasm`;
+
+    // Load from tree-sitter-wasms package
+    const wasmPath = require.resolve(`tree-sitter-wasms/out/${wasmFileName}`);
 
     // Read the WASM file as buffer
     const wasmBuffer = await readFile(wasmPath);

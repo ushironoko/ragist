@@ -3,13 +3,24 @@
  * This module provides a single source of truth for all file extension handling
  */
 
-import {
-  SUPPORTED_LANGUAGES,
-  type SupportedLanguage,
-} from "./supported-languages.js";
+// Centralized list of supported languages for CST parsing
+export const SUPPORTED_LANGUAGES = [
+  "javascript",
+  "typescript",
+  "tsx",
+  "python",
+  "go",
+  "rust",
+  "java",
+  "ruby",
+  "c",
+  "cpp",
+  "html",
+  "css",
+  "bash",
+] as const;
 
-// Re-export for backward compatibility
-export { SUPPORTED_LANGUAGES, type SupportedLanguage };
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 /**
  * File extensions type
