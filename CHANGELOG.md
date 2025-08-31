@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5] - 2025-08-31
+
+- Merge pull request #77 from ushironoko:fix-external-tree-sitter
+- fix external
+- fix
+
+
 ## [1.1.4] - 2025-08-28
 
 - bugfic: mcp tool use
