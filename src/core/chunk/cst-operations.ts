@@ -31,8 +31,10 @@ const createNodeTraverser = (language: string) => {
   const traverse = (node: SyntaxNode): CSTBoundary[] => {
     const boundaries: CSTBoundary[] = [];
 
-    const visit = (node: SyntaxNode): void => {
-      if (isBoundary(node.type)) {
+    const visit = (node: SyntaxNode, insideBoundary = false): void => {
+      const isCurrentBoundary = isBoundary(node.type);
+
+      if (isCurrentBoundary && !insideBoundary) {
         boundaries.push({
           type: node.type,
           name: extractName(node),
@@ -40,10 +42,15 @@ const createNodeTraverser = (language: string) => {
           endIndex: node.endIndex,
           text: node.text,
         });
-      }
-
-      for (const child of node.children) {
-        visit(child);
+        // 境界ノード内の子ノードは境界として扱わない
+        for (const child of node.children) {
+          visit(child, true);
+        }
+      } else {
+        // 境界ノードでない場合は、子ノードを同じ境界状態で探索
+        for (const child of node.children) {
+          visit(child, insideBoundary);
+        }
       }
     };
 
@@ -137,7 +144,10 @@ export const createCSTChunkingOperations = () => {
     try {
       return await chunkWithCST(code, language, options, factory);
     } catch (error) {
-      console.warn(`CST parsing failed for ${filePath}, using fallback`);
+      if (process.env.DEBUG_GISTDEX) {
+        console.warn(`CST parsing failed for ${filePath}:`, error);
+      }
+      // Silently fall back to regular chunking
       return fallback(code, language, options);
     } finally {
       factory.dispose();

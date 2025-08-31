@@ -33,7 +33,7 @@ describe("CST operations - JavaScript", () => {
       });
     });
 
-    it("should detect arrow functions", async () => {
+    it("should detect arrow functions within lexical declarations", async () => {
       const code = "const add = (a, b) => a + b;";
 
       const result = await withCSTParsing(factory, async (ops) => {
@@ -44,10 +44,10 @@ describe("CST operations - JavaScript", () => {
         return boundaries;
       });
 
-      // Arrow function should be detected
-      const arrowFunc = result.find((b) => b.type === "arrow_function");
-      expect(arrowFunc).toBeDefined();
-      expect(arrowFunc?.text).toBe("(a, b) => a + b");
+      // Lexical declaration containing arrow function should be detected
+      const lexicalDecl = result.find((b) => b.type === "lexical_declaration");
+      expect(lexicalDecl).toBeDefined();
+      expect(lexicalDecl?.text).toBe(code);
     });
 
     it("should detect class declarations", async () => {
@@ -62,13 +62,15 @@ describe("CST operations - JavaScript", () => {
         return boundaries;
       });
 
-      // Should detect class and method
+      // Should detect class as a single boundary (methods are inside)
       const classDecl = result.find((b) => b.type === "class_declaration");
       expect(classDecl).toBeDefined();
       expect(classDecl?.name).toBe("Calculator");
+      expect(classDecl?.text).toBe(code);
 
+      // Methods should not be separate boundaries as they're inside the class
       const methodDef = result.find((b) => b.type === "method_definition");
-      expect(methodDef).toBeDefined();
+      expect(methodDef).toBeUndefined();
     });
 
     it("should detect import statements", async () => {
@@ -109,7 +111,7 @@ var z = 30;`;
       expect(lexicalDecls.length + varDecls.length).toBeGreaterThan(0);
     });
 
-    it("should detect function expressions", async () => {
+    it("should detect function expressions within lexical declarations", async () => {
       const code = "const fn = function namedFunc() { return 42; };";
 
       const result = await withCSTParsing(factory, async (ops) => {
@@ -120,9 +122,10 @@ var z = 30;`;
         return boundaries;
       });
 
-      const funcExpr = result.find((b) => b.type === "function_expression");
-      expect(funcExpr).toBeDefined();
-      expect(funcExpr?.name).toBe("namedFunc");
+      // Lexical declaration containing function expression should be detected
+      const lexicalDecl = result.find((b) => b.type === "lexical_declaration");
+      expect(lexicalDecl).toBeDefined();
+      expect(lexicalDecl?.text).toBe(code);
     });
 
     it("should detect async functions", async () => {
@@ -165,12 +168,15 @@ class MyComponent {
         return boundaries;
       });
 
-      // Should find class, methods, and nested arrow function
+      // Should find only the class as a boundary (everything else is nested inside)
       expect(result.find((b) => b.type === "class_declaration")).toBeDefined();
+      expect(result).toHaveLength(1); // Only the class should be a boundary
+
+      // Methods and nested declarations should not be separate boundaries
       expect(result.filter((b) => b.type === "method_definition")).toHaveLength(
-        2,
-      ); // constructor and render
-      expect(result.find((b) => b.type === "arrow_function")).toBeDefined();
+        0,
+      );
+      expect(result.find((b) => b.type === "arrow_function")).toBeUndefined();
     });
   });
 
