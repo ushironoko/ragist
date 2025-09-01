@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.0] - 2025-09-01
+
+- Merge pull request #81 from ushironoko:feature/add-vue-support
+- feat: add Vue SFC support for CST-based chunking
+
+
 ## [1.1.8] - 2025-08-31
 
 - Merge pull request #80 from ushironoko/fix-export
