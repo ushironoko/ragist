@@ -113,6 +113,14 @@ export const LANGUAGE_NODE_TYPES = {
     commands: ["command"],
     variables: ["variable_assignment"],
   },
+  vue: {
+    templates: ["template_element"],
+    scripts: ["script_element"],
+    styles: ["style_element"],
+    components: ["component"],
+    directives: ["directive_attribute"],
+    interpolations: ["interpolation"],
+  },
 } as const;
 
 // Collect all boundary node types

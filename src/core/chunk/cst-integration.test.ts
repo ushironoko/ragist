@@ -84,10 +84,13 @@ class UserService {
       expect(chunks.length).toBeGreaterThan(0);
     });
 
-    it("should fall back gracefully for unsupported files", async () => {
+    it("should use CST for Vue files", async () => {
       const vueCode = `<template>
   <div>Hello</div>
-</template>`;
+</template>
+<script setup>
+const msg = 'World'
+</script>`;
 
       const chunks = await chunkTextWithCST(vueCode, {
         preserveBoundaries: true,
@@ -96,8 +99,9 @@ class UserService {
         overlap: 10,
       });
 
-      // Should still chunk the text even without CST support
+      // Should chunk using CST boundaries for Vue files
       expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[0]).toContain("<template>");
     });
 
     it("should handle Markdown files with boundary preservation", async () => {
@@ -171,6 +175,12 @@ Another paragraph.`;
         file: "test.ts",
         code: "interface User {\n  name: string;\n}",
         expectedType: "interface_declaration",
+      },
+      {
+        name: "Vue SFC components",
+        file: "test.vue",
+        code: "<template>\n  <div>{{ msg }}</div>\n</template>\n<script setup>\nconst msg = 'Hello'\n</script>",
+        expectedType: "template_element",
       },
     ];
 

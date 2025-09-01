@@ -18,6 +18,7 @@ export const SUPPORTED_LANGUAGES = [
   "html",
   "css",
   "bash",
+  "vue",
 ] as const;
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
@@ -117,6 +118,8 @@ export const LANGUAGE_PARSERS = new Map<FileExtension, SupportedLanguage>([
   // Shell
   [".sh", "bash"],
   [".bash", "bash"],
+  // Vue
+  [".vue", "vue"],
 ]);
 
 /**
